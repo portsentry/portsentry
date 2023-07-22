@@ -1,0 +1,164 @@
+*************************************************************************
+	STEALTH MODE ONLY SUPPORTED FOR LINUX SYSTEMS ONLY
+*************************************************************************
+
+$Id: README.stealth,v 1.9 2000/09/27 04:17:23 crowland Exp crowland $
+
+Stealth Scans
+=-=-=-=-=-=-=
+
+Right now PortSentry will detect the following:
+
+- Strobe-style scans (full connect() scans)
+- SYN/Half open scans.
+- FIN scans.
+- NULL scans.
+- XMAS scans.
+- UDP scans (not really stealth scans per se)
+- Any odd-ball packet with flags not matching the above.
+
+You can test out this functionality by grabbing "nmap" Which is a popular
+scanner. You can get it from:
+
+http://www.insecure.org
+
+
+A few notes on the implementation:
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+Stealth scan detection mode one
+-------------------------------
+
+This mode will monitor ports just like the original version of PortSentry. The
+primary difference being that it does not bind to anything. An attacker
+still has to hit a tripwired port to activate the sensor though. 
+To prevent other issues, this scan mode will not react if the ACK flag of
+the TCP packet is set. This prevents causing alarms on "established"
+connections that happen to take one of your high ports temporarily.
+
+
+Stealth scan detection mode two
+-------------------------------
+
+** Advanced Logic Mode ** - PortSentry is intelligent about how it monitors   
+ports. For some protocols such as FTP the client actually opens up ports  
+in the ephemeral range (1024-65535) and the server then connects *back* to
+you. This would normally cause the port scanner to activate. PortSentry though
+will look at the incoming connection and determine if it is destined for  
+one of these "temporary" bindings. If it is, then the connection is
+ignored for that one time. As soon as the connection is torn down the
+window closes and full protection is back again. This is in fact a
+rudimentary stateful inspection engine.
+
+Trying it out:
+--------------
+
+1) Fire up PortSentry in any one of the stealth modes (-stcp, -atcp, -sudp,
+-audp). 
+
+2) Take a program such as netcat and bind up to a protected port on the
+host (i.e. "nc -p 143 -l").
+ 
+3) Go to a remote machine and telnet to that port, you will now connect to
+netcat and can see the text you type on your host. 
+
+4) Now disconnect and shut down netcat. 
+
+5) Re-Connect to the same protected port again from the remote host and
+now PortSentry will block you normally.
+
+This logic is built into all of the stealth modes (UDP and TCP). 
+
+
+UDP "stealth" scan detection
+----------------------------
+
+The UDP flags are not really "stealth" scan detection in the traditional
+sense, but acts like the other TCP stealth scan options. Simply put, it
+doesn't bind ports but uses a raw socket. The same warnings apply.
+
+We don't suggest using Advanced mode UDP stealth scan detection unless you
+know what you are doing. It is very good if you know enough to
+exclude broadcast traffic (you may want to run it in non-blocking mode
+to see what alarms are generated and then set this up). The ports that
+generally cause this are route (520) and NetBIOS (137/138).
+
+General WARNINGS and CAUTIONS
+-----------------------------
+
+As stated in several places, it is possible that an attacker can forge
+packets to appear from any host and can use this to trick PortSentry into
+activating against the forged host IP. This can cause a variety of
+problems in theory such as blocking gateways or name servers.
+
+Sometimes though theory and reality just don't mix. The reality is 
+that not many people are using this tactic. In fact recent
+versions of nmap even put in a "decoy" feature which we can only assume was
+prompted by the release of PortSentry. This feature uses a list of forged
+hosts to try to conceal the real culprit. The theory being that the
+attacker is hidden in a list of chaff and the port scan detector is
+blocking everyone thereby making it ineffective. 
+
+Well arguments can be made all day on the pluses and minuses of
+auto-blocking hosts. When the theory is examined, the reality
+sets in which shows through our own (informal) observations that your
+chances of someone doing this to you are small. In fact we think that
+it is small enough that if you are considering running the stealth
+scan detection on a small *not-well-known* host the benefits outweigh
+the risk. Why is this? Well:
+
+1) The person port scanning you doesn't want to be found, that is why they
+are "stealth" scanning you to begin with. It is kind of silly to spray
+false packets at a host during the scan as this only increases the
+chances of being spotted and no matter what gets your host blocked
+anyway.
+
+2) Spraying X number of additional packets slows your scan down by a
+similar amount. Most attackers are going for quantity, not quality. They
+want a scan to finish ASAP and with the least amount of noise. 
+
+3) Many networks now deploy anti-spoof filters which will prevent "decoy"
+packets from exiting the border routers due to a bogus source address not
+on the network. This means an attacker going through an ISP or similarly
+clueful network will cause many router log messages to be generated and
+will certainly grab attention of any aware admin from the originating
+network. This also means the decoy packets won't make it to your host and
+the real scanning host is revealed.
+
+4) Even if the intruder is smart and uses decoy addresses from the local
+subnet to allow them to exit the network it still raises a red flag that
+a network administrator will know where to start. Despite what people
+think, it's not *that* hard to find out which of 10 (or whatever) possible 
+hosts are compromised and doing a port scan.
+
+Does this mean you are risk free?? No. But we have not received a
+single complaint so far about people using forge scan tactics on
+a widespread basis (in fact we haven't received a *single* complaint
+of this tactic being used at all). So for the time being (as of
+this writing) you are probably OK if you look at all the facts.
+
+So where do we stand on the issue??
+
+Well we use full connect mode for any external host, but this is because 
+some of the hosts we watch are high-profile and we don't want to risk
+people playing games with us. For internal hosts though we will use the 
+stealth modes because we want to know immediately of a probe; forged or 
+not. 
+
+Now the conservative side would like to add a few things. We would like to
+say that the initial version of this tool only did full connect TCP scan
+detection. This was done deliberately to prevent such attacks from
+possibly occurring. Because of this, we only recommend the full connect
+mode (-tcp) for deployment on critical hosts or hosts subject to frequent
+abuse...
+
+...and the band played on...
+
+Over time we had many people write about UDP support and stealth scan
+support so we put them in because we thought they would be useful. 
+What this means is that our physical-world philosophy matches our 
+virtual-world philosophy. Basically, we accept the fact that people 
+are capable of making their own decisions when given adequate information. 
+Therefore, you are responsible for your own actions. We have given you 
+all the information you should need to decide what mode to use the tool. 
+So don't complain if something bad happens, because it is your choice. 

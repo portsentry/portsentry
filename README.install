@@ -1,0 +1,474 @@
+PortSentry - Port scan detection and active defense.
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+$Id: README.install,v 1.29 2003/05/23 18:10:02 crowland Exp crowland $
+
+E-Mail : craigrowland at users dot sourceforge dot net
+Date   : 05-23-2003
+Version: 1.2
+
+Introduction
+=-=-=-=-=-=-
+
+This is the "long" install version. You should read this file if you want
+to understand everything going on and the method to the madness in the
+program logic. Skip to Install down below if you don't care about this.
+
+More information can be obtained from http://sourceforge.net/projects/sentrytools
+
+PortSentry has a number of options to detect port scans, when it finds one it
+can react in the following ways:
+
+	- A log indicating the incident is made via syslog()
+	- The target host is automatically dropped into /etc/hosts.deny
+	  for TCP Wrappers
+	- The local host is automatically re-configured to route all
+	  traffic to the target to a dead host to make the target system
+	  disappear.
+	- The local host is automatically re-configured to drop all
+	  packets from the target via a local packet filter.
+
+
+The purpose of this is to give an admin a heads up that their host is
+being probed. There are similar programs that do this already (klaxon, 
+etc.) We have added a little twist to the whole idea (auto-blocking), plus
+extensive support for stealth scan detection.
+
+PortSentry has four "stealth" scan detection modes. Method one uses a 
+pre-defined list of ports to watch over. If someone pokes at them
+it activates. The second method is what is called "inverse" port binding, 
+where every port under a range is watched *except* for those that the 
+system has bound for network daemons when the PortSentry starts or ones that
+you've manually excluded. This is a very sensitive way for looking for
+port probes, but also the most prone to false alarms.
+
+Install
+=-=-=-=
+
+Step ONE:
+
+Pull the portsentry_config.h file into your editor and make sure the
+following are to your liking:
+
+CONFIG_FILE - The path to the PortSentry configuration file.
+WRAPPER_HOSTS_DENY - The path and name of TCP wrapper hosts.deny file.
+SYSLOG_FACILITY - The syslog facility for PortSentry to use.
+SYSLOG_LEVEL - The syslog level to send messages.
+
+We suggest not changing any of these options unless you know what you
+are doing.
+
+NOTE: For advanced users, you may wish to change the SYSLOG_FACILITY from 
+LOG_DAEMON to LOG_LOCAL0 (or one of the other LOCAL reporting facilities). 
+This will allow you to edit the syslog.conf file and drop PortSentry 
+messages direcly to its own file on the system for separate monitoring.
+
+SECOND NOTE: DO NOT DELETE THE "#" SIGNS FROM THIS FILE. They are NOT comments,
+they are required by the C compiler to pre-process the headers. If you delete
+the "#" signs you will get compile errors.
+
+
+Step TWO:
+
+Next, pull in portsentry.conf into your editor and check/change the
+following options:
+
+TCP_PORTS - A comma delimited string of TCP ports you want PortSentry to
+listen to. This string can NOT have any spaces in it. You can put in as
+many sockets as you want. PortSentry will try to bind them all up until
+the default limit of 64. 
+
+For the stealth scan detection modes, the ports are not "bound" per se, 
+but they are monitored at the socket level for connections. 
+
+For the Advanced Stealth Scan Detection (see below). This list is *ignored*
+
+UDP_PORTS - The same as above, except for UDP ports. You need to be
+very careful with UDP mode as an attacker can forge a port sweep and
+make you block any number of hosts. Use this option with caution, or 
+not at all if your host is a well-known Internet connected system.
+
+For the Advanced Stealth Scan Detection (see below). This list is *ignored*
+
+ADVANCED_PORTS_TCP - A number indicating the highest port number to
+monitor down from. Any port *below* this number is then monitored. The
+default is 1024 (reserved port range), but can be made as large as 65535
+(system max). I don't recommend going over 1024 with this option.
+
+ADVANCED_PORTS_UDP - Same as above, except for UDP.
+
+ADVANCED_EXCLUDE_TCP - A comma delimited string of TCP ports that should
+be manually excluded from monitoring in Advanced mode. These are normally
+ports that may get hit by mistake by remote clients and shouldn't cause
+alarms (ident, SSL, etc).
+
+ADVANCED_EXCLUDE_UDP - Same as above, except for UDP.
+
+IGNORE_FILE - The path to the file that contains IP addresses of hosts you
+want to always be ignored. This will be explained later.
+
+BLOCKED_FILE - The path to the file that contains the IP addresses of
+blocked hosts.
+
+RESOLVE_HOST - This option turns off DNS resolution for hosts. If you have a 
+slow DNS server it may be more effective to turn off resolution. 
+
+BLOCK_UDP - This option disables all automatic responses to UDP probes.
+Because UDP can be easily forged, it may allow an attacker to start a
+denial of service attack against the protected host, causing it to block
+all manner of hosts that should normally be left alone. Setting this option
+to "0" will disable all responses, although the connects are still logged.
+This option is mainly useful for Internet exposed hosts. For internal hosts
+you should leave this enabled. If someone internally is firing spoofed
+packets at you, then you have a much bigger problem than a denial of service.
+
+BLOCK_TCP - Same as above, but for TCP. Packet forgery is not as big a problem
+though because PortSentry waits for a full connect to occur and this is much
+harder to forge in the basic modes. Leave this enabled, even for 
+Internet connected hosts. For stealth scan detection modes the UDP warning 
+applies:
+
+	An attacker can cause you to block hosts you don't want to
+	through packet forgery. 
+
+KILL_ROUTE - This is the command to run to drop the offending route if 
+an attack is detected. This is the *full path* to the route command
+along with the necessary parameters to make the command work. The macro
+$TARGET$ will be substituted with the attacking host IP and is
+REQUIRED in this option. Your gateway should be a *dead host* on the 
+local subnet. On some systems though you can just put in the localhost
+address (127.0.0.1) and this will probably work. All packets from the 
+target host will get routed to this address so don't mess this up.
+More modern route commands will include a "-blackhole" or "-reject" flag.
+Check your man(1) pages and if your route command supports this feature
+you should use it (although we recommend using packet filtering
+instead, see below).
+
+Also be aware that this creates what is known as an "asynchronous
+route" which basically means packets enter your host via one route
+and are sent out on another (dead) route. This works OK for full
+TCP connect requests, but for UDP and stealth scan modes it
+still allows packets to activate PortSentry and you may get a 
+series of "already blocked" alarms by PortSentry. For UDP scans
+this method prevents ICMP messages from returning to the attacker
+so all ports appear open. However, if the attacker is performing
+an actual exploit with UDP the drop route method will not work. 
+The asynchronous route allows the packet to hit the system and the
+attacker could perform a "blind" attack with UDP if they know what
+the responses are going to be. 
+
+By far the best method is to use the local packet filter (such as Linux
+ipfwadm/ipchains or *BSD ipfw). This is a much cleaner solution and is
+detailed in the config file. The macro $PORT$ will substitute the port 
+that was connected to by the attacker, but this is NOT required for this
+option. The macro $MODE$ reports what mode the blocking occurred in
+(tcp, udp, stcp, sudp, atcp, audp) but is also NOT required.
+
+KILL_HOSTS_DENY - This is the format of the string to drop into the
+hosts.deny file that TCP wrappers uses. Again the $TARGET$ macro is
+expanded out to be the IP of the attacker and is required. You can
+also drop in any TCP wrapper escape codes here as well (%h, twist, 
+etc). The macro $PORT$ will substitute the port that was connected to 
+by the attacker, but this is NOT required for this option. The macro 
+$MODE$ reports what mode the blocking occurred in (tcp, udp, stcp, 
+sudp, atcp, audp) but is also NOT required.
+
+KILL_RUN_CMD - This is a command you want run *before* the route
+is dropped to the attacker. You can put in any program/script you want
+executed when an attack is detected. WE NEVER RECOMMEND PUTTING IN
+RETALIATORY ACTION AGAINST AN ATTACKING HOST. Virtually every time you're
+are port scanned the host doing the scanning has been compromised itself.
+Therefore, if you retaliate you are probably attacking an innocent(?)
+party. Also the goal of security is to make the person GO AWAY. You don't
+want to irritate them into making a personal vendetta against you.
+Remember, even a 13 year old can run a [insert favorite D.O.S. program 
+here] attack against you from their Windows box to make your life
+miserable. As above, the $TARGET$, $PORT$, and $MODE$ macros are 
+available to you but they are not required with this option as above.
+
+KILL_RUN_CMD_FIRST - Setting this to "0" makes the command above run
+before the route is dropped. Setting it to "1" makes the command run
+aftter the blocking has occurred.
+
+SCAN_TRIGGER - PortSentry has a state engine that will remember hosts
+that connected to it. Setting this value will tell PortSentry to allow X
+number of grace port hits before it reacts. This will detect both
+sequential and random port sweeps. The default is 0 which will react
+immediately. A setting of 1 or 2 will reduce false alarms, anything
+higher is probably too much as anything more than 3 hits to different
+ports is pretty suspicious behavior. Usually you can leave this at 0
+without any consequence, with the exception of Advanced stealth scan 
+detection modes where you may create a "hair trigger" if you aren't 
+careful. Use your own discretion.
+
+PORT_BANNER - A text banner you want displayed to the connecting host if
+the PortSentry is activated. Leave this commented out if you don't want this
+feature. If you do use it, try not to taunt the person too badly. We
+recommend keeping it professional and to the point. The banner is *not*
+displayed when stealth scan detection modes are used.
+
+
+Step THREE:
+
+Pull the portsentry.ignore file into your editor and add in any host you
+want to have ignored if it connects to a tripwired port. This should always
+contain at least the localhost (127.0.0.1) and the IP's of the local
+interfaces. We would *not* recommend putting in every machine IP on your
+network, but you can use a netmask to do this. Format for this is:
+
+<IP Address>/<Netmask Bits>
+
+192.168.2.0/24
+192.168.0.0/16
+etc.
+
+We don't recommend ignoring too much. It may be important for you to see 
+who is connecting to you, even if it is a "friendly" machine. This can 
+help you detect internal host compromises faster. To answer your paranoia,
+yes this does happen and we've had cases of admins ignoring too much and
+getting hacked by their own machines as a result with no warning. 
+
+
+Step FOUR:
+
+Compile. Type make and pick your system type and allow it to build and install. 
+The default directory is /usr/local/psionic/portsentry. If you don't like
+this directory just edit the Makefile and make sure your portsentry.conf and 
+portsentry_config.h files reflect the new path.
+
+Type make install after the build to have it copy files to your install
+directory.
+
+Step FIVE:
+
+Start up PortSentry. PortSentry has six modes of operation. ONLY ONE PROTOCOL MODE
+TYPE CAN BE STARTED AT A TIME (i.e. one TCP mode and one UDP mode) The available 
+modes are:
+
+portsentry -tcp (basic port-bound TCP mode)
+portsentry -udp (basic port-bound UDP mode)
+portsentry -stcp (Stealth TCP scan detection)
+portsentry -atcp (Advanced TCP stealth scan detection)
+portsentry -sudp ("Stealth" UDP scan detection)
+portsentry -audp (Advanced "Stealth" UDP scan detection)
+ 
+-tcp - Basic port-bound TCP mode
+
+PortSentry will check the config files and then bind to all the TCP ports in
+the background. If you want to check the init status you should just look
+in your local syslog file that you are having the messages directed to. 
+
+-udp - Basic port-bound UDP mode
+
+PortSentry will check the config files and then bind to all the UDP ports in
+the background. If you want to check the init status you should just look
+in your local syslog file that you are having the messages directed to. 
+UDP/Stealth scan warnings apply (read: README.stealth).
+
+-stcp - Stealth TCP scan detection mode
+
+PortSentry will use a raw socket to monitor all incoming packets. If an incoming
+packet is destined for a monitored port it will react to block the host. This
+method will detect connect() scans, SYN/half-open scans, and FIN scans.
+UDP/Stealth scan warnings apply (read: README.stealth).
+
+-sudp - "Stealth" UDP scan detection mode
+
+This operates the same as the TCP stealth mode above. UDP ports need to be
+listed and they are then monitored. This does not bind any sockets, and
+while not really "stealth" scan detection (doesn't usually apply to UDP),
+it operates in a similar manner (reacts to *any* UDP packet). UDP/Stealth
+scan warnings apply (read: README.stealth).
+
+-atcp - Advanced TCP stealth scan detection mode
+
+PortSentry will start by making a list of all the ports listening in the port
+area under the ADVANCED_PORTS_TCP option and will then create an exclusion
+list based on these ports. Any host connecting to *any port* in this range
+that is *not excluded* (i.e not a listening network daemon [SMTP, HTTP,
+etc.]) is blocked. This has some very powerful implications that you
+should be aware of:
+
+1) This mode is the most sensitive and the most effective of all the protection
+options. It reacts to port probes with lightning speed because you don't have
+to wait for them to hit a tripwired port.
+
+2) Because it reacts so abruptly, you may cut off legitimate traffic. A
+FTP site may send an ident request at you. If you are monitoring the
+ident port (113 TCP) then you have just cut off the FTP site you were
+going to! As a result you should put in ports that fall into this
+situation in this list. 
+
+** Advanced Logic Mode ** - PortSentry is intelligent about how it monitors
+ports. For some protocols such as FTP the client actually opens up ports
+in the ephemeral range (1024-65535) and the server then connects *back* to
+you. This would normally cause the port scanner to activate. PortSentry though
+will look at the incoming connection and determine if it is destined for
+one of these "temporary" bindings. If it is, then the connection is
+ignored for that one time. As soon as the connection is torn down the
+window closes and full protection is back again. This is in fact a
+rudimentary stateful inspection engine. UDP/Stealth scan warnings apply 
+(read: README.stealth).
+
+
+-audp - Advanced UDP "stealth" scan detection mode
+
+This is the same as above except for the UDP protocol. This is a very
+advanced option and you stand a good chance of causing false alarms. This
+is because PortSentry makes no distinction between broadcast and direct
+traffic. If you have a router on your local network putting out RIP
+broadcasts then there is a good likelihood you will block them. Use this
+option with extreme caution. You need to be sure you put in these
+exclusions into the ADVANCED_EXCLUDE_UDP line (i.e 520 [RIP]) UDP/Stealth 
+scan warnings apply (read: README.stealth).
+
+
+Test the install:
+
+Tail the local log and you should see several PortSentry initialization 
+messages.
+
+A successful startup looks like this:
+
+Oct  9 09:11:35 nemesis portsentry[1644]: adminalert: portsentry is
+starting. 
+Oct  9 09:11:36 nemesis portsentry[1644]: adminalert: Going into listen
+mode on TCP port: 143
+. . .
+Oct  9 09:11:37 nemesis portsentry[1644]: adminalert: PortSentry is now active and
+listening.
+
+************************************************************************
+** The last line indicates the PortSentry is properly initialized, if **
+** you don't see it then something failed. 			      **
+************************************************************************
+
+You should see all the ports you told it to listen to in the log. If a port 
+is in use PortSentry will give you a warning that it couldn't bind to it and will
+continue on until all the other ports are bound. If *none* of the ports
+could be bound it will exit with an error.
+
+For the Advanced stealth scan detection mode it will list the ports that it
+will *not* listen for. This is an inverse binding.
+
+Now you can go to another host and telnet to a booby-trapped port. DO NOT DO THIS
+FROM YOUR ONLY ACCESS POINT TO THE PROTECTED HOST BECAUSE YOU WILL BLOCK
+YOURSELF OFF COMPLETELY IF IT WORKS. You should immediately see something like:
+
+Oct  9 09:12:44 nemesis portsentry[1644]: attackalert: Connect from
+host: 123.345.56.78 to TCP port: 143
+
+Oct  9 09:12:46 nemesis portsentry[1644]: attackalert: Host
+server.haxor.org/123.345.56.78 has been blocked via dropped route.
+
+Oct  9 09:12:46 nemesis portsentry[1644]: attackalert: Host
+server.haxor.org/123.345.56.78 has been blocked via wrappers.
+
+For advanced mode you can telnet to any port not excluded to trip an
+alarm.
+
+If you disconnect and try to telnet back again you should find that the
+target system is now unreachable. Congratulations you are now operational.
+
+If you are running Logcheck this will show up in the next pass and
+it should be screaming at you.
+
+If you do a netstat -rn you will see the suspect host pointed at the dead
+route you supplied (unless using a packet filter, which is what we
+recommend).
+
+Drop the PortSentry commands in a startup file and get back to work as
+you are done.
+
+How will it help?
+
+Here are some ideas:
+
+	- Run as a UDP service on port 69 to catch TFTP probes.
+	- Run as a UDP service on port 161,162 to catch SNMP probes.
+	- Run as a UDP service in the port range 32000-33000 to catch RPC
+	  probes. 
+	- Run as a TCP service on port 143 to catch IMAP probes.
+	- Run as a TCP service on ports 11,15 to catch netstat/systat
+	  probes.
+	- etc.
+
+The fact is that PortSentry reacts quickly enough that a port scan of your
+host by an attacker will be stopped within one second after hitting any
+tripwired port, even faster in the Advanced TCP stealth scan detection
+mode.
+
+For any type of UDP scan it will prove highly irritating for the person 
+trying to scan you as all the ports will likely appear "open." For TCP scans
+the attacker will simply get no response whatsoever.
+
+Safety
+=-=-=-
+
+If we missed anything in the program's safety considerations we would very 
+much like to hear about it before you post it to BugTraq :).
+
+Messages
+=-=-=-=-
+
+To the best we could, all states/errors/successes and unknowns are written
+to the syslog. The following tags identify each one:
+
+adminalert: - Some message indicating the status of the PortSentry.
+securityalert: - A message indicating a security relevant event occurred.
+attackalert: - A host has tripped a sensor and an action was performed.
+
+
+Files
+=-=-=
+
+As it stands now, all hosts are dropped into the portsentry.blocked.* file
+when they are blocked as well as a portsentry.history file. The blocked file
+is erased each time PortSentry is restarted. The history file is simply
+appended to and can be used as a record of all hosts that have been blocked
+to date. The portsentry.blocked.* has an appended extension indicating what mode
+it applies to. I.E.:
+
+portsentry.blocked.tcp
+portsentry.blocked.udp
+portsentry.blocked.stcp
+portsentry.blocked.sudp
+portsentry.blocked.atcp
+portsentry.blocked.audp
+
+Each file is created depending on what startup mode is selected and is removed
+when PortSentry re-starts.
+
+The way the route blocking works is that it drops the *return* route to the
+attacking host, not the *incoming* route. If an attacker is doing a UDP
+scan of your host the packets will still trip the sensor, they just don't
+return to the host. If the blocked file did not exist the host would be
+written possibly hundreds or thousands of times to hosts.deny!! This is not
+good. A better solution is to integrate in with a real packet filter
+locally (ala Linux ipfwadm which is supported or any other similar
+package on your system).
+
+After a period of time elapses you may wish to delete the local dead route
+to the offender and keep them in the hosts.deny file. This is solely your
+choice. If you wish to re-enable blocking should the offender return, just
+re-start PortSentry or delete the individual entry from the blocked file.
+
+If you need to restore the route to the blocked host on most systems you can
+simply delete the route like so:
+
+Linux: 
+
+route del <ip_address> reject
+
+Others:
+
+route delete <ip_address> <dead_route>
+
+Or you can simply flush your packet filters. 
+
+That's about it. We highly recommend you use Logcheck to keep an eye
+on things in the log files as well so you can detect other problems, and
+see what the PortSentry is saying to you. You can find this program at:
+
+http://sourceforget.net/projects/sentrytools
+

@@ -1,0 +1,14 @@
+Tested and found to work on:
+
+Linux 1.x/2.x		<crowland at psionic.com>
+BSDI 2.x/3.x		<crowland at psionic.com>
+OpenBSD 2.x		<crowland at psionic.com>
+FreeBSD 3.x 		<angio at aros.net>
+HPUX 10.20		<anonymous>
+Solaris 2.6+		<various>
+AIX			<sauron at the-infinite.org>
+SCO			<jonco at sco.COM>
+Digital Unix		<ALLAN at mnhep1.hep.umn.edu>
+NetBSD			<various>
+OSX			<various>
+
