@@ -1077,7 +1077,8 @@ PortSentryModeTCP (void)
 {
 
   struct sockaddr_in client, server;
-  int length, portCount = 0, ports[MAXSOCKS];
+  socklen_t length;
+  int portCount = 0, ports[MAXSOCKS];
   int openSockfd[MAXSOCKS], incomingSockfd, result = TRUE;
   int count = 0, scanDetectTrigger = TRUE, showBanner = FALSE, boundPortCount = 0;
   int selectResult = 0;
@@ -1277,7 +1278,8 @@ int
 PortSentryModeUDP (void)
 {
   struct sockaddr_in client, server;
-  int length, ports[MAXSOCKS], openSockfd[MAXSOCKS], result = TRUE;
+  socklen_t length;
+  int ports[MAXSOCKS], openSockfd[MAXSOCKS], result = TRUE;
   int count = 0, portCount = 0, selectResult = 0, scanDetectTrigger = 0;
   int boundPortCount = 0, showBanner = FALSE;
   char *temp, target[IPMAXBUF], bannerBuffer[MAXBUF], configToken[MAXBUF];
