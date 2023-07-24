@@ -113,7 +113,8 @@ int NeverBlock(char *target, char *filename) {
   FILE *input;
   char buffer[MAXBUF], tempBuffer[MAXBUF], netmaskBuffer[MAXBUF];
   char *slashPos;
-  int count = 0, dest = 0, netmaskBits = 0;
+  int dest = 0, netmaskBits = 0;
+  size_t count = 0;
 
 #ifdef DEBUG
   Log("debug: NeverBlock: Opening ignore file: %s \n", filename);
