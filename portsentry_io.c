@@ -636,9 +636,10 @@ int IsBlocked(char *target, char *filename) {
  **********************************************************************************/
 int SubstString(const char *replace, const char *find, const char *target,
                 char *result) {
-  int replaceCount = 0, count = 0, findCount = 0, findLen = 0,
+  int count = 0, findCount = 0, findLen = 0,
       numberOfSubst = 0;
   char tempString[MAXBUF], *tempStringPtr;
+  size_t replaceCount = 0;
 
 #ifdef DEBUG
   Log("debug: SubstString: Processing string: %s %d", target, strlen(target));
