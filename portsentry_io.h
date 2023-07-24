@@ -31,7 +31,7 @@ int OpenUDPSocket (void);
 	int OpenRAWTCPSocket (void);
 	int OpenRAWUDPSocket (void);
 #endif
-int BindSocket (int, struct sockaddr_in, struct sockaddr_in, int);
+int BindSocket (int, int);
 int KillRoute (char *, int, char *, char *);
 int KillHostsDeny (char *, int, char *, char *);
 int KillRunCmd (char *, int, char *, char *);

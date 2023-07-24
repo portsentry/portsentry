@@ -311,8 +311,8 @@ int ConfigTokenRetrieve(char *token, char *configToken) {
 }
 
 /* This will bind a socket to a port. It works for UDP/TCP */
-int BindSocket(int sockfd, struct sockaddr_in client, struct sockaddr_in server,
-               int port) {
+int BindSocket(int sockfd, int port) {
+struct sockaddr_in server;
 #ifdef DEBUG
   Log("debug: BindSocket: Binding to port: %d\n", port);
 #endif

@@ -81,8 +81,8 @@ int DisposeTCP (char *, int);
 int CheckStateEngine (char *);
 int InitConfig(void);
 void Usage (void);
-int SmartVerifyTCP(struct sockaddr_in, struct sockaddr_in, int);
-int SmartVerifyUDP(struct sockaddr_in, struct sockaddr_in, int);
+int SmartVerifyTCP(int);
+int SmartVerifyUDP(int);
 
 #ifdef SUPPORT_STEALTH
 int PortSentryStealthModeTCP (void);

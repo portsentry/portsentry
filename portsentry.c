@@ -311,7 +311,6 @@ int PacketReadUDP(int socket, struct iphdr *ipPtr, struct udphdr *udpPtr) {
 /*                                                              */
 /****************************************************************/
 int PortSentryStealthModeTCP(void) {
-  struct sockaddr_in client, server;
   int portCount = 0, portCount2 = 0, ports[MAXSOCKS], ports2[MAXSOCKS];
   int count = 0, scanDetectTrigger = TRUE, gotBound = FALSE, result = TRUE;
   int openSockfd = 0, incomingPort = 0;
@@ -352,7 +351,7 @@ int PortSentryStealthModeTCP(void) {
       return (ERROR);
     }
 
-    if (BindSocket(openSockfd, client, server, ports[count]) == ERROR)
+    if (BindSocket(openSockfd, ports[count]) == ERROR)
       Log("adminalert: ERROR: Socket %d is in use and will not be monitored. "
           "Attempting to continue\n",
           ports[count]);
@@ -393,7 +392,7 @@ int PortSentryStealthModeTCP(void) {
       /* this iterates the list of ports looking for a match */
       for (count = 0; count < portCount; count++) {
         if (incomingPort == ports2[count]) {
-          if (SmartVerifyTCP(client, server, incomingPort) == TRUE)
+          if (SmartVerifyTCP(incomingPort) == TRUE)
             break;
 
           /* copy the clients address into our buffer for nuking */
@@ -465,7 +464,6 @@ int PortSentryStealthModeTCP(void) {
 /*                                                              */
 /****************************************************************/
 int PortSentryAdvancedStealthModeTCP(void) {
-  struct sockaddr_in client, server;
   int result = TRUE, scanDetectTrigger = TRUE, hotPort = TRUE;
   int openSockfd = 0, smartVerify = FALSE;
   unsigned int advancedPorts = 1024, incomingPort = 0;
@@ -491,7 +489,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
       Log("adminalert: ERROR: could not open TCP socket. Aborting.\n");
       return (ERROR);
     }
-    if (BindSocket(openSockfd, client, server, count) == ERROR)
+    if (BindSocket(openSockfd, count) == ERROR)
       inUsePorts[portCount++] = count;
 
     close(openSockfd);
@@ -549,7 +547,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
       }
 
       if (hotPort) {
-        smartVerify = SmartVerifyTCP(client, server, incomingPort);
+        smartVerify = SmartVerifyTCP(incomingPort);
 
         if (smartVerify != TRUE) {
           addr.s_addr = (u_int)ip.saddr;
@@ -618,7 +616,6 @@ int PortSentryAdvancedStealthModeTCP(void) {
 /*                                                              */
 /****************************************************************/
 int PortSentryStealthModeUDP(void) {
-  struct sockaddr_in client, server;
   int portCount = 0, portCount2 = 0, ports[MAXSOCKS], ports2[MAXSOCKS],
       result = TRUE;
   int count = 0, scanDetectTrigger = TRUE, gotBound = FALSE;
@@ -660,7 +657,7 @@ int PortSentryStealthModeUDP(void) {
       return (ERROR);
     }
 
-    if (BindSocket(openSockfd, client, server, ports[count]) == ERROR)
+    if (BindSocket(openSockfd, ports[count]) == ERROR)
       Log("adminalert: ERROR: Socket %d is in use and will not be monitored. "
           "Attempting to continue\n",
           ports[count]);
@@ -694,7 +691,7 @@ int PortSentryStealthModeUDP(void) {
     /* this iterates the list of ports looking for a match */
     for (count = 0; count < portCount; count++) {
       if (incomingPort == ports2[count]) {
-        if (SmartVerifyUDP(client, server, incomingPort) == TRUE)
+        if (SmartVerifyUDP(incomingPort) == TRUE)
           break;
 
         addr.s_addr = (u_int)ip.saddr;
@@ -763,7 +760,6 @@ int PortSentryStealthModeUDP(void) {
 /*                                                              */
 /****************************************************************/
 int PortSentryAdvancedStealthModeUDP(void) {
-  struct sockaddr_in client, server;
   int result = TRUE, scanDetectTrigger = TRUE, hotPort = TRUE;
   int openSockfd = 0, smartVerify = FALSE;
   unsigned int advancedPorts = 1024, incomingPort = 0;
@@ -789,7 +785,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
       Log("adminalert: ERROR: could not open UDP socket. Aborting.\n");
       return (ERROR);
     }
-    if (BindSocket(openSockfd, client, server, count) == ERROR)
+    if (BindSocket(openSockfd, count) == ERROR)
       inUsePorts[portCount++] = count;
 
     close(openSockfd);
@@ -843,7 +839,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
     }
 
     if (hotPort) {
-      smartVerify = SmartVerifyUDP(client, server, incomingPort);
+      smartVerify = SmartVerifyUDP(incomingPort);
 
       if (smartVerify != TRUE) {
         /* copy the clients address into our buffer for nuking */
@@ -913,8 +909,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
 /*                                                              */
 /****************************************************************/
 int PortSentryModeTCP(void) {
-
-  struct sockaddr_in client, server;
+  struct sockaddr_in client;
   socklen_t length;
   int portCount = 0, ports[MAXSOCKS];
   int openSockfd[MAXSOCKS], incomingSockfd, result = TRUE;
@@ -961,7 +956,7 @@ int PortSentryModeTCP(void) {
       return (ERROR);
     }
 
-    if (BindSocket(openSockfd[boundPortCount], client, server, ports[count]) ==
+    if (BindSocket(openSockfd[boundPortCount], ports[count]) ==
         ERROR) {
       Log("adminalert: ERROR: could not bind TCP socket: %d. Attempting to "
           "continue\n",
@@ -1084,7 +1079,7 @@ int PortSentryModeTCP(void) {
 /*                                                              */
 /****************************************************************/
 int PortSentryModeUDP(void) {
-  struct sockaddr_in client, server;
+  struct sockaddr_in client;
   socklen_t length;
   int ports[MAXSOCKS], openSockfd[MAXSOCKS], result = TRUE;
   int count = 0, portCount = 0, selectResult = 0, scanDetectTrigger = 0;
@@ -1129,7 +1124,7 @@ int PortSentryModeUDP(void) {
       Log("adminalert: ERROR: could not open UDP socket. Aborting\n");
       return (ERROR);
     }
-    if (BindSocket(openSockfd[boundPortCount], client, server, ports[count]) ==
+    if (BindSocket(openSockfd[boundPortCount], ports[count]) ==
         ERROR) {
       Log("adminalert: ERROR: could not bind UDP socket: %d. Attempting to "
           "continue\n",
@@ -1458,23 +1453,19 @@ char *ReportPacketType(struct tcphdr tcpPkt) {
   return (packetDescPtr);
 }
 
-int SmartVerifyTCP(struct sockaddr_in client, struct sockaddr_in server,
-                   int port) {
-
+int SmartVerifyTCP(int port) {
   int testSockfd;
 
   /* Ok here is where we "Smart-Verify" the socket. If the port was previously
-   */
-  /* unbound, but now appears to have someone there, then we will skip
-   * responding */
-  /* to this inbound packet. This a basic "stateful" inspection of the */
-  /* the connection */
+   * unbound, but now appears to have someone there, then we will skip responding
+   * to this inbound packet. This a basic "stateful" inspection of the
+   * the connection */
 
   if ((testSockfd = OpenTCPSocket()) == ERROR) {
     Log("adminalert: ERROR: could not open TCP socket to smart-verify.\n");
     return (FALSE);
   } else {
-    if (BindSocket(testSockfd, client, server, port) == ERROR) {
+    if (BindSocket(testSockfd, port) == ERROR) {
 #ifdef DEBUG
       Log("debug: SmartVerify: Smart-Verify Port In Use: %d", port);
 #endif
@@ -1487,23 +1478,20 @@ int SmartVerifyTCP(struct sockaddr_in client, struct sockaddr_in server,
   return (FALSE);
 }
 
-int SmartVerifyUDP(struct sockaddr_in client, struct sockaddr_in server,
-                   int port) {
+int SmartVerifyUDP(int port) {
   int testSockfd;
 
   /* Ok here is where we "Smart-Verify" the socket. If the port was previously
-   */
-  /* unbound, but now appears to have someone there, then we will skip
-   * responding */
-  /* to this inbound packet. This essentially is a "stateful" inspection of the
-   */
-  /* the connection */
+   * unbound, but now appears to have someone there, then we will skip
+   * responding
+   * to this inbound packet. This essentially is a "stateful" inspection of the
+   * the connection */
 
   if ((testSockfd = OpenUDPSocket()) == ERROR) {
     Log("adminalert: ERROR: could not open UDP socket to smart-verify.\n");
     return (FALSE);
   } else {
-    if (BindSocket(testSockfd, client, server, port) == ERROR) {
+    if (BindSocket(testSockfd, port) == ERROR) {
 #ifdef DEBUG
       Log("debug: SmartVerify: Smart-Verify Port In Use: %d", port);
 #endif
