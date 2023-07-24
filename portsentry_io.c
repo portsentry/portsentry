@@ -584,7 +584,7 @@ int IsBlocked(char *target, char *filename) {
   FILE *input;
   char buffer[MAXBUF], tempBuffer[MAXBUF];
   char *ipOffset;
-  int count;
+  size_t count;
 
 #ifdef DEBUG
   Log("debug: IsBlocked: Opening block file: %s \n", filename);
