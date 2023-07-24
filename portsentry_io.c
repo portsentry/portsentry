@@ -68,7 +68,10 @@ int DaemonSeed(void) {
     exit(0);
 
   setsid();
-  chdir("/");
+  /* FIXME: This should perhaps he a fatal error, also maybe do better daemonizing */
+  if (chdir("/") == -1) {
+    Log("adminalert: Unable to change to root directory during daemonizing (ignoring)\n");
+  }
   umask(077);
 
   /* close stdout, stdin, stderr */
@@ -268,11 +271,10 @@ int ConfigTokenRetrieve(char *token, char *configToken) {
 #endif
         /* search for the token and make sure the trailing character */
         /* is a " " or "=" to make sure the entire token was found */
-        if ((strstr(buffer, token) != (char)NULL) &&
+        if ((strstr(buffer, token) != NULL) &&
             ((buffer[strlen(token)] == '=') ||
-             (buffer[strlen(token)] ==
-              ' '))) { /* cut off the '=' and send it back */
-          if (strstr(buffer, "\"") == (char)NULL) {
+             (buffer[strlen(token)] == ' '))) { /* cut off the '=' and send it back */
+          if (strstr(buffer, "\"") == NULL) {
             Log("adminalert: Quotes missing from %s token. Option skipped\n",
                 token);
             fclose(config);
@@ -594,7 +596,7 @@ int IsBlocked(char *target, char *filename) {
   }
 
   while (fgets(buffer, MAXBUF, input) != NULL) {
-    if ((ipOffset = strstr(buffer, target)) != (char)NULL) {
+    if ((ipOffset = strstr(buffer, target)) != NULL) {
       for (count = 0; count < strlen(ipOffset); count++) {
         if ((isdigit(ipOffset[count])) || (ipOffset[count] == '.')) {
           tempBuffer[count] = ipOffset[count];
@@ -645,7 +647,7 @@ int SubstString(const char *replace, const char *find, const char *target,
 #endif
 
   /* string not found in target */
-  if (strstr(target, find) == (char)NULL) {
+  if (strstr(target, find) == NULL) {
     strncpy(result, target, MAXBUF);
 #ifdef DEBUG
     Log("debug: SubstString: Result string: %s", result);
