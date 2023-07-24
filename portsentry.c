@@ -467,8 +467,8 @@ int PortSentryStealthModeTCP(void) {
 int PortSentryAdvancedStealthModeTCP(void) {
   struct sockaddr_in client, server;
   int result = TRUE, scanDetectTrigger = TRUE, hotPort = TRUE;
-  int openSockfd = 0, incomingPort = 0, smartVerify = FALSE;
-  unsigned int advancedPorts = 1024;
+  int openSockfd = 0, smartVerify = FALSE;
+  unsigned int advancedPorts = 1024, incomingPort = 0;
   unsigned int count = 0, inUsePorts[MAXSOCKS], portCount = 0;
   char target[IPMAXBUF], configToken[MAXBUF];
   char resolvedHost[DNSMAXBUF], *temp, *packetType;
@@ -765,8 +765,8 @@ int PortSentryStealthModeUDP(void) {
 int PortSentryAdvancedStealthModeUDP(void) {
   struct sockaddr_in client, server;
   int result = TRUE, scanDetectTrigger = TRUE, hotPort = TRUE;
-  int openSockfd = 0, incomingPort = 0, smartVerify = FALSE;
-  unsigned int advancedPorts = 1024;
+  int openSockfd = 0, smartVerify = FALSE;
+  unsigned int advancedPorts = 1024, incomingPort = 0;
   unsigned int count = 0, inUsePorts[MAXSOCKS], portCount = 0;
   char target[IPMAXBUF], configToken[MAXBUF];
   char resolvedHost[DNSMAXBUF], *temp;
