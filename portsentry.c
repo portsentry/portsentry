@@ -1028,8 +1028,14 @@ int PortSentryModeTCP(void) {
 
             if (scanDetectTrigger == TRUE) {
               /* show the banner if one was selected */
-              if (showBanner == TRUE)
-                write(incomingSockfd, bannerBuffer, strlen(bannerBuffer));
+              if (showBanner == TRUE) {
+                /* FIXME: Should be handled better */
+                if (write(incomingSockfd, bannerBuffer, strlen(bannerBuffer)) ==
+                    -1) {
+                  Log("adminalert: ERROR: Could not write banner to socket "
+                      "(ignoring)");
+                }
+              }
               /* we don't need the bonehead anymore */
               close(incomingSockfd);
               if (gblResolveHost) /* Do they want DNS resolution? */
