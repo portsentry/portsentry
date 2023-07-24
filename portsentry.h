@@ -47,17 +47,17 @@
 #include "portsentry_util.h"
 
 #ifdef SUPPORT_STEALTH
-	#ifdef LINUX
-		#include "portsentry_tcpip.h"
-		#include <netinet/in_systm.h>
-	#endif
+  #ifdef LINUX
+    #include "portsentry_tcpip.h"
+    #include <netinet/in_systm.h>
+  #endif
 
 #define TCPPACKETLEN 80
 #define UDPPACKETLEN 68
 #endif /* SUPPORT_STEALTH */
 
 #ifdef NEXT
-	#include <ansi.h>
+  #include <ansi.h>
 #endif
 
 #define ERROR -1
