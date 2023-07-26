@@ -327,7 +327,7 @@ int PortSentryStealthModeTCP(void) {
 
     if (BindSocket(openSockfd, ports[count]) == ERROR) {
       Log("adminalert: ERROR: Socket %d is in use and will not be monitored. Attempting to continue\n", ports[count]);
-    } else {/* well we at least bound to one socket so we'll continue */
+    } else { /* well we at least bound to one socket so we'll continue */
       gotBound = TRUE;
       ports2[portCount2++] = ports[count];
     }
@@ -402,7 +402,7 @@ int PortSentryStealthModeTCP(void) {
                   Log("attackalert: ERROR: Could not block host %s/%s !!", resolvedHost, target);
                 else
                   WriteBlocked(target, resolvedHost, ports2[count], gblBlockedFile, gblHistoryFile, "TCP");
-              } else {/* end IsBlocked check */
+              } else { /* end IsBlocked check */
                 Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
               }
             }    /* end if(scanDetectTrigger) */
@@ -522,7 +522,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
             scanDetectTrigger = CheckStateEngine(target);
 
             if (scanDetectTrigger == TRUE) {
-              if (gblResolveHost) {/* Do they want DNS resolution? */
+              if (gblResolveHost) { /* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
                   Log("attackalert: ERROR: Error resolving host. \
 					      	resolving disabled for this host.\n");
@@ -653,7 +653,7 @@ int PortSentryStealthModeUDP(void) {
           /* check if they've visited before */
           scanDetectTrigger = CheckStateEngine(target);
           if (scanDetectTrigger == TRUE) {
-            if (gblResolveHost) {/* Do they want DNS resolution? */
+            if (gblResolveHost) { /* Do they want DNS resolution? */
               if (CleanAndResolve(resolvedHost, target) != TRUE) {
                 Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
                 snprintf(resolvedHost, DNSMAXBUF, "%s", target);
@@ -1041,7 +1041,7 @@ int PortSentryModeUDP(void) {
     }
     if (BindSocket(openSockfd[boundPortCount], ports[count]) == ERROR) {
       Log("adminalert: ERROR: could not bind UDP socket: %d. Attempting to continue\n", ports[count]);
-    } else {/* well we at least bound to one socket so we'll continue */
+    } else { /* well we at least bound to one socket so we'll continue */
       boundPortCount++;
     }
   }
