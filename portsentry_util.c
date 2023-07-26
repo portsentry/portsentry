@@ -78,8 +78,7 @@ char *CleanIpAddr(char *cleanAddr, const char *dirtyAddr) {
   }
 
 #ifdef DEBUG
-  Log("debug: cleanAddr: Cleaned IpAddress: %s Dirty IpAddress: %s", cleanAddr,
-      dirtyAddr);
+  Log("debug: cleanAddr: Cleaned IpAddress: %s Dirty IpAddress: %s", cleanAddr, dirtyAddr);
 #endif
 
   return (cleanAddr);
@@ -119,8 +118,7 @@ int CleanAndResolve(char *resolvedHost, const char *unresolvedHost) {
     snprintf(resolvedHost, DNSMAXBUF, "%s", unresolvedHost);
 
 #ifdef DEBUG
-  Log("debug: CleanAndResolve: Cleaned Resolved: %s Dirty Unresolved: %s",
-      resolvedHost, unresolvedHost);
+  Log("debug: CleanAndResolve: Cleaned Resolved: %s Dirty Unresolved: %s", resolvedHost, unresolvedHost);
 #endif
 
   return (TRUE);

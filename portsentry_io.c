@@ -240,9 +240,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
     return (TRUE);
 }
 
-/* This reads a token from the config file up to the "=" and returns the string
- */
-/* up to the first space or NULL */
+/* This reads a token from the config file up to the "=" and returns the string up to the first space or NULL */
 int ConfigTokenRetrieve(char *token, char *configToken) {
   FILE *config;
   char buffer[MAXBUF], tokenBuffer[MAXBUF];
