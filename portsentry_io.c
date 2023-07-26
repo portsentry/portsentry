@@ -214,8 +214,8 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
     blockedStatus = FALSE;
   } else {
     fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
-        current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-        tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
+            current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
+            tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
     fclose(output);
     blockedStatus = TRUE;
   }
@@ -228,8 +228,8 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
     historyStatus = FALSE;
   } else {
     fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
-        current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-        tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
+            current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
+            tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
     fclose(output);
     historyStatus = TRUE;
   }
@@ -302,7 +302,7 @@ int ConfigTokenRetrieve(char *token, char *configToken) {
 
 /* This will bind a socket to a port. It works for UDP/TCP */
 int BindSocket(int sockfd, int port) {
-struct sockaddr_in server;
+  struct sockaddr_in server;
 #ifdef DEBUG
   Log("debug: BindSocket: Binding to port: %d\n", port);
 #endif
@@ -605,7 +605,7 @@ int SubstString(const char *replace, const char *find, const char *target, char 
     Log("debug: SubstString: Result string: %s", result);
 #endif
     return (numberOfSubst);
-  } else if ((strlen(target)) + (strlen(replace)) + (strlen(find)) > MAXBUF) {/* String/victim/target too long */
+  } else if ((strlen(target)) + (strlen(replace)) + (strlen(find)) > MAXBUF) { /* String/victim/target too long */
     return (ERROR);
   }
 
