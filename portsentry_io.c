@@ -150,9 +150,9 @@ int NeverBlock(char *target, char *filename) {
       SafeStrncpy(netmaskBuffer, slashPos + 1, MAXBUF);
       /* Terminate tempBuffer string at delimeter for later use */
       *slashPos = '\0';
-    } else
-      /* Copy in a 32 bit netmask if none given */
+    } else { /* Copy in a 32 bit netmask if none given */
       SafeStrncpy(netmaskBuffer, "32", MAXBUF);
+    }
 
     /* Convert netmaskBuffer to bits in netmask */
     netmaskBits = atoi(netmaskBuffer);
@@ -169,7 +169,6 @@ int NeverBlock(char *target, char *filename) {
       fclose(input);
       return (TRUE);
     }
-
   } /* end while() */
 
 #ifdef DEBUG
@@ -187,8 +186,9 @@ int CheckConfig(void) {
   if ((input = fopen(CONFIG_FILE, "r")) == NULL) {
     Log("adminalert: Cannot open config file: %s. Exiting\n", CONFIG_FILE);
     return (FALSE);
-  } else
+  } else {
     fclose(input);
+  }
 
   return (TRUE);
 }
@@ -256,7 +256,7 @@ int ConfigTokenRetrieve(char *token, char *configToken) {
 #endif
 
   while ((fgets(buffer, MAXBUF, config)) != NULL) {
-    if (buffer[0] == '#' || buffer[0] == '\n') { // Skip comments and blank lines
+    if (buffer[0] == '#' || buffer[0] == '\n') { /* Skip comments and blank lines */
       continue;
     }
 
@@ -615,11 +615,11 @@ int SubstString(const char *replace, const char *find, const char *target, char 
   tempStringPtr = tempString;
 
   for (count = 0; count < MAXBUF; count++) {
-    if (*target == '\0')
+    if (*target == '\0') {
       break;
-    else if ((strncmp(target, find, findLen)) != 0)
+    } else if ((strncmp(target, find, findLen)) != 0) {
       *tempStringPtr++ = *target++;
-    else {
+    } else {
       numberOfSubst++;
       for (replaceCount = 0; replaceCount < strlen(replace); replaceCount++)
         *tempStringPtr++ = replace[replaceCount];
