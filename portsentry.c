@@ -200,8 +200,9 @@ int InitConfig(void) {
     if ((input = fopen(gblBlockedFile, "w")) == NULL) {
       Log("adminalert: ERROR: Cannot delete blocked file on startup: %s.\n", gblBlockedFile);
       return (FALSE);
-    } else
+    } else {
       fclose(input);
+    }
   } else {
     Log("InitConfig: Cannot retrieve BLOCKED_FILE option! Aborting\n");
     return (FALSE);
@@ -378,8 +379,7 @@ int PortSentryStealthModeTCP(void) {
             /* check if they've visited before */
             scanDetectTrigger = CheckStateEngine(target);
             if (scanDetectTrigger == TRUE) {
-              if (gblResolveHost) /* Do they want DNS resolution? */
-              {
+              if (gblResolveHost) {/* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
                   Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
@@ -412,7 +412,6 @@ int PortSentryStealthModeTCP(void) {
       }          /* end for( check for protected port loop ) loop */
     }            /* end if(TH_ACK) check */
   }              /* end for( ; ; ) loop */
-
 } /* end PortSentryStealthModeTCP */
 
 /****************************************************************/
@@ -466,12 +465,14 @@ int PortSentryAdvancedStealthModeTCP(void) {
           inUsePorts[portCount++] = atoi(temp);
           Log("adminalert: Advanced mode will manually exclude port: %d ",
               inUsePorts[portCount - 1]);
-        } else
+        } else {
           break;
+        }
       }
     }
-  } else
+  } else {
     Log("adminalert: Advanced mode will manually exclude no ports");
+  }
 
   for (count = 0; count < portCount; count++)
     Log("adminalert: Advanced Stealth scan detection mode activated. Ignored TCP port: %d\n", inUsePorts[count]);
@@ -499,8 +500,9 @@ int PortSentryAdvancedStealthModeTCP(void) {
         if ((incomingPort == inUsePorts[count]) || (incomingPort >= advancedPorts)) {
           hotPort = FALSE;
           break;
-        } else
+        } else {
           hotPort = TRUE;
+        }
       }
 
       if (hotPort) {
@@ -524,8 +526,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
             if (scanDetectTrigger == TRUE) {
               if (gblResolveHost) { /* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                  Log("attackalert: ERROR: Error resolving host. \
-					      	resolving disabled for this host.\n");
+                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
                 }
               } else {
@@ -546,9 +547,9 @@ int PortSentryAdvancedStealthModeTCP(void) {
                   Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
                 else
                   WriteBlocked(target, resolvedHost, incomingPort, gblBlockedFile, gblHistoryFile, "TCP");
-              } /* end IsBlocked check */
-              else
+              } else { /* end IsBlocked check */
                 Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
+              }
             } /* end if(scanDetectTrigger) */
           }   /* end if(never block) check */
         }     /* end if(smartVerify) */
@@ -605,9 +606,9 @@ int PortSentryStealthModeUDP(void) {
       return (ERROR);
     }
 
-    if (BindSocket(openSockfd, ports[count]) == ERROR)
+    if (BindSocket(openSockfd, ports[count]) == ERROR) {
       Log("adminalert: ERROR: Socket %d is in use and will not be monitored. Attempting to continue\n", ports[count]);
-    else {
+    } else {
       gotBound = TRUE;
       ports2[portCount2++] = ports[count];
     }
@@ -674,8 +675,7 @@ int PortSentryStealthModeUDP(void) {
                 Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
               else
                 WriteBlocked(target, resolvedHost, ports2[count], gblBlockedFile, gblHistoryFile, "UDP");
-            } /* end IsBlocked check */
-            else {
+            } else { /* end IsBlocked check */
               Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
             }
           }    /* end if(scanDetectTrigger) */
@@ -684,7 +684,6 @@ int PortSentryStealthModeUDP(void) {
       }        /* end if(incoming port) ==  protected port */
     }          /* end for( check for protected port loop ) loop */
   }            /* end for( ; ; ) loop */
-
 } /* end PortSentryStealthModeUDP */
 
 /****************************************************************/
@@ -769,8 +768,9 @@ int PortSentryAdvancedStealthModeUDP(void) {
       if ((incomingPort == inUsePorts[count]) || (incomingPort >= advancedPorts)) {
         hotPort = FALSE;
         break;
-      } else
+      } else {
         hotPort = TRUE;
+      }
     }
 
     if (hotPort) {
@@ -813,8 +813,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
                 Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
               else
                 WriteBlocked(target, resolvedHost, incomingPort, gblBlockedFile, gblHistoryFile, "UDP");
-            } /* end IsBlocked check */
-            else {
+            } else { /* end IsBlocked check */
               Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
             }
           } /* end if(scanDetectTrigger) */
@@ -882,11 +881,11 @@ int PortSentryModeTCP(void) {
       return (ERROR);
     }
 
-    if (BindSocket(openSockfd[boundPortCount], ports[count]) ==
-        ERROR) {
+    if (BindSocket(openSockfd[boundPortCount], ports[count]) == ERROR) {
       Log("adminalert: ERROR: could not bind TCP socket: %d. Attempting to continue\n", ports[count]);
-    } else /* well we at least bound to one socket so we'll continue */
+    } else { /* well we at least bound to one socket so we'll continue */
       boundPortCount++;
+    }
   }
 
   /* if we didn't bind to anything then abort */
@@ -916,10 +915,7 @@ int PortSentryModeTCP(void) {
 #ifdef DEBUG
       Log("Select timeout");
 #endif
-    }
-
-    /* select is reporting a waiting socket. Poll them all to find out which */
-    else if (selectResult > 0) {
+    } else if (selectResult > 0) { /* select is reporting a waiting socket. Poll them all to find out which */
       for (count = 0; count < boundPortCount; count++) {
         if (FD_ISSET(openSockfd[count], &selectFds)) {
           incomingSockfd = accept(openSockfd[count], (struct sockaddr *)&client, &length);
@@ -1071,10 +1067,7 @@ int PortSentryModeUDP(void) {
 #ifdef DEBUG
       Log("Select timeout");
 #endif
-    }
-
-    /* select is reporting a waiting socket. Poll them all to find out which */
-    else if (selectResult > 0) {
+    } else if (selectResult > 0) { /* select is reporting a waiting socket. Poll them all to find out which */
       for (count = 0; count < portCount; count++) {
         if (FD_ISSET(openSockfd[count], &selectFds)) {
           /* here just read in one byte from the UDP socket, that's all we need
@@ -1121,8 +1114,9 @@ int PortSentryModeUDP(void) {
                   Log("attackalert: ERROR: Could not block host %s !!", target);
                 else
                   WriteBlocked(target, resolvedHost, ports[count], gblBlockedFile, gblHistoryFile, "UDP");
-              } else
+              } else {
                 Log("attackalert: Host: %s is already blocked. Ignoring", target);
+              }
             }
           }
           break;
@@ -1130,7 +1124,6 @@ int PortSentryModeUDP(void) {
       }   /* end for() */
     }     /* end else (selectResult > 0) */
   }       /* end main for(; ; ) loop */
-
 } /* end UDP PortSentry */
 
 /* kill the TCP connection depending on config option */
@@ -1158,9 +1151,7 @@ int DisposeTCP(char *target, int port) {
       if (strlen(gblKillRoute) > 0)
         if (KillRoute(target, port, gblKillRoute, gblDetectionType) != TRUE)
           status = FALSE;
-    }
-    /* run hosts.deny first, dead route second, external command last */
-    else {
+    } else { /* run hosts.deny first, dead route second, external command last */
       if (strlen(gblKillHostsDeny) > 0)
         if (KillHostsDeny(target, port, gblKillHostsDeny, gblDetectionType) != TRUE)
           status = FALSE;
@@ -1208,9 +1199,7 @@ int DisposeUDP(char *target, int port) {
       if (strlen(gblKillRoute) > 0)
         if (KillRoute(target, port, gblKillRoute, gblDetectionType) != TRUE)
           status = FALSE;
-    }
-    /* run hosts.deny first, dead route second, external command last */
-    else {
+    } else { /* run hosts.deny first, dead route second, external command last */
       if (strlen(gblKillHostsDeny) > 0)
         if (KillHostsDeny(target, port, gblKillHostsDeny, gblDetectionType) != TRUE)
           status = FALSE;
