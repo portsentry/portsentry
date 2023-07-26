@@ -1,18 +1,18 @@
 /************************************************************************/
 /*                                                                      */
-/* PortSentry								*/
+/* PortSentry                                                           */
+/*                                                                      */
+/* This software is Copyright(c) 1997-2003 Craig Rowland                */
+/*                                                                      */
+/* This software is covered under the Common Public License v1.0        */
+/* See the enclosed LICENSE file for more information.                  */
 /*                                                                      */
 /* Created: 10-12-1997                                                  */
 /* Modified: 05-23-2003                                                 */
 /*                                                                      */
-/* Send all changes/modifications/bugfixes to:				*/
-/* craigrowland at users dot sourceforge dot net    			*/
+/* Send all changes/modifications/bugfixes to:                          */
+/* craigrowland at users dot sourceforge dot net                        */
 /*                                                                      */
-/*                                                                      */
-/* This software is Copyright(c) 1997-2003 Craig Rowland	        */
-/*                                                                      */
-/* This software is covered under the Common Public License v1.0	*/
-/* See the enclosed LICENSE file for more information.			*/
 /* $Id: portsentry_io.c,v 1.36 2003/05/23 17:41:40 crowland Exp crowland $ */
 /************************************************************************/
 
