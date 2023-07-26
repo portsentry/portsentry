@@ -578,11 +578,11 @@ int PortSentryAdvancedStealthModeTCP(void) {
               }
 
               packetType = ReportPacketType(tcp);
-              Log("attackalert: %s from host: %s/%s to TCP port: %d",
+              Log("attackalert: %s from host: %s/%s to TCP port: %u",
                   packetType, resolvedHost, target, incomingPort);
               /* Report on options present */
               if (ip.ihl > 5)
-                Log("attackalert: Packet from host: %s/%s to TCP port: %d has "
+                Log("attackalert: Packet from host: %s/%s to TCP port: %u has "
                     "IP options set (detection avoidance technique).",
                     resolvedHost, target, incomingPort);
 
@@ -870,11 +870,11 @@ int PortSentryAdvancedStealthModeUDP(void) {
               snprintf(resolvedHost, DNSMAXBUF, "%s", target);
             }
 
-            Log("attackalert: UDP scan from host: %s/%s to UDP port: %d",
+            Log("attackalert: UDP scan from host: %s/%s to UDP port: %u",
                 resolvedHost, target, incomingPort);
             /* Report on options present */
             if (ip.ihl > 5)
-              Log("attackalert: Packet from host: %s/%s to UDP port: %d has IP "
+              Log("attackalert: Packet from host: %s/%s to UDP port: %u has IP "
                   "options set (detection avoidance technique).",
                   resolvedHost, target, incomingPort);
 
