@@ -199,11 +199,11 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   FILE *output;
   int blockedStatus = TRUE, historyStatus = TRUE;
 
-  struct tm *tmptr;
+  struct tm tm, *tmptr;
 
   time_t current_time;
   current_time = time(0);
-  tmptr = localtime(&current_time);
+  tmptr = localtime_r(&current_time, &tm);
 
 #ifdef DEBUG
   Log("debug: WriteBlocked: Opening block file: %s \n", blockedFilename);
