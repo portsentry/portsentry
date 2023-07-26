@@ -26,15 +26,15 @@ CC = cc
 #CC = gcc 
 
 # Normal systems flags
-CFLAGS = -O -Wall
+CFLAGS = -O -Wall -Wextra -pedantic
 
 # Debug mode for portsentry
-#CFLAGS = -Wall -g -DNODAEMON -DDEBUG
-#CFLAGS = -Wall -g -DNODAEMON
-#CFLAGS = -Wall -g -DDEBUG
+#CFLAGS += -g -DNODAEMON -DDEBUG
+#CFLAGS += -g -DNODAEMON
+#CFLAGS += -g -DDEBUG
 
 # Profiler mode for portsentry
-#CFLAGS = -pg -O -Wall -DNODAEMON
+#CFLAGS += -pg -DNODAEMON
 #LIBS = /usr/lib/libefence.a
 
 INSTALLDIR = /usr/local/psionic
