@@ -157,15 +157,13 @@ int NeverBlock(char *target, char *filename) {
     /* Convert netmaskBuffer to bits in netmask */
     netmaskBits = atoi(netmaskBuffer);
     if ((netmaskBits < 0) || (netmaskBits > 32)) {
-      Log("adminalert: Invalid netmask in config file: %s  Ignoring entry.\n",
-          buffer);
+      Log("adminalert: Invalid netmask in config file: %s  Ignoring entry.\n", buffer);
       continue;
     }
 
     if (CompareIPs(target, tempBuffer, netmaskBits)) {
 #ifdef DEBUG
-      Log("debug: NeverBlock: Host: %s found in ignore file with netmask %s\n",
-          target, netmaskBuffer);
+      Log("debug: NeverBlock: Host: %s found in ignore file with netmask %s\n", target, netmaskBuffer);
 #endif
 
       fclose(input);
@@ -197,8 +195,7 @@ int CheckConfig(void) {
 
 /* This writes out blocked hosts to the blocked file. It adds the hostname */
 /* time stamp, and port connection that was acted on */
-int WriteBlocked(char *target, char *resolvedHost, int port,
-                 char *blockedFilename, char *historyFilename, char *portType) {
+int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, char *portType) {
   FILE *output;
   int blockedStatus = TRUE, historyStatus = TRUE;
 
@@ -216,12 +213,9 @@ int WriteBlocked(char *target, char *resolvedHost, int port,
     Log("adminalert: ERROR: Cannot open blocked file: %s.\n", blockedFilename);
     blockedStatus = FALSE;
   } else {
-    fprintf(
-        output,
-        "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
+    fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
         current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-        tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target,
-        port, portType);
+        tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
     fclose(output);
     blockedStatus = TRUE;
   }
@@ -233,12 +227,9 @@ int WriteBlocked(char *target, char *resolvedHost, int port,
     Log("adminalert: ERROR: Cannot open history file: %s.\n", historyFilename);
     historyStatus = FALSE;
   } else {
-    fprintf(
-        output,
-        "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
+    fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
         current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-        tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target,
-        port, portType);
+        tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
     fclose(output);
     historyStatus = TRUE;
   }
@@ -276,8 +267,7 @@ int ConfigTokenRetrieve(char *token, char *configToken) {
             ((buffer[strlen(token)] == '=') ||
              (buffer[strlen(token)] == ' '))) { /* cut off the '=' and send it back */
           if (strstr(buffer, "\"") == NULL) {
-            Log("adminalert: Quotes missing from %s token. Option skipped\n",
-                token);
+            Log("adminalert: Quotes missing from %s token. Option skipped\n", token);
             fclose(config);
             return (FALSE);
           }
@@ -408,26 +398,22 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   substStatus =
       SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
-    Log("adminalert: No target variable specified in KILL_ROUTE option. "
-        "Skipping.\n");
+    Log("adminalert: No target variable specified in KILL_ROUTE option. Skipping.\n");
     return (ERROR);
   } else if (substStatus == ERROR) {
-    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_ROUTE. "
-        "Skipping.\n");
+    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_ROUTE. Skipping.\n");
     return (ERROR);
   }
 
   if (SubstString(portString, "$PORT$", commandStringTemp,
                   commandStringTemp2) == ERROR) {
-    Log("adminalert: Error trying to parse $PORT$ Token for KILL_ROUTE. "
-        "Skipping.\n");
+    Log("adminalert: Error trying to parse $PORT$ Token for KILL_ROUTE. Skipping.\n");
     return (ERROR);
   }
 
   if (SubstString(detectionType, "$MODE$", commandStringTemp2,
                   commandStringFinal) == ERROR) {
-    Log("adminalert: Error trying to parse $MODE$ Token for KILL_ROUTE. "
-        "Skipping.\n");
+    Log("adminalert: Error trying to parse $MODE$ Token for KILL_ROUTE. Skipping.\n");
     return (ERROR);
   }
 
@@ -439,19 +425,13 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   killStatus = system(commandStringFinal);
 
   if (killStatus == 127) {
-    Log("adminalert: ERROR: There was an error trying to block host (exec "
-        "fail) %s",
-        target);
+    Log("adminalert: ERROR: There was an error trying to block host (exec fail) %s", target);
     return (ERROR);
   } else if (killStatus < 0) {
-    Log("adminalert: ERROR: There was an error trying to block host (system "
-        "fail) %s",
-        target);
+    Log("adminalert: ERROR: There was an error trying to block host (system fail) %s", target);
     return (ERROR);
   } else {
-    Log("attackalert: Host %s has been blocked via dropped route using "
-        "command: \"%s\"",
-        target, commandStringFinal);
+    Log("attackalert: Host %s has been blocked via dropped route using command: \"%s\"", target, commandStringFinal);
     return (TRUE);
   }
 }
@@ -468,24 +448,18 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   snprintf(portString, MAXBUF, "%d", port);
 
   /* Tokens are not required, but we check for an error anyway */
-  if (SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp) ==
-      ERROR) {
-    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_RUN_CMD. "
-        "Skipping.\n");
+  if (SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp) == ERROR) {
+    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_RUN_CMD. Skipping.\n");
     return (ERROR);
   }
 
-  if (SubstString(portString, "$PORT$", commandStringTemp,
-                  commandStringTemp2) == ERROR) {
-    Log("adminalert: Error trying to parse $PORT$ Token for KILL_RUN_CMD. "
-        "Skipping.\n");
+  if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
+    Log("adminalert: Error trying to parse $PORT$ Token for KILL_RUN_CMD. Skipping.\n");
     return (ERROR);
   }
 
-  if (SubstString(detectionType, "$MODE$", commandStringTemp2,
-                  commandStringFinal) == ERROR) {
-    Log("adminalert: Error trying to parse $MODE$ Token for KILL_RUN_CMD. "
-        "Skipping.\n");
+  if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
+    Log("adminalert: Error trying to parse $MODE$ Token for KILL_RUN_CMD. Skipping.\n");
     return (ERROR);
   }
 
@@ -493,31 +467,22 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   killStatus = system(commandStringFinal);
 
   if (killStatus == 127) {
-    Log("adminalert: ERROR: There was an error trying to run command (exec "
-        "fail) %s",
-        target);
+    Log("adminalert: ERROR: There was an error trying to run command (exec fail) %s", target);
     return (ERROR);
   } else if (killStatus < 0) {
-    Log("adminalert: ERROR: There was an error trying to run command (system "
-        "fail) %s",
-        target);
+    Log("adminalert: ERROR: There was an error trying to run command (system fail) %s", target);
     return (ERROR);
   } else {
     /* report success */
-    Log("attackalert: External command run for host: %s using command: \"%s\"",
-        target, commandStringFinal);
+    Log("attackalert: External command run for host: %s using command: \"%s\"", target, commandStringFinal);
     return (TRUE);
   }
 }
 
-/* this function will drop the host into the TCP wrappers hosts.deny file to
- * deny */
-/* all access. The drop route metod is preferred as this stops UDP attacks as
- * well */
-/* as TCP. You may find though that host.deny will be a more permanent home.. */
-int KillHostsDeny(char *target, int port, char *killString,
-                  char *detectionType) {
-
+/* this function will drop the host into the TCP wrappers hosts.deny file to deny
+ * all access. The drop route metod is preferred as this stops UDP attacks as well
+ * as TCP. You may find though that host.deny will be a more permanent home.. */
+int KillHostsDeny(char *target, int port, char *killString, char *detectionType) {
   FILE *output;
   char cleanAddr[MAXBUF], commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
@@ -535,46 +500,35 @@ int KillHostsDeny(char *target, int port, char *killString,
   substStatus =
       SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
-    Log("adminalert: No target variable specified in KILL_HOSTS_DENY option. "
-        "Skipping.\n");
+    Log("adminalert: No target variable specified in KILL_HOSTS_DENY option. Skipping.\n");
     return (ERROR);
   } else if (substStatus == ERROR) {
-    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_HOSTS_DENY. "
-        "Skipping.\n");
+    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_HOSTS_DENY. Skipping.\n");
     return (ERROR);
   }
 
-  if (SubstString(portString, "$PORT$", commandStringTemp,
-                  commandStringTemp2) == ERROR) {
-    Log("adminalert: Error trying to parse $PORT$ Token for KILL_HOSTS_DENY. "
-        "Skipping.\n");
+  if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
+    Log("adminalert: Error trying to parse $PORT$ Token for KILL_HOSTS_DENY. Skipping.\n");
     return (ERROR);
   }
 
-  if (SubstString(detectionType, "$MODE$", commandStringTemp2,
-                  commandStringFinal) == ERROR) {
-    Log("adminalert: Error trying to parse $MODE$ Token for KILL_HOSTS_DENY. "
-        "Skipping.\n");
+  if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
+    Log("adminalert: Error trying to parse $MODE$ Token for KILL_HOSTS_DENY. Skipping.\n");
     return (ERROR);
   }
 
 #ifdef DEBUG
-  Log("debug: KillHostsDeny: result string for block: %s\n",
-      commandStringFinal);
+  Log("debug: KillHostsDeny: result string for block: %s\n", commandStringFinal);
 #endif
 
   if ((output = fopen(WRAPPER_HOSTS_DENY, "a")) == NULL) {
-    Log("adminalert: cannot open hosts.deny file: %s for blocking.",
-        WRAPPER_HOSTS_DENY);
-    Log("securityalert: ERROR: There was an error trying to block host %s",
-        target);
+    Log("adminalert: cannot open hosts.deny file: %s for blocking.", WRAPPER_HOSTS_DENY);
+    Log("securityalert: ERROR: There was an error trying to block host %s", target);
     return (FALSE);
   } else {
     fprintf(output, "%s\n", commandStringFinal);
     fclose(output);
-    Log("attackalert: Host %s has been blocked via wrappers with string: "
-        "\"%s\"",
-        target, commandStringFinal);
+    Log("attackalert: Host %s has been blocked via wrappers with string: \"%s\"", target, commandStringFinal);
     return (TRUE);
   }
 }
@@ -590,9 +544,7 @@ int IsBlocked(char *target, char *filename) {
   Log("debug: IsBlocked: Opening block file: %s \n", filename);
 #endif
   if ((input = fopen(filename, "r")) == NULL) {
-    Log("adminalert: ERROR: Cannot open blocked file: %s for reading. Will "
-        "create.\n",
-        filename);
+    Log("adminalert: ERROR: Cannot open blocked file: %s for reading. Will create.\n", filename);
     return (FALSE);
   }
 
@@ -634,10 +586,8 @@ int IsBlocked(char *target, char *filename) {
  *
  * It returns the number of substitutions made during the operation.
  **********************************************************************************/
-int SubstString(const char *replace, const char *find, const char *target,
-                char *result) {
-  int count = 0, findCount = 0, findLen = 0,
-      numberOfSubst = 0;
+int SubstString(const char *replace, const char *find, const char *target, char *result) {
+  int count = 0, findCount = 0, findLen = 0, numberOfSubst = 0;
   char tempString[MAXBUF], *tempStringPtr;
   size_t replaceCount = 0;
 
@@ -655,10 +605,9 @@ int SubstString(const char *replace, const char *find, const char *target,
     Log("debug: SubstString: Result string: %s", result);
 #endif
     return (numberOfSubst);
-  }
-  /* String/victim/target too long */
-  else if ((strlen(target)) + (strlen(replace)) + (strlen(find)) > MAXBUF)
+  } else if ((strlen(target)) + (strlen(replace)) + (strlen(find)) > MAXBUF) {/* String/victim/target too long */
     return (ERROR);
+  }
 
   memset(tempString, '\0', MAXBUF);
   memset(result, '\0', MAXBUF);
@@ -706,7 +655,6 @@ int CheckFlag(char *flagName) {
 /* snprintf for NEXTSTEP (others??) */
 /* I don't know where this code came from and I don't */
 /* warrant its effectiveness. CHR */
-
 #ifdef HAS_NO_SNPRINTF
 int snprintf(char *str, size_t n, char const *fmt, ...) {
   va_list ap;
