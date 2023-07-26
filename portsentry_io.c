@@ -16,8 +16,8 @@
 /* $Id: portsentry_io.c,v 1.36 2003/05/23 17:41:40 crowland Exp crowland $ */
 /************************************************************************/
 
-#include "portsentry.h"
 #include "portsentry_io.h"
+#include "portsentry.h"
 #include "portsentry_util.h"
 
 /* Main logging function to surrogate syslog */
@@ -249,53 +249,54 @@ int ConfigTokenRetrieve(char *token, char *configToken) {
   if ((config = fopen(CONFIG_FILE, "r")) == NULL) {
     Log("adminalert: ERROR: Cannot open config file: %s.\n", CONFIG_FILE);
     return (ERROR);
-  } else {
-#ifdef DEBUG
-    Log("debug: ConfigTokenRetrieve: checking for token %s", token);
-#endif
-    while ((fgets(buffer, MAXBUF, config)) != NULL) {
-      /* this skips comments */
-      if (buffer[0] != '#') {
-#ifdef DEBUG
-        Log("debug: ConfigTokenRetrieve: data: %s", buffer);
-#endif
-        /* search for the token and make sure the trailing character */
-        /* is a " " or "=" to make sure the entire token was found */
-        if ((strstr(buffer, token) != NULL) &&
-            ((buffer[strlen(token)] == '=') ||
-             (buffer[strlen(token)] == ' '))) { /* cut off the '=' and send it back */
-          if (strstr(buffer, "\"") == NULL) {
-            Log("adminalert: Quotes missing from %s token. Option skipped\n", token);
-            fclose(config);
-            return (FALSE);
-          }
-
-          SafeStrncpy(tokenBuffer, strstr(buffer, "\"") + 1, MAXBUF);
-
-          /* strip off unprintables/linefeeds (if any) */
-          count = 0;
-          while (count < MAXBUF - 1) {
-            if ((isprint(tokenBuffer[count])) && tokenBuffer[count] != '"')
-              configToken[count] = tokenBuffer[count];
-            else {
-              configToken[count] = '\0';
-              break;
-            }
-            count++;
-          }
+  }
 
 #ifdef DEBUG
-          Log("debug: ConfigTokenRetrieved token: %s\n", configToken);
+  Log("debug: ConfigTokenRetrieve: checking for token %s", token);
 #endif
-          configToken[MAXBUF - 1] = '\0';
+
+  while ((fgets(buffer, MAXBUF, config)) != NULL) {
+    /* this skips comments */
+    if (buffer[0] != '#') {
+#ifdef DEBUG
+      Log("debug: ConfigTokenRetrieve: data: %s", buffer);
+#endif
+      /* search for the token and make sure the trailing character */
+      /* is a " " or "=" to make sure the entire token was found */
+      if ((strstr(buffer, token) != NULL) &&
+          ((buffer[strlen(token)] == '=') ||
+           (buffer[strlen(token)] == ' '))) { /* cut off the '=' and send it back */
+        if (strstr(buffer, "\"") == NULL) {
+          Log("adminalert: Quotes missing from %s token. Option skipped\n", token);
           fclose(config);
-          return (TRUE);
+          return (FALSE);
         }
+
+        SafeStrncpy(tokenBuffer, strstr(buffer, "\"") + 1, MAXBUF);
+
+        /* strip off unprintables/linefeeds (if any) */
+        count = 0;
+        while (count < MAXBUF - 1) {
+          if ((isprint(tokenBuffer[count])) && tokenBuffer[count] != '"')
+            configToken[count] = tokenBuffer[count];
+          else {
+            configToken[count] = '\0';
+            break;
+          }
+          count++;
+        }
+
+#ifdef DEBUG
+        Log("debug: ConfigTokenRetrieved token: %s\n", configToken);
+#endif
+        configToken[MAXBUF - 1] = '\0';
+        fclose(config);
+        return (TRUE);
       }
     }
-    fclose(config);
-    return (FALSE);
   }
+  fclose(config);
+  return (FALSE);
 }
 
 /* This will bind a socket to a port. It works for UDP/TCP */
