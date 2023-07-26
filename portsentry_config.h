@@ -1,7 +1,7 @@
 #pragma once
 /************************************************************************/
 /*                                                                      */
-/* PortSentry	                                                          */
+/* PortSentry                                                           */
 /*                                                                      */
 /* This software is Copyright(c) 1997-2003 Craig Rowland                */
 /*                                                                      */
