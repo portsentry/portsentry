@@ -17,8 +17,8 @@
 /************************************************************************/
 
 #include "portsentry.h"
-#include "portsentry_io.h"
 #include "portsentry_util.h"
+#include "portsentry_io.h"
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
@@ -122,4 +122,22 @@ int CleanAndResolve(char *resolvedHost, const char *unresolvedHost) {
 #endif
 
   return (TRUE);
+}
+
+long getLong(char *buffer) {
+  long value = 0;
+  char *endptr = NULL;
+
+  if (buffer == NULL)
+    return ERROR;
+
+  value = strtol(buffer, &endptr, 10);
+
+  if (value == LONG_MIN || value == LONG_MAX)
+    return ERROR;
+
+  if (endptr == buffer)
+    return ERROR;
+
+  return value;
 }

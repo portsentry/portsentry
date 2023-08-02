@@ -19,16 +19,21 @@
 #include "portsentry.h"
 #include "portsentry_io.h"
 #include "portsentry_util.h"
+#include "configfile.h"
 
 /* Global variables */
 char gblScanDetectHost[MAXSTATE][IPMAXBUF];
 char gblKillRoute[MAXBUF];
 char gblKillHostsDeny[MAXBUF];
 char gblKillRunCmd[MAXBUF];
-char gblBlockedFile[MAXBUF];
-char gblHistoryFile[MAXBUF];
-char gblIgnoreFile[MAXBUF];
 char gblDetectionType[MAXBUF];
+char gblPorts[MAXBUF];  // Depending on mode selection, will be populated with either TCP or UDP ports
+char gblAdvancedExclude[MAXBUF]; // Depending on mode selection, will be populated with either TCP or UDP ports
+char gblPortBanner[MAXBUF];
+
+char gblBlockedFile[PATH_MAX];
+char gblHistoryFile[PATH_MAX];
+char gblIgnoreFile[PATH_MAX];
 
 int gblScanDetectCount = 0;
 int gblBlockTCP = 0;
@@ -63,17 +68,7 @@ int main(int argc, char *argv[]) {
       printf("ERROR: Error setting internal scan detection type.\n");
       printf("ERROR: PortSentry is shutting down!\n");
       Exit(ERROR);
-    } else if (CheckConfig() == FALSE) {
-      Log("adminalert: ERROR: Configuration files are missing/corrupted. Shutting down.\n");
-      printf("ERROR: Configuration files are missing/corrupted.\n");
-      printf("ERROR: Check your syslog for a more detailed error message.\n");
-      printf("ERROR: PortSentry is shutting down!\n");
-      Exit(ERROR);
-    } else if (InitConfig() == FALSE) {
-      Log("adminalert: ERROR: Your config file is corrupted/missing mandatory option! Shutting down.\n");
-      printf("ERROR: Your config file is corrupted/missing mandatory option!\n");
-      printf("ERROR: Check your syslog for a more detailed error message.\n");
-      printf("ERROR: PortSentry is shutting down!\n");
+    } else if (readConfigFile() == ERROR) {
       Exit(ERROR);
     }
 #ifndef NODAEMON
@@ -126,108 +121,6 @@ int main(int argc, char *argv[]) {
   return (0);
 }
 
-/****************************************************************/
-/* Reads generic config options into global variables           */
-/****************************************************************/
-int InitConfig(void) {
-  FILE *input;
-  char configToken[MAXBUF];
-
-  gblBlockTCP = CheckFlag("BLOCK_TCP");
-  gblBlockUDP = CheckFlag("BLOCK_UDP");
-  gblResolveHost = CheckFlag("RESOLVE_HOST");
-
-  memset(gblKillRoute, '\0', MAXBUF);
-  memset(gblKillHostsDeny, '\0', MAXBUF);
-  memset(gblKillRunCmd, '\0', MAXBUF);
-
-  if ((ConfigTokenRetrieve("SCAN_TRIGGER", configToken)) == FALSE) {
-    Log("adminalert: ERROR: Could not read SCAN_TRIGGER option from config file. Disabling SCAN DETECTION TRIGGER");
-    gblConfigTriggerCount = 0;
-  } else {
-#ifdef DEBUG
-    Log("debug: InitConfig: retrieved SCAN_TRIGGER option: %s \n", configToken);
-#endif
-    gblConfigTriggerCount = atoi(configToken);
-  }
-
-  if ((ConfigTokenRetrieve("KILL_ROUTE", gblKillRoute)) == TRUE) {
-#ifdef DEBUG
-    Log("debug: InitConfig: retrieved KILL_ROUTE option: %s \n", gblKillRoute);
-#endif
-  } else {
-#ifdef DEBUG
-    Log("debug: InitConfig: KILL_ROUTE option NOT FOUND.\n");
-#endif
-  }
-
-  if ((ConfigTokenRetrieve("KILL_HOSTS_DENY", gblKillHostsDeny)) == TRUE) {
-#ifdef DEBUG
-    Log("debug: InitConfig: retrieved KILL_HOSTS_DENY option: %s \n", gblKillHostsDeny);
-#endif
-  } else {
-#ifdef DEBUG
-    Log("debug: InitConfig: KILL_HOSTS_DENY option NOT FOUND.\n");
-#endif
-  }
-
-  if ((ConfigTokenRetrieve("KILL_RUN_CMD", gblKillRunCmd)) == TRUE) {
-#ifdef DEBUG
-    Log("debug: InitConfig: retrieved KILL_RUN_CMD option: %s \n", gblKillRunCmd);
-#endif
-    /* Check the order we should run the KILL_RUN_CMD */
-    /* Default is to run the command after blocking */
-    gblRunCmdFirst = CheckFlag("KILL_RUN_CMD_FIRST");
-  } else {
-#ifdef DEBUG
-    Log("debug: InitConfig: KILL_RUN_CMD option NOT FOUND.\n");
-#endif
-  }
-
-  if ((ConfigTokenRetrieve("BLOCKED_FILE", gblBlockedFile)) == TRUE) {
-    if (strlen(gblBlockedFile) < MAXBUF - 5) {
-      strncat(gblBlockedFile, ".", 1);
-      strncat(gblBlockedFile, gblDetectionType, 4);
-    } else {
-      Log("adminalert: ERROR: Blocked filename is too long to append detection type file extension: %s.\n", gblBlockedFile);
-      return (FALSE);
-    }
-#ifdef DEBUG
-    Log("debug: InitConfig: retrieved BLOCKED_FILE option: %s \n", gblBlockedFile);
-    Log("debug: CheckConfig: Removing old block file: %s \n", gblBlockedFile);
-#endif
-
-    if ((input = fopen(gblBlockedFile, "w")) == NULL) {
-      Log("adminalert: ERROR: Cannot delete blocked file on startup: %s.\n", gblBlockedFile);
-      return (FALSE);
-    } else {
-      fclose(input);
-    }
-  } else {
-    Log("InitConfig: Cannot retrieve BLOCKED_FILE option! Aborting\n");
-    return (FALSE);
-  }
-
-  if ((ConfigTokenRetrieve("HISTORY_FILE", gblHistoryFile)) == TRUE) {
-#ifdef DEBUG
-    Log("debug: InitConfig: retrieved HISTORY_FILE option: %s \n", gblHistoryFile);
-#endif
-  } else {
-    Log("InitConfig: Cannot retrieve HISTORY_FILE option! Aborting\n");
-    return (FALSE);
-  }
-
-  if ((ConfigTokenRetrieve("IGNORE_FILE", gblIgnoreFile)) == TRUE) {
-#ifdef DEBUG
-    Log("debug: InitConfig: retrieved IGNORE_FILE option: %s \n", gblIgnoreFile);
-#endif
-  } else {
-    Log("InitConfig: Cannot retrieve IGNORE_FILE option! Aborting\n");
-    return (FALSE);
-  }
-
-  return (TRUE);
-}
 
 #ifdef SUPPORT_STEALTH
 
@@ -290,19 +183,14 @@ int PortSentryStealthModeTCP(void) {
   int portCount = 0, portCount2 = 0, ports[MAXSOCKS], ports2[MAXSOCKS];
   int count = 0, scanDetectTrigger = TRUE, gotBound = FALSE, result = TRUE;
   int openSockfd = 0, incomingPort = 0;
-  char *temp, target[IPMAXBUF], configToken[MAXBUF];
+  char *temp, target[IPMAXBUF];
   char resolvedHost[DNSMAXBUF], *packetType;
   struct in_addr addr;
   struct iphdr ip;
   struct tcphdr tcp;
 
-  if ((ConfigTokenRetrieve("TCP_PORTS", configToken)) == FALSE) {
-    Log("adminalert: ERROR: Could not read TCP_PORTS option from config file");
-    return (ERROR);
-  }
-
   /* break out the ports */
-  if ((temp = (char *)strtok(configToken, ",")) != NULL) {
+  if ((temp = (char *)strtok(gblPorts, ",")) != NULL) {
     ports[0] = atoi(temp);
     for (count = 1; count < MAXSOCKS; count++) {
       if ((temp = (char *)strtok(NULL, ",")) != NULL)
@@ -428,18 +316,13 @@ int PortSentryAdvancedStealthModeTCP(void) {
   int openSockfd = 0, smartVerify = FALSE;
   unsigned int advancedPorts = 1024, incomingPort = 0;
   unsigned int count = 0, inUsePorts[MAXSOCKS], portCount = 0;
-  char target[IPMAXBUF], configToken[MAXBUF];
+  char target[IPMAXBUF];
   char resolvedHost[DNSMAXBUF], *temp, *packetType;
   struct in_addr addr;
   struct iphdr ip;
   struct tcphdr tcp;
 
-  if ((ConfigTokenRetrieve("ADVANCED_PORTS_TCP", configToken)) == FALSE) {
-    Log("adminalert: ERROR: Could not read ADVANCED_PORTS_TCP option from config file. Assuming 1024.");
-    advancedPorts = 1024;
-  } else {
-    advancedPorts = atoi(configToken);
-  }
+  advancedPorts = atoi(gblPorts);
 
   Log("adminalert: Advanced mode will monitor first %d ports", advancedPorts);
 
@@ -455,9 +338,9 @@ int PortSentryAdvancedStealthModeTCP(void) {
     close(openSockfd);
   }
 
-  if ((ConfigTokenRetrieve("ADVANCED_EXCLUDE_TCP", configToken)) != FALSE) {
+  if (strlen(gblAdvancedExclude) > 0) {
     /* break out the ports */
-    if ((temp = (char *)strtok(configToken, ",")) != NULL) {
+    if ((temp = (char *)strtok(gblAdvancedExclude, ",")) != NULL) {
       inUsePorts[portCount++] = atoi(temp);
       Log("adminalert: Advanced mode will manually exclude port: %d ", inUsePorts[portCount - 1]);
       for (count = 0; count < MAXSOCKS; count++) {
@@ -570,19 +453,14 @@ int PortSentryStealthModeUDP(void) {
   int portCount = 0, portCount2 = 0, ports[MAXSOCKS], ports2[MAXSOCKS], result = TRUE;
   int count = 0, scanDetectTrigger = TRUE, gotBound = FALSE;
   int openSockfd = 0, incomingPort = 0;
-  char *temp, target[IPMAXBUF], configToken[MAXBUF];
+  char *temp, target[IPMAXBUF];
   char resolvedHost[DNSMAXBUF];
   struct in_addr addr;
   struct iphdr ip;
   struct udphdr udp;
 
-  if ((ConfigTokenRetrieve("UDP_PORTS", configToken)) == FALSE) {
-    Log("adminalert: ERROR: Could not read UDP_PORTS option from config file");
-    return (ERROR);
-  }
-
   /* break out the ports */
-  if ((temp = (char *)strtok(configToken, ",")) != NULL) {
+  if ((temp = (char *)strtok(gblPorts, ",")) != NULL) {
     ports[0] = atoi(temp);
     for (count = 1; count < MAXSOCKS; count++) {
       if ((temp = (char *)strtok(NULL, ",")) != NULL)
@@ -700,18 +578,13 @@ int PortSentryAdvancedStealthModeUDP(void) {
   int openSockfd = 0, smartVerify = FALSE;
   unsigned int advancedPorts = 1024, incomingPort = 0;
   unsigned int count = 0, inUsePorts[MAXSOCKS], portCount = 0;
-  char target[IPMAXBUF], configToken[MAXBUF];
+  char target[IPMAXBUF];
   char resolvedHost[DNSMAXBUF], *temp;
   struct in_addr addr;
   struct iphdr ip;
   struct udphdr udp;
 
-  if ((ConfigTokenRetrieve("ADVANCED_PORTS_UDP", configToken)) == FALSE) {
-    Log("adminalert: ERROR: Could not read ADVANCED_PORTS_UDP option from config file. Assuming 1024.");
-    advancedPorts = 1024;
-  } else {
-    advancedPorts = atoi(configToken);
-  }
+  advancedPorts = atoi(gblPorts);
 
   Log("adminalert: Advanced mode will monitor first %d ports", advancedPorts);
 
@@ -727,9 +600,9 @@ int PortSentryAdvancedStealthModeUDP(void) {
     close(openSockfd);
   }
 
-  if ((ConfigTokenRetrieve("ADVANCED_EXCLUDE_UDP", configToken)) != FALSE) {
+  if (strlen(gblAdvancedExclude) > 0) {
     /* break out the ports */
-    if ((temp = (char *)strtok(configToken, ",")) != NULL) {
+    if ((temp = (char *)strtok(gblAdvancedExclude, ",")) != NULL) {
       inUsePorts[portCount++] = atoi(temp);
       Log("adminalert: Advanced mode will manually exclude port: %d ", inUsePorts[portCount - 1]);
       for (count = 0; count < MAXSOCKS; count++) {
@@ -841,17 +714,12 @@ int PortSentryModeTCP(void) {
   int openSockfd[MAXSOCKS], incomingSockfd, result = TRUE;
   int count = 0, scanDetectTrigger = TRUE, showBanner = FALSE, boundPortCount = 0;
   int selectResult = 0;
-  char *temp, target[IPMAXBUF], bannerBuffer[MAXBUF], configToken[MAXBUF];
+  char *temp, target[IPMAXBUF], bannerBuffer[MAXBUF];
   char resolvedHost[DNSMAXBUF];
   fd_set selectFds;
 
-  if ((ConfigTokenRetrieve("TCP_PORTS", configToken)) == FALSE) {
-    Log("adminalert: ERROR: Could not read TCP_PORTS option from config file");
-    return (ERROR);
-  }
-
   /* break out the ports */
-  if ((temp = (char *)strtok(configToken, ",")) != NULL) {
+  if ((temp = (char *)strtok(gblPorts, ",")) != NULL) {
     ports[0] = atoi(temp);
     for (count = 1; count < MAXSOCKS; count++) {
       if ((temp = (char *)strtok(NULL, ",")) != NULL)
@@ -865,10 +733,9 @@ int PortSentryModeTCP(void) {
     return (ERROR);
   }
 
-  /* read in the banner if one is given */
-  if ((ConfigTokenRetrieve("PORT_BANNER", configToken)) == TRUE) {
+  if (strlen(gblPortBanner) > 0) {
     showBanner = TRUE;
-    SafeStrncpy(bannerBuffer, configToken, MAXBUF);
+    SafeStrncpy(bannerBuffer, gblPortBanner, MAXBUF); // FIXME: Use gblPortBanner directly
   }
 
   /* setup select call */
@@ -995,18 +862,13 @@ int PortSentryModeUDP(void) {
   int ports[MAXSOCKS], openSockfd[MAXSOCKS], result = TRUE;
   int count = 0, portCount = 0, selectResult = 0, scanDetectTrigger = 0;
   int boundPortCount = 0, showBanner = FALSE;
-  char *temp, target[IPMAXBUF], bannerBuffer[MAXBUF], configToken[MAXBUF];
+  char *temp, target[IPMAXBUF], bannerBuffer[MAXBUF];
   char buffer[MAXBUF];
   char resolvedHost[DNSMAXBUF];
   fd_set selectFds;
 
-  if ((ConfigTokenRetrieve("UDP_PORTS", configToken)) == FALSE) {
-    Log("adminalert: ERROR: Could not read UDP_PORTS option from config file");
-    return (ERROR);
-  }
-
   /* break out the ports */
-  if ((temp = (char *)strtok(configToken, ",")) != NULL) {
+  if ((temp = (char *)strtok(gblPorts, ",")) != NULL) {
     ports[0] = atoi(temp);
     for (count = 1; count < MAXSOCKS; count++) {
       if ((temp = (char *)strtok(NULL, ",")) != NULL)
@@ -1021,9 +883,9 @@ int PortSentryModeUDP(void) {
   }
 
   /* read in the banner if one is given */
-  if ((ConfigTokenRetrieve("PORT_BANNER", configToken)) == TRUE) {
+  if (strlen(gblPortBanner) > 0) {
     showBanner = TRUE;
-    SafeStrncpy(bannerBuffer, configToken, MAXBUF);
+    SafeStrncpy(bannerBuffer, gblPortBanner, MAXBUF);  // FIXME: Use gblPortBanner directly
   }
 
   /* setup select call */

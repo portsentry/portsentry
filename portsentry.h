@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <limits.h>
 #include <sys/param.h>
 #include <sys/types.h>
 #ifndef _LINUX_C_LIB_VERSION
@@ -76,7 +77,6 @@ int PortSentryModeUDP(void);
 int DisposeUDP(char *, int);
 int DisposeTCP(char *, int);
 int CheckStateEngine(char *);
-int InitConfig(void);
 void Usage(void);
 int SmartVerifyTCP(int);
 int SmartVerifyUDP(int);

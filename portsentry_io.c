@@ -16,8 +16,8 @@
 /* $Id: portsentry_io.c,v 1.36 2003/05/23 17:41:40 crowland Exp crowland $ */
 /************************************************************************/
 
-#include "portsentry_io.h"
 #include "portsentry.h"
+#include "portsentry_io.h"
 #include "portsentry_util.h"
 
 /* Main logging function to surrogate syslog */
@@ -179,20 +179,6 @@ int NeverBlock(char *target, char *filename) {
   return (FALSE);
 }
 
-/* Make sure the config file is available */
-int CheckConfig(void) {
-  FILE *input;
-
-  if ((input = fopen(CONFIG_FILE, "r")) == NULL) {
-    Log("adminalert: Cannot open config file: %s. Exiting\n", CONFIG_FILE);
-    return (FALSE);
-  } else {
-    fclose(input);
-  }
-
-  return (TRUE);
-}
-
 /* This writes out blocked hosts to the blocked file. It adds the hostname */
 /* time stamp, and port connection that was acted on */
 int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, char *portType) {
@@ -238,66 +224,6 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
     return (FALSE);
   else
     return (TRUE);
-}
-
-/* This reads a token from the config file up to the "=" and returns the string up to the first space or NULL */
-int ConfigTokenRetrieve(char *token, char *configToken) {
-  FILE *config;
-  char buffer[MAXBUF], tokenBuffer[MAXBUF];
-  int count = 0;
-
-  if ((config = fopen(CONFIG_FILE, "r")) == NULL) {
-    Log("adminalert: ERROR: Cannot open config file: %s.\n", CONFIG_FILE);
-    return (ERROR);
-  }
-
-#ifdef DEBUG
-  Log("debug: ConfigTokenRetrieve: checking for token %s", token);
-#endif
-
-  while ((fgets(buffer, MAXBUF, config)) != NULL) {
-    if (buffer[0] == '#' || buffer[0] == '\n') { /* Skip comments and blank lines */
-      continue;
-    }
-
-#ifdef DEBUG
-    Log("debug: ConfigTokenRetrieve: data: %s", buffer);
-#endif
-    /* search for the token and make sure the trailing character */
-    /* is a " " or "=" to make sure the entire token was found */
-    if ((strstr(buffer, token) != NULL) &&
-        ((buffer[strlen(token)] == '=') ||
-         (buffer[strlen(token)] == ' '))) { /* cut off the '=' and send it back */
-      if (strstr(buffer, "\"") == NULL) {
-        Log("adminalert: Quotes missing from %s token. Option skipped\n", token);
-        fclose(config);
-        return (FALSE);
-      }
-
-      SafeStrncpy(tokenBuffer, strstr(buffer, "\"") + 1, MAXBUF);
-
-      /* strip off unprintables/linefeeds (if any) */
-      count = 0;
-      while (count < MAXBUF - 1) {
-        if ((isprint(tokenBuffer[count])) && tokenBuffer[count] != '"') {
-          configToken[count] = tokenBuffer[count];
-        } else {
-          configToken[count] = '\0';
-          break;
-        }
-        count++;
-      }
-
-#ifdef DEBUG
-      Log("debug: ConfigTokenRetrieved token: %s\n", configToken);
-#endif
-      configToken[MAXBUF - 1] = '\0';
-      fclose(config);
-      return (TRUE);
-    }
-  }
-  fclose(config);
-  return (FALSE);
 }
 
 /* This will bind a socket to a port. It works for UDP/TCP */
@@ -635,20 +561,40 @@ int SubstString(const char *replace, const char *find, const char *target, char 
   return (numberOfSubst);
 }
 
-/* This function checks a config variable for a numerical flag and returns it */
-int CheckFlag(char *flagName) {
-  char configToken[MAXBUF];
+int copyPrintableString(char *ptr, char *configToken, size_t maxbuf) {
+  size_t count = 0;
 
-  if ((ConfigTokenRetrieve(flagName, configToken)) == TRUE) {
-#ifdef DEBUG
-    Log("debug: CheckFlag: found %s string.\n", flagName);
-#endif
-    return (atoi(configToken));
-  } else {
-#ifdef DEBUG
-    Log("debug: CheckFlag: %s option not found. Assuming FALSE.\n", flagName);
-#endif
+  if(maxbuf == 0) {
+    return FALSE;
+  }
+
+  while (count < maxbuf - 1) {
+    if ((isprint(*ptr)) && *ptr != '"') {
+      configToken[count] = *ptr;
+    } else {
+      break;
+    }
+    count++;
+    ptr++;
+  }
+
+  configToken[count] = '\0';
+
+  if (count == maxbuf - 1) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+int testFileAccess(char *filename, char *mode) {
+  FILE *testFile;
+
+  if ((testFile = fopen(filename, mode)) == NULL) {
     return (FALSE);
+  } else {
+    fclose(testFile);
+    return (TRUE);
   }
 }
 

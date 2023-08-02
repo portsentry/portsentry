@@ -23,3 +23,4 @@
 char * SafeStrncpy(char *, const char *, size_t);
 char * CleanIpAddr(char *, const char *);
 int CleanAndResolve(char *, const char *);
+long getLong(char *buffer);

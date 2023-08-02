@@ -102,7 +102,7 @@ linux:
 		SYSTYPE=linux 
 		@echo "Making $(SYSTYPE)"
 		$(CC) $(CFLAGS) -DLINUX -DSUPPORT_STEALTH -o ./portsentry ./portsentry.c \
-		./portsentry_io.c ./portsentry_util.c $(LIBS)
+		./portsentry_io.c ./portsentry_util.c configfile.c $(LIBS)
 
 debian-linux:		
 		SYSTYPE=debian-linux 
