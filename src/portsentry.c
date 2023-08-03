@@ -20,6 +20,7 @@
 #include "portsentry_io.h"
 #include "portsentry_util.h"
 #include "configfile.h"
+#include "config.h"
 
 /* Global variables */
 char gblScanDetectHost[MAXSTATE][IPMAXBUF];
@@ -1089,7 +1090,7 @@ void Usage(void) {
   printf("PortSentry - Port Scan Detector.\n");
   printf("Copyright 1997-2003 Craig H. Rowland <craigrowland at users dot sourceforget dot net>\n");
   printf("Licensing restrictions apply. Please see documentation\n");
-  printf("Version: %s\n\n", VERSION);
+  printf("Version: %d.%d\n\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR);
 #ifdef SUPPORT_STEALTH
   printf("usage: portsentry [-tcp -udp -stcp -atcp -sudp -audp]\n\n");
 #else
