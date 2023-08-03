@@ -3,7 +3,6 @@
 
 #include "configfile.h"
 #include "portsentry.h"
-#include "portsentry_config.h"
 #include "portsentry_io.h"
 #include "portsentry_util.h"
 

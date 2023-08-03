@@ -20,7 +20,6 @@
 #include "portsentry_io.h"
 #include "portsentry_util.h"
 #include "configfile.h"
-#include "config.h"
 
 /* Global variables */
 char gblScanDetectHost[MAXSTATE][IPMAXBUF];
