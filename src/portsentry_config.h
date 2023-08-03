@@ -18,7 +18,7 @@
 /************************************************************************/
 
 /* These are probably ok. Be sure you change the Makefile if you change the path */
-#define CONFIG_FILE "/usr/local/psionic/portsentry/portsentry.conf"
+#define CONFIG_FILE "/etc/portsentry/portsentry.conf"
 
 /* The location of Wietse Venema's TCP Wrapper hosts.deny file */
 #define WRAPPER_HOSTS_DENY "/etc/hosts.deny"
