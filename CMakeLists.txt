@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(Portsentry VERSION 1.3)
 
-set(CMAKE_C_FLAGS "-O -Wall -Wextra -pedantic")
+set(CMAKE_C_FLAGS "-O -Wall -Wextra -pedantic -DLINUX -DSUPPORT_STEALTH")
 
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
