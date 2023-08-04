@@ -590,28 +590,3 @@ int testFileAccess(char *filename, char *mode) {
     return (TRUE);
   }
 }
-
-/* snprintf for NEXTSTEP (others??) */
-/* I don't know where this code came from and I don't */
-/* warrant its effectiveness. CHR */
-#ifdef HAS_NO_SNPRINTF
-int snprintf(char *str, size_t n, char const *fmt, ...) {
-  va_list ap;
-  FILE f;
-
-  if (n > MAXBUF) {
-    n = MAXBUF;
-  }
-  va_start(ap, fmt);
-  f._file = EOF;
-  f._flag = _IOWRT | _IOSTRG;
-  f._base = f._ptr = str;
-  f._bufsiz = f._cnt = n ? n - 1 : 0;
-  (void)vfprintf(&f, fmt, ap);
-  va_end(ap);
-  if (n) {
-    *f._ptr = '\0';
-  }
-  return (f._ptr - str);
-}
-#endif

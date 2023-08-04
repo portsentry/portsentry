@@ -53,10 +53,6 @@
 #define UDPPACKETLEN 68
 #endif /* SUPPORT_STEALTH */
 
-#ifdef NEXT
-  #include <ansi.h>
-#endif
-
 #define ERROR -1
 #define TRUE 1
 #define FALSE 0
