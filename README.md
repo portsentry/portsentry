@@ -1,6 +1,6 @@
 # Portsentry
 
-**IMPORTANT! TL;DR: If you pull this code with the intent to use it in prod, then BUILD FROM tag v1.2 (or download the precompiled binaries) - This is the original Portsentry code, as it where when it was orphaned in 2003. The new version is _not_ complete yet**
+**IMPORTANT! TL;DR: If you pull this code with the intent to use it in prod, then BUILD FROM tag v1.2. Tag v1.2 is the original Portsentry code, as it where when it was orphaned in 2003. The new version is _not_ complete yet. Many linux distributions also provide precomiled binaries in their package managers**
 
 ## What is this?
 This repo contains a continuation of Psionic's sentrytools/portsentry code. Portsentry was abandoned in 2003 at version 1.2. This project aim to continue developing new and improved versions of Portsentry. The initial check in (tag v1.2) is the old, original code from 2003. All other commits are the project continuation.
