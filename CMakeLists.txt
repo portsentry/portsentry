@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(Portsentry VERSION 1.3)
 
-set(CMAKE_C_FLAGS "-O -Wall -Wextra -pedantic -DLINUX -DSUPPORT_STEALTH")
+set(CMAKE_C_FLAGS "-O -Wall -Wextra -pedantic -DLINUX")
 
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
@@ -11,6 +11,7 @@ set(MAXSTATE 50 CACHE STRING "Maximum number of hosts to keep in a \"previous co
 
 option(NODAEMON "Don't daemonize" OFF)
 option(DEBUG "Enable debug output" OFF)
+option(SUPPORT_STEALTH "Enable stealth mode" OFF)
 
 if (DEBUG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -DDEBUG")
@@ -18,6 +19,10 @@ endif()
 
 if (NODAEMON)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNODAEMON")
+endif()
+
+if (SUPPORT_STEALTH)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSUPPORT_STEALTH")
 endif()
 
 configure_file(config.h.in config.h)
