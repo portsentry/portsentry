@@ -42,13 +42,6 @@ void Exit(int status) {
   exit(status);
 }
 
-void Start(void) {
-  Log("adminalert: PortSentry %s is starting.\n", VERSION);
-#ifdef DEBUG
-  printf("Compiled: " __DATE__ " at " __TIME__ "\n");
-#endif
-}
-
 /* The daemonizing code copied from Advanced Programming */
 /* in the UNIX Environment by W. Richard Stevens with minor changes */
 int DaemonSeed(void) {

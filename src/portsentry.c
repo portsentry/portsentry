@@ -61,7 +61,6 @@ int main(int argc, char *argv[]) {
     Usage();
     Exit(ERROR);
   } else {
-    Start();
     /* This copies the startup type to a global for later use */
     if ((SafeStrncpy(gblDetectionType, strstr(argv[1], "-") + 1, MAXBUF)) == NULL) {
       Log("adminalert: ERROR: Error setting internal scan detection type.\n");

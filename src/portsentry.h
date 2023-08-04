@@ -17,8 +17,6 @@
 /* $Id: portsentry.h,v 1.32 2003/05/23 17:50:20 crowland Exp crowland $ */
 /************************************************************************/
 
-#define VERSION "1.2"
-
 #include <stdio.h>
 #include <syslog.h>
 #include <stdlib.h>

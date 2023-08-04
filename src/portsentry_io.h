@@ -21,7 +21,6 @@
 int WriteBlocked(char *, char *, int, char *, char *, char *);
 void Log(char *, ...);
 void Exit(int);
-void Start(void);
 int DaemonSeed(void);
 int NeverBlock(char *, char *);
 int CheckConfig(void);
