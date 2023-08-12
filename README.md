@@ -21,21 +21,17 @@ Two other very important (recommended) flags are: **NODAEMON** and **SUPPORT_STE
 ### Compilation Examples
 
 **Compiling for release**
-
+```
 mkdir release
-
 cd release
-
 cmake .. -D CMAKE_BUILD_TYPE=Release -D NODAEMON=ON -D SUPPORT_STEALTH=ON
-
 cmake --build . -v
+```
 
 **Compiling for debugging (mostly for developing)**
-
+```
 mkdir debug
-
 cd debug
-
 cmake .. -D CMAKE_BUILD_TYPE=Debug -D NODAEMON=ON -D SUPPORT_STEALTH=ON
-
 cmake --build . -v
+```
