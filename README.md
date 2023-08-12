@@ -10,3 +10,24 @@ We aim to accomplish 3 things in this project:
 1. Fix the various long standing bugs in the code
 2. Modernize the code in order to make it more efficient, readable and easier to work on
 3. Implement new features
+
+## Compiling
+There are a number of compile-time options which can be specified
+
+The most import (and required flag is) **CMAKE_BUILD_TYPE**. It should be set to either **Debug** or **Release**.
+
+Two other very important (recommended) flags are: **NODAEMON** and **SUPPORT_STEALTH**. Set NODAEMON to ON if you plan on running via a daemon service like systemd. In addition, you will in 99% of cases want to set SUPPORT_STEALTH to ON.
+
+### Compilation Examples
+
+**Compiling for release**
+mkdir release
+cd release
+cmake .. -D CMAKE_BUILD_TYPE=Release -D NODAEMON=ON -D SUPPORT_STEALTH=ON
+cmake --build . -v
+
+**Compiling for debugging (mostly for developing)**
+mkdir debug
+cd debug
+cmake .. -D CMAKE_BUILD_TYPE=Debug -D NODAEMON=ON -D SUPPORT_STEALTH=ON
+cmake --build . -v
