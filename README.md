@@ -12,7 +12,7 @@ We aim to accomplish 3 things in this project:
 3. Implement new features
 
 ## Compiling
-There are a number of compile-time options which can be specified
+Checkout a specific tag to compile stable releases, or use the master branch for the latest, unstable version. There are a number of compile-time options which can be specified.
 
 The most import (and required flag is) **CMAKE_BUILD_TYPE**. It should be set to either **Debug** or **Release**.
 
@@ -35,3 +35,7 @@ cd debug
 cmake .. -D CMAKE_BUILD_TYPE=Debug -D NODAEMON=ON -D SUPPORT_STEALTH=ON
 cmake --build . -v
 ```
+
+**Compiling old version (v1.2)**
+Tag v1.2 is the release from 2003, before the project was orphaned and uses a different build method, execute _make_ in order to see compilation instructions. All versions after v1.2, see instructions below.
+
