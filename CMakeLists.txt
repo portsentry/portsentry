@@ -8,7 +8,6 @@ set(SYSLOG_LEVEL LOG_NOTICE CACHE STRING "Syslog level to use")
 set(MAXSTATE 50 CACHE STRING "Maximum number of hosts to keep in a \"previous connect\" state engine")
 
 option(NODAEMON "Don't daemonize" OFF)
-option(DEBUG "Enable debug output" OFF)
 option(SUPPORT_STEALTH "Enable stealth mode" OFF)
 
 configure_file(config.h.in config.h)
