@@ -37,5 +37,6 @@ cmake --build . -v
 ```
 
 **Compiling old version (v1.2)**
+
 Tag v1.2 is the release from 2003, before the project was orphaned and uses a different build method, execute _make_ in order to see compilation instructions. All versions after v1.2, see instructions below.
 
