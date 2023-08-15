@@ -33,3 +33,5 @@ endif()
 if (SUPPORT_STEALTH)
   target_compile_definitions(portsentry PUBLIC SUPPORT_STEALTH)
 endif()
+
+install(TARGETS portsentry DESTINATION bin)
