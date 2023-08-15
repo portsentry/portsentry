@@ -34,4 +34,6 @@ if (SUPPORT_STEALTH)
   target_compile_definitions(portsentry PUBLIC SUPPORT_STEALTH)
 endif()
 
-install(TARGETS portsentry DESTINATION bin)
+install(TARGETS portsentry DESTINATION usr/sbin)
+install(FILES examples/portsentry.conf DESTINATION etc/portsentry)
+install(FILES examples/portsentry.ignore DESTINATION etc/portsentry)
