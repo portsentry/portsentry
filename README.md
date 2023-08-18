@@ -40,3 +40,16 @@ cmake --build . -v
 
 Tag v1.2 is the release from 2003, before the project was orphaned and uses a different build method, execute _make_ in order to see compilation instructions.
 
+## FIXME: Documentation
+For now, please see the old Documentation: README.install, README.methods, README.stealth
+
+## Supported Platforms
+### Verified
+Linux
+
+### To be tested
+OpenBSD
+FreeBSD
+NetBSD
+OSX
+
