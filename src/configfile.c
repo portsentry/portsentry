@@ -70,7 +70,7 @@ int readConfigFile(void) {
     stripTrailingSpace(buffer);
 
     if ((keySize = getKeySize(buffer)) == 0) {
-      Log("adminalert: ERROR: Invalid config file entry at line %u\n", line);
+      Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
       fclose(config);
       return ERROR;
     }
@@ -79,7 +79,7 @@ int readConfigFile(void) {
     ptr = skipSpaceAndTab(ptr);
 
     if (*ptr != '=') {
-      Log("adminalert: ERROR: Invalid config file entry at line %u\n", line);
+      Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
       fclose(config);
       return ERROR;
     }
@@ -88,14 +88,14 @@ int readConfigFile(void) {
     ptr = skipSpaceAndTab(ptr);
 
     if (*ptr != '"') {
-      Log("adminalert: ERROR: Invalid config file entry at line %u\n", line);
+      Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
       fclose(config);
       return ERROR;
     }
     ptr++;
 
     if ((valueSize = getSizeToQuote(ptr)) == ERROR) {
-      Log("adminalert: ERROR: Invalid config file entry at line %u\n", line);
+      Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
       fclose(config);
       return ERROR;
     }
@@ -258,7 +258,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
   } else if (strncmp(buffer, "PORT_BANNER", keySize) == 0) {
     copyPrintableString(ptr, gblPortBanner, MAXBUF);
   } else {
-    Log("adminalert: ERROR: Invalid config file entry at line %u\n", line);
+    Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
     exit(1);
   }
 }
