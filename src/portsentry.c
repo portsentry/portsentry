@@ -1161,7 +1161,7 @@ int CheckStateEngine(char *target) {
   }
 
   if (gblConfigTriggerCount > MAXSTATE) {
-    Log("securityalert: WARNING: Trigger value %d is larger than state engine capacity of %d.\n", gblConfigTriggerCount);
+    Log("securityalert: WARNING: Trigger value %d is larger than state engine capacity of %d.\n", gblConfigTriggerCount, MAXSTATE);
     Log("Adjust the value lower or recompile with a larger state engine value.\n", MAXSTATE);
     Log("securityalert: Blocking host anyway because of invalid trigger value");
     scanDetectTrigger = TRUE;
