@@ -20,6 +20,7 @@
 #include "portsentry_io.h"
 #include "portsentry_util.h"
 #include "configfile.h"
+#include "config_data.h"
 
 /* Global variables */
 char gblScanDetectHost[MAXSTATE][IPMAXBUF];
@@ -42,6 +43,8 @@ int gblRunCmdFirst = 0;
 int gblResolveHost = 0;
 int gblConfigTriggerCount = 0;
 
+struct ConfigData configData;
+
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     Usage();
@@ -52,6 +55,8 @@ int main(int argc, char *argv[]) {
     printf("You need to be root to run this.\n");
     Exit(ERROR);
   }
+
+  resetConfigData(configData);
 
   /* Cheesy arg parser. Some systems don't support getopt and I don't want to
    * port it. */
