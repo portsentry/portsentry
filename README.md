@@ -11,14 +11,22 @@ We aim to accomplish 3 things in this project:
 2. Modernize the code in order to make it more efficient, readable and easier to work on
 3. Implement new features
 
-## Compiling
-Checkout a specific tag to compile stable releases, or use the master branch for the latest, unstable version. There are a number of compile-time options which can be specified.
+## Building
+Checkout a specific tag to compile stable releases, or use the master branch for the latest, unstable version.
 
-The most import (and required flag is) **CMAKE_BUILD_TYPE**. It should be set to either **Debug** or **Release**.
+The build.sh script provides a convenient way to build, clean and run tests:
+
+- ./build.sh debug - Build debug version w/ reasonable defaults
+- ./build.sh release - Build release version
+- ./build.sh clean - Remove all builds
+- ./build.sh sast - Run sast scanners
+
+### Running CMake manually
+There are a number of compile-time options which can be specified. The most import (and required flag is) **CMAKE_BUILD_TYPE**. It should be set to either **Debug** or **Release**.
 
 Two other very important (recommended) flags are: **NODAEMON** and **SUPPORT_STEALTH**. Set NODAEMON to ON if you plan on running via a daemon service like systemd. In addition, you will in 99% of cases want to set SUPPORT_STEALTH to ON.
 
-### Compilation Examples
+#### Compilation Examples
 
 **Compiling for release**
 ```
