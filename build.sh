@@ -26,15 +26,15 @@ elif [ "$ACTION" == "release" ]; then
   cmake --build . -v
   exit 0
 elif [ "$ACTION" == "sast" ]; then
-  semgrep scan --config=auto
-  flawfinder src
-
   rm -rf /tmp/portsentry
   rsync -avz ../portsentry /tmp/
   codeql database create /tmp/portsentry/codeqldb --language=cpp --source-root=/tmp/portsentry
   codeql database analyze /tmp/portsentry/codeqldb --format=csv --output=/tmp/portsentry/codeqlout.csv
   echo "========== CodeQL Results =========="
   cat /tmp/portsentry/codeqlout.csv
+
+  semgrep scan --config=auto
+  flawfinder src
 
   exit 0
 else
