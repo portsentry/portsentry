@@ -12,7 +12,7 @@ option(SUPPORT_STEALTH "Enable stealth mode" OFF)
 
 configure_file(config.h.in config.h)
 
-add_executable(portsentry src/configfile.c  src/portsentry.c  src/portsentry_io.c  src/portsentry_util.c)
+add_executable(portsentry src/configfile.c  src/portsentry.c  src/portsentry_io.c  src/portsentry_util.c src/state_machine.c)
 target_include_directories(portsentry PUBLIC "${PROJECT_BINARY_DIR}")
 
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
