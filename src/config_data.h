@@ -1,6 +1,6 @@
 #pragma once
 
-enum SentryMode { TCP, STCP, ATCP, UDP, SUDP, AUDP };
+enum SentryMode { SENTRY_MODE_TCP, SENTRY_MODE_STCP, SENTRY_MODE_ATCP, SENTRY_MODE_UDP, SENTRY_MODE_SUDP, SENTRY_MODE_AUDP };
 
 struct ConfigData {
   char killRoute[MAXBUF];
@@ -23,7 +23,7 @@ struct ConfigData {
   int resolveHost;
   int configTriggerCount;
 
-  SentryMode sentryMode;
+  enum SentryMode sentryMode;
 };
 
 extern struct ConfigData configData;
