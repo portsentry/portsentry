@@ -1,7 +1,6 @@
 #include "portsentry.h"
 #include "state_machine.h"
-
-extern int gblConfigTriggerCount;
+#include "config_data.h"
 
 static char gblScanDetectHost[MAXSTATE][IPMAXBUF];
 static int gblScanDetectCount = 0;
@@ -24,7 +23,7 @@ int CheckStateEngine(char *target) {
   gotOne = 1;               /* our flag counter if we get a match */
   scanDetectTrigger = TRUE; /* set to TRUE until set otherwise */
 
-  if (gblConfigTriggerCount > 0) {
+  if (configData.gblConfigTriggerCount > 0) {
     for (count = 0; count < MAXSTATE; count++) {
       /* if the array has the IP address then increment the gotOne counter and
        */
@@ -33,11 +32,11 @@ int CheckStateEngine(char *target) {
       if (strcmp(gblScanDetectHost[count], target) == 0) {
         /* compare the number of matches to the configured trigger value */
         /* if we've exceeded we can stop this noise */
-        if (++gotOne >= gblConfigTriggerCount) {
+        if (++gotOne >= configData.gblConfigTriggerCount) {
           scanDetectTrigger = TRUE;
 #ifdef DEBUG
           Log("debug: CheckStateEngine: host: %s has exceeded trigger value: %d\n",
-              gblScanDetectHost[count], gblConfigTriggerCount);
+              gblScanDetectHost[count], configData.gblConfigTriggerCount);
 #endif
           break;
         }
@@ -63,13 +62,13 @@ int CheckStateEngine(char *target) {
       Log("debug: CheckStateEngine: state engine host: %s -> position: %d Detected: %d\n",
           gblScanDetectHost[count], count, scanDetectTrigger);
 #endif
-    /* end catch to set state if gblConfigTriggerCount == 0 */
-    if (gotOne >= gblConfigTriggerCount)
+    /* end catch to set state if configData.gblConfigTriggerCount == 0 */
+    if (gotOne >= configData.gblConfigTriggerCount)
       scanDetectTrigger = TRUE;
   }
 
-  if (gblConfigTriggerCount > MAXSTATE) {
-    Log("securityalert: WARNING: Trigger value %d is larger than state engine capacity of %d.\n", gblConfigTriggerCount, MAXSTATE);
+  if (configData.gblConfigTriggerCount > MAXSTATE) {
+    Log("securityalert: WARNING: Trigger value %d is larger than state engine capacity of %d.\n", configData.gblConfigTriggerCount, MAXSTATE);
     Log("Adjust the value lower or recompile with a larger state engine value.\n", MAXSTATE);
     Log("securityalert: Blocking host anyway because of invalid trigger value");
     scanDetectTrigger = TRUE;
