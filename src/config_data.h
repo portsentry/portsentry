@@ -22,5 +22,6 @@ struct ConfigData {
   int gblConfigTriggerCount;
 };
 
+extern struct ConfigData configData;
 
 void resetConfigData(struct ConfigData cd);

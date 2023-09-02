@@ -42,8 +42,6 @@ int gblRunCmdFirst = 0;
 int gblResolveHost = 0;
 int gblConfigTriggerCount = 0;
 
-struct ConfigData configData;
-
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     Usage();
