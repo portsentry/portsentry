@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     Exit(ERROR);
   } else {
     /* This copies the startup type to a global for later use */
-    if ((SafeStrncpy(configData.gblDetectionType, strstr(argv[1], "-") + 1, MAXBUF)) == NULL) {
+    if ((SafeStrncpy(configData.detectionType, strstr(argv[1], "-") + 1, MAXBUF)) == NULL) {
       Log("adminalert: ERROR: Error setting internal scan detection type.\n");
       printf("ERROR: Error setting internal scan detection type.\n");
       printf("ERROR: PortSentry is shutting down!\n");
@@ -172,7 +172,7 @@ int PortSentryStealthModeTCP(void) {
   struct tcphdr tcp;
 
   /* break out the ports */
-  if ((temp = (char *)strtok(configData.gblPorts, ",")) != NULL) {
+  if ((temp = (char *)strtok(configData.ports, ",")) != NULL) {
     ports[0] = atoi(temp);
     for (count = 1; count < MAXSOCKS; count++) {
       if ((temp = (char *)strtok(NULL, ",")) != NULL)
@@ -238,7 +238,7 @@ int PortSentryStealthModeTCP(void) {
           addr.s_addr = (u_int)ip.saddr;
           SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
           /* check if we should ignore this IP */
-          result = NeverBlock(target, configData.gblIgnoreFile);
+          result = NeverBlock(target, configData.ignoreFile);
 
           if (result == ERROR) {
             Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
@@ -249,7 +249,7 @@ int PortSentryStealthModeTCP(void) {
             /* check if they've visited before */
             scanDetectTrigger = CheckStateEngine(target);
             if (scanDetectTrigger == TRUE) {
-              if (configData.gblResolveHost) {/* Do they want DNS resolution? */
+              if (configData.resolveHost) {/* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
                   Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
@@ -266,12 +266,12 @@ int PortSentryStealthModeTCP(void) {
                     resolvedHost, target, ports2[count]);
 
               /* check if this target is already blocked */
-              if (IsBlocked(target, configData.gblBlockedFile) == FALSE) {
+              if (IsBlocked(target, configData.blockedFile) == FALSE) {
                 /* toast the prick */
                 if (DisposeTCP(target, ports2[count]) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s/%s !!", resolvedHost, target);
                 else
-                  WriteBlocked(target, resolvedHost, ports2[count], configData.gblBlockedFile, configData.gblHistoryFile, "TCP");
+                  WriteBlocked(target, resolvedHost, ports2[count], configData.blockedFile, configData.historyFile, "TCP");
               } else { /* end IsBlocked check */
                 Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
               }
@@ -304,7 +304,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
   struct iphdr ip;
   struct tcphdr tcp;
 
-  advancedPorts = atoi(configData.gblPorts);
+  advancedPorts = atoi(configData.ports);
 
   Log("adminalert: Advanced mode will monitor first %d ports", advancedPorts);
 
@@ -320,9 +320,9 @@ int PortSentryAdvancedStealthModeTCP(void) {
     close(openSockfd);
   }
 
-  if (strlen(configData.gblAdvancedExclude) > 0) {
+  if (strlen(configData.advancedExclude) > 0) {
     /* break out the ports */
-    if ((temp = (char *)strtok(configData.gblAdvancedExclude, ",")) != NULL) {
+    if ((temp = (char *)strtok(configData.advancedExclude, ",")) != NULL) {
       inUsePorts[portCount++] = atoi(temp);
       Log("adminalert: Advanced mode will manually exclude port: %d ", inUsePorts[portCount - 1]);
       for (count = 0; count < MAXSOCKS; count++) {
@@ -377,7 +377,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
           addr.s_addr = (u_int)ip.saddr;
           SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
           /* check if we should ignore this IP */
-          result = NeverBlock(target, configData.gblIgnoreFile);
+          result = NeverBlock(target, configData.ignoreFile);
 
           if (result == ERROR) {
             Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
@@ -389,7 +389,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
             scanDetectTrigger = CheckStateEngine(target);
 
             if (scanDetectTrigger == TRUE) {
-              if (configData.gblResolveHost) { /* Do they want DNS resolution? */
+              if (configData.resolveHost) { /* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
                   Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
@@ -406,12 +406,12 @@ int PortSentryAdvancedStealthModeTCP(void) {
                     resolvedHost, target, incomingPort);
 
               /* check if this target is already blocked */
-              if (IsBlocked(target, configData.gblBlockedFile) == FALSE) {
+              if (IsBlocked(target, configData.blockedFile) == FALSE) {
                 /* toast the prick */
                 if (DisposeTCP(target, incomingPort) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
                 else
-                  WriteBlocked(target, resolvedHost, incomingPort, configData.gblBlockedFile, configData.gblHistoryFile, "TCP");
+                  WriteBlocked(target, resolvedHost, incomingPort, configData.blockedFile, configData.historyFile, "TCP");
               } else { /* end IsBlocked check */
                 Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
               }
@@ -442,7 +442,7 @@ int PortSentryStealthModeUDP(void) {
   struct udphdr udp;
 
   /* break out the ports */
-  if ((temp = (char *)strtok(configData.gblPorts, ",")) != NULL) {
+  if ((temp = (char *)strtok(configData.ports, ",")) != NULL) {
     ports[0] = atoi(temp);
     for (count = 1; count < MAXSOCKS; count++) {
       if ((temp = (char *)strtok(NULL, ",")) != NULL)
@@ -503,7 +503,7 @@ int PortSentryStealthModeUDP(void) {
         addr.s_addr = (u_int)ip.saddr;
         SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
         /* check if we should ignore this IP */
-        result = NeverBlock(target, configData.gblIgnoreFile);
+        result = NeverBlock(target, configData.ignoreFile);
 
         if (result == ERROR) {
           Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
@@ -514,7 +514,7 @@ int PortSentryStealthModeUDP(void) {
           /* check if they've visited before */
           scanDetectTrigger = CheckStateEngine(target);
           if (scanDetectTrigger == TRUE) {
-            if (configData.gblResolveHost) { /* Do they want DNS resolution? */
+            if (configData.resolveHost) { /* Do they want DNS resolution? */
               if (CleanAndResolve(resolvedHost, target) != TRUE) {
                 Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
                 snprintf(resolvedHost, DNSMAXBUF, "%s", target);
@@ -530,11 +530,11 @@ int PortSentryStealthModeUDP(void) {
                   resolvedHost, target, incomingPort);
 
             /* check if this target is already blocked */
-            if (IsBlocked(target, configData.gblBlockedFile) == FALSE) {
+            if (IsBlocked(target, configData.blockedFile) == FALSE) {
               if (DisposeUDP(target, ports2[count]) != TRUE)
                 Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
               else
-                WriteBlocked(target, resolvedHost, ports2[count], configData.gblBlockedFile, configData.gblHistoryFile, "UDP");
+                WriteBlocked(target, resolvedHost, ports2[count], configData.blockedFile, configData.historyFile, "UDP");
             } else { /* end IsBlocked check */
               Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
             }
@@ -566,7 +566,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
   struct iphdr ip;
   struct udphdr udp;
 
-  advancedPorts = atoi(configData.gblPorts);
+  advancedPorts = atoi(configData.ports);
 
   Log("adminalert: Advanced mode will monitor first %d ports", advancedPorts);
 
@@ -582,9 +582,9 @@ int PortSentryAdvancedStealthModeUDP(void) {
     close(openSockfd);
   }
 
-  if (strlen(configData.gblAdvancedExclude) > 0) {
+  if (strlen(configData.advancedExclude) > 0) {
     /* break out the ports */
-    if ((temp = (char *)strtok(configData.gblAdvancedExclude, ",")) != NULL) {
+    if ((temp = (char *)strtok(configData.advancedExclude, ",")) != NULL) {
       inUsePorts[portCount++] = atoi(temp);
       Log("adminalert: Advanced mode will manually exclude port: %d ", inUsePorts[portCount - 1]);
       for (count = 0; count < MAXSOCKS; count++) {
@@ -636,7 +636,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
         addr.s_addr = (u_int)ip.saddr;
         SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
         /* check if we should ignore this IP */
-        result = NeverBlock(target, configData.gblIgnoreFile);
+        result = NeverBlock(target, configData.ignoreFile);
 
         if (result == ERROR) {
           Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
@@ -648,7 +648,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
           scanDetectTrigger = CheckStateEngine(target);
 
           if (scanDetectTrigger == TRUE) {
-            if (configData.gblResolveHost) { /* Do they want DNS resolution? */
+            if (configData.resolveHost) { /* Do they want DNS resolution? */
               if (CleanAndResolve(resolvedHost, target) != TRUE) {
                 Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
                 snprintf(resolvedHost, DNSMAXBUF, "%s", target);
@@ -663,11 +663,11 @@ int PortSentryAdvancedStealthModeUDP(void) {
               Log("attackalert: Packet from host: %s/%s to UDP port: %u has IP options set (detection avoidance technique).", resolvedHost, target, incomingPort);
 
             /* check if this target is already blocked */
-            if (IsBlocked(target, configData.gblBlockedFile) == FALSE) {
+            if (IsBlocked(target, configData.blockedFile) == FALSE) {
               if (DisposeUDP(target, incomingPort) != TRUE)
                 Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
               else
-                WriteBlocked(target, resolvedHost, incomingPort, configData.gblBlockedFile, configData.gblHistoryFile, "UDP");
+                WriteBlocked(target, resolvedHost, incomingPort, configData.blockedFile, configData.historyFile, "UDP");
             } else { /* end IsBlocked check */
               Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
             }
@@ -701,7 +701,7 @@ int PortSentryModeTCP(void) {
   fd_set selectFds;
 
   /* break out the ports */
-  if ((temp = (char *)strtok(configData.gblPorts, ",")) != NULL) {
+  if ((temp = (char *)strtok(configData.ports, ",")) != NULL) {
     ports[0] = atoi(temp);
     for (count = 1; count < MAXSOCKS; count++) {
       if ((temp = (char *)strtok(NULL, ",")) != NULL)
@@ -715,9 +715,9 @@ int PortSentryModeTCP(void) {
     return (ERROR);
   }
 
-  if (strlen(configData.gblPortBanner) > 0) {
+  if (strlen(configData.portBanner) > 0) {
     showBanner = TRUE;
-    SafeStrncpy(bannerBuffer, configData.gblPortBanner, MAXBUF); // FIXME: Use configData.gblPortBanner directly
+    SafeStrncpy(bannerBuffer, configData.portBanner, MAXBUF); // FIXME: Use configData.portBanner directly
   }
 
   /* setup select call */
@@ -776,7 +776,7 @@ int PortSentryModeTCP(void) {
           /* copy the clients address into our buffer for nuking */
           SafeStrncpy(target, (char *)inet_ntoa(client.sin_addr), IPMAXBUF);
           /* check if we should ignore this IP */
-          result = NeverBlock(target, configData.gblIgnoreFile);
+          result = NeverBlock(target, configData.ignoreFile);
 
           if (result == ERROR) {
             Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
@@ -797,7 +797,7 @@ int PortSentryModeTCP(void) {
               }
               /* we don't need the bonehead anymore */
               close(incomingSockfd);
-              if (configData.gblResolveHost) { /* Do they want DNS resolution? */
+              if (configData.resolveHost) { /* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
                   Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
@@ -809,11 +809,11 @@ int PortSentryModeTCP(void) {
               Log("attackalert: Connect from host: %s/%s to TCP port: %d", resolvedHost, target, ports[count]);
 
               /* check if this target is already blocked */
-              if (IsBlocked(target, configData.gblBlockedFile) == FALSE) {
+              if (IsBlocked(target, configData.blockedFile) == FALSE) {
                 if (DisposeTCP(target, ports[count]) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s !!", target);
                 else
-                  WriteBlocked(target, resolvedHost, ports[count], configData.gblBlockedFile, configData.gblHistoryFile, "TCP");
+                  WriteBlocked(target, resolvedHost, ports[count], configData.blockedFile, configData.historyFile, "TCP");
               } else {
                 Log("attackalert: Host: %s is already blocked. Ignoring", target);
               }
@@ -850,7 +850,7 @@ int PortSentryModeUDP(void) {
   fd_set selectFds;
 
   /* break out the ports */
-  if ((temp = (char *)strtok(configData.gblPorts, ",")) != NULL) {
+  if ((temp = (char *)strtok(configData.ports, ",")) != NULL) {
     ports[0] = atoi(temp);
     for (count = 1; count < MAXSOCKS; count++) {
       if ((temp = (char *)strtok(NULL, ",")) != NULL)
@@ -865,9 +865,9 @@ int PortSentryModeUDP(void) {
   }
 
   /* read in the banner if one is given */
-  if (strlen(configData.gblPortBanner) > 0) {
+  if (strlen(configData.portBanner) > 0) {
     showBanner = TRUE;
-    SafeStrncpy(bannerBuffer, configData.gblPortBanner, MAXBUF);  // FIXME: Use configData.gblPortBanner directly
+    SafeStrncpy(bannerBuffer, configData.portBanner, MAXBUF);  // FIXME: Use configData.portBanner directly
   }
 
   /* setup select call */
@@ -929,7 +929,7 @@ int PortSentryModeUDP(void) {
           Log("debug: PortSentryModeUDP: accepted UDP connection from: %s\n", target);
 #endif
           /* check if we should ignore this IP */
-          result = NeverBlock(target, configData.gblIgnoreFile);
+          result = NeverBlock(target, configData.ignoreFile);
           if (result == ERROR) {
             Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
             result = FALSE;
@@ -942,7 +942,7 @@ int PortSentryModeUDP(void) {
               if (showBanner == TRUE)
                 sendto(openSockfd[count], bannerBuffer, strlen(bannerBuffer), 0, (struct sockaddr *)&client, length);
 
-              if (configData.gblResolveHost) { /* Do they want DNS resolution? */
+              if (configData.resolveHost) { /* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
                   Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
@@ -953,11 +953,11 @@ int PortSentryModeUDP(void) {
 
               Log("attackalert: Connect from host: %s/%s to UDP port: %d", resolvedHost, target, ports[count]);
               /* check if this target is already blocked */
-              if (IsBlocked(target, configData.gblBlockedFile) == FALSE) {
+              if (IsBlocked(target, configData.blockedFile) == FALSE) {
                 if (DisposeUDP(target, ports[count]) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s !!", target);
                 else
-                  WriteBlocked(target, resolvedHost, ports[count], configData.gblBlockedFile, configData.gblHistoryFile, "UDP");
+                  WriteBlocked(target, resolvedHost, ports[count], configData.blockedFile, configData.historyFile, "UDP");
               } else {
                 Log("attackalert: Host: %s is already blocked. Ignoring", target);
               }
@@ -975,41 +975,41 @@ int DisposeTCP(char *target, int port) {
   int status = TRUE;
 
 #ifdef DEBUG
-  Log("debug: DisposeTCP: disposing of host %s on port %d with option: %d", target, port, configData.gblBlockTCP);
-  Log("debug: DisposeTCP: killRunCmd: %s", configData.gblKillRunCmd);
-  Log("debug: DisposeTCP: configData.gblRunCmdFirst: %d", configData.gblRunCmdFirst);
-  Log("debug: DisposeTCP: killHostsDeny: %s", configData.gblKillHostsDeny);
-  Log("debug: DisposeTCP: killRoute: %s  %d", configData.gblKillRoute,
-      strlen(configData.gblKillRoute));
+  Log("debug: DisposeTCP: disposing of host %s on port %d with option: %d", target, port, configData.blockTCP);
+  Log("debug: DisposeTCP: killRunCmd: %s", configData.killRunCmd);
+  Log("debug: DisposeTCP: configData.runCmdFirst: %d", configData.runCmdFirst);
+  Log("debug: DisposeTCP: killHostsDeny: %s", configData.killHostsDeny);
+  Log("debug: DisposeTCP: killRoute: %s  %d", configData.killRoute,
+      strlen(configData.killRoute));
 #endif
   /* Should we ignore TCP from active response? */
-  if (configData.gblBlockTCP == 1) {
+  if (configData.blockTCP == 1) {
     /* run external command first, hosts.deny second, dead route last */
-    if (configData.gblRunCmdFirst) {
-      if (strlen(configData.gblKillRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.gblKillRunCmd, configData.gblDetectionType) != TRUE)
+    if (configData.runCmdFirst) {
+      if (strlen(configData.killRunCmd) > 0)
+        if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
           status = FALSE;
-      if (strlen(configData.gblKillHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.gblKillHostsDeny, configData.gblDetectionType) != TRUE)
+      if (strlen(configData.killHostsDeny) > 0)
+        if (KillHostsDeny(target, port, configData.killHostsDeny, configData.detectionType) != TRUE)
           status = FALSE;
-      if (strlen(configData.gblKillRoute) > 0)
-        if (KillRoute(target, port, configData.gblKillRoute, configData.gblDetectionType) != TRUE)
+      if (strlen(configData.killRoute) > 0)
+        if (KillRoute(target, port, configData.killRoute, configData.detectionType) != TRUE)
           status = FALSE;
     } else { /* run hosts.deny first, dead route second, external command last */
-      if (strlen(configData.gblKillHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.gblKillHostsDeny, configData.gblDetectionType) != TRUE)
+      if (strlen(configData.killHostsDeny) > 0)
+        if (KillHostsDeny(target, port, configData.killHostsDeny, configData.detectionType) != TRUE)
           status = FALSE;
-      if (strlen(configData.gblKillRoute) > 0)
-        if (KillRoute(target, port, configData.gblKillRoute, configData.gblDetectionType) != TRUE)
+      if (strlen(configData.killRoute) > 0)
+        if (KillRoute(target, port, configData.killRoute, configData.detectionType) != TRUE)
           status = FALSE;
-      if (strlen(configData.gblKillRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.gblKillRunCmd, configData.gblDetectionType) != TRUE)
+      if (strlen(configData.killRunCmd) > 0)
+        if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
           status = FALSE;
     }
-  } else if (configData.gblBlockTCP == 2) {
+  } else if (configData.blockTCP == 2) {
     /* run external command only */
-    if (strlen(configData.gblKillRunCmd) > 0)
-      if (KillRunCmd(target, port, configData.gblKillRunCmd, configData.gblDetectionType) != TRUE)
+    if (strlen(configData.killRunCmd) > 0)
+      if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
         status = FALSE;
   } else {
     Log("attackalert: Ignoring TCP response per configuration file setting.");
@@ -1023,41 +1023,41 @@ int DisposeUDP(char *target, int port) {
   int status = TRUE;
 
 #ifdef DEBUG
-  Log("debug: DisposeUDP: disposing of host %s on port %d with option: %d", target, port, configData.gblBlockUDP);
-  Log("debug: DisposeUDP: killRunCmd: %d", configData.gblKillRunCmd);
-  Log("debug: DisposeUDP: configData.gblRunCmdFirst: %s", configData.gblRunCmdFirst);
-  Log("debug: DisposeUDP: killHostsDeny: %s", configData.gblKillHostsDeny);
-  Log("debug: DisposeUDP: killRoute: %s  %d", configData.gblKillRoute,
-      strlen(configData.gblKillRoute));
+  Log("debug: DisposeUDP: disposing of host %s on port %d with option: %d", target, port, configData.blockUDP);
+  Log("debug: DisposeUDP: killRunCmd: %d", configData.killRunCmd);
+  Log("debug: DisposeUDP: configData.runCmdFirst: %s", configData.runCmdFirst);
+  Log("debug: DisposeUDP: killHostsDeny: %s", configData.killHostsDeny);
+  Log("debug: DisposeUDP: killRoute: %s  %d", configData.killRoute,
+      strlen(configData.killRoute));
 #endif
   /* Should we ignore TCP from active response? */
-  if (configData.gblBlockUDP == 1) {
+  if (configData.blockUDP == 1) {
     /* run external command first, hosts.deny second, dead route last */
-    if (configData.gblRunCmdFirst) {
-      if (strlen(configData.gblKillRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.gblKillRunCmd, configData.gblDetectionType) != TRUE)
+    if (configData.runCmdFirst) {
+      if (strlen(configData.killRunCmd) > 0)
+        if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
           status = FALSE;
-      if (strlen(configData.gblKillHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.gblKillHostsDeny, configData.gblDetectionType) != TRUE)
+      if (strlen(configData.killHostsDeny) > 0)
+        if (KillHostsDeny(target, port, configData.killHostsDeny, configData.detectionType) != TRUE)
           status = FALSE;
-      if (strlen(configData.gblKillRoute) > 0)
-        if (KillRoute(target, port, configData.gblKillRoute, configData.gblDetectionType) != TRUE)
+      if (strlen(configData.killRoute) > 0)
+        if (KillRoute(target, port, configData.killRoute, configData.detectionType) != TRUE)
           status = FALSE;
     } else { /* run hosts.deny first, dead route second, external command last */
-      if (strlen(configData.gblKillHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.gblKillHostsDeny, configData.gblDetectionType) != TRUE)
+      if (strlen(configData.killHostsDeny) > 0)
+        if (KillHostsDeny(target, port, configData.killHostsDeny, configData.detectionType) != TRUE)
           status = FALSE;
-      if (strlen(configData.gblKillRoute) > 0)
-        if (KillRoute(target, port, configData.gblKillRoute, configData.gblDetectionType) != TRUE)
+      if (strlen(configData.killRoute) > 0)
+        if (KillRoute(target, port, configData.killRoute, configData.detectionType) != TRUE)
           status = FALSE;
-      if (strlen(configData.gblKillRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.gblKillRunCmd, configData.gblDetectionType) != TRUE)
+      if (strlen(configData.killRunCmd) > 0)
+        if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
           status = FALSE;
     }
-  } else if (configData.gblBlockUDP == 2) {
+  } else if (configData.blockUDP == 2) {
     /* run external command only */
-    if (strlen(configData.gblKillRunCmd) > 0)
-      if (KillRunCmd(target, port, configData.gblKillRunCmd, configData.gblDetectionType) != TRUE)
+    if (strlen(configData.killRunCmd) > 0)
+      if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
         status = FALSE;
   } else {
     Log("attackalert: Ignoring UDP response per configuration file setting.");

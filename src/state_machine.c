@@ -23,7 +23,7 @@ int CheckStateEngine(char *target) {
   gotOne = 1;               /* our flag counter if we get a match */
   scanDetectTrigger = TRUE; /* set to TRUE until set otherwise */
 
-  if (configData.gblConfigTriggerCount > 0) {
+  if (configData.configTriggerCount > 0) {
     for (count = 0; count < MAXSTATE; count++) {
       /* if the array has the IP address then increment the gotOne counter and
        */
@@ -32,11 +32,11 @@ int CheckStateEngine(char *target) {
       if (strcmp(gblScanDetectHost[count], target) == 0) {
         /* compare the number of matches to the configured trigger value */
         /* if we've exceeded we can stop this noise */
-        if (++gotOne >= configData.gblConfigTriggerCount) {
+        if (++gotOne >= configData.configTriggerCount) {
           scanDetectTrigger = TRUE;
 #ifdef DEBUG
           Log("debug: CheckStateEngine: host: %s has exceeded trigger value: %d\n",
-              gblScanDetectHost[count], configData.gblConfigTriggerCount);
+              gblScanDetectHost[count], configData.configTriggerCount);
 #endif
           break;
         }
@@ -62,13 +62,13 @@ int CheckStateEngine(char *target) {
       Log("debug: CheckStateEngine: state engine host: %s -> position: %d Detected: %d\n",
           gblScanDetectHost[count], count, scanDetectTrigger);
 #endif
-    /* end catch to set state if configData.gblConfigTriggerCount == 0 */
-    if (gotOne >= configData.gblConfigTriggerCount)
+    /* end catch to set state if configData.configTriggerCount == 0 */
+    if (gotOne >= configData.configTriggerCount)
       scanDetectTrigger = TRUE;
   }
 
-  if (configData.gblConfigTriggerCount > MAXSTATE) {
-    Log("securityalert: WARNING: Trigger value %d is larger than state engine capacity of %d.\n", configData.gblConfigTriggerCount, MAXSTATE);
+  if (configData.configTriggerCount > MAXSTATE) {
+    Log("securityalert: WARNING: Trigger value %d is larger than state engine capacity of %d.\n", configData.configTriggerCount, MAXSTATE);
     Log("Adjust the value lower or recompile with a larger state engine value.\n", MAXSTATE);
     Log("securityalert: Blocking host anyway because of invalid trigger value");
     scanDetectTrigger = TRUE;

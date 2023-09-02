@@ -1,25 +1,29 @@
 #pragma once
 
+enum SentryMode { TCP, STCP, ATCP, UDP, SUDP, AUDP };
+
 struct ConfigData {
-  char gblKillRoute[MAXBUF];
-  char gblKillHostsDeny[MAXBUF];
-  char gblKillRunCmd[MAXBUF];
+  char killRoute[MAXBUF];
+  char killHostsDeny[MAXBUF];
+  char killRunCmd[MAXBUF];
 
-  char gblDetectionType[MAXBUF];
-  char gblPorts[MAXBUF];
-  uint16_t ports[USHRT_MAX];
-  char gblAdvancedExclude[MAXBUF];
-  char gblPortBanner[MAXBUF];
+  char detectionType[MAXBUF];
+  char ports[MAXBUF];
+  uint16_t parsedPorts[USHRT_MAX];
+  char advancedExclude[MAXBUF];
+  char portBanner[MAXBUF];
 
-  char gblBlockedFile[PATH_MAX];
-  char gblHistoryFile[PATH_MAX];
-  char gblIgnoreFile[PATH_MAX];
+  char blockedFile[PATH_MAX];
+  char historyFile[PATH_MAX];
+  char ignoreFile[PATH_MAX];
 
-  int gblBlockTCP;
-  int gblBlockUDP;
-  int gblRunCmdFirst;
-  int gblResolveHost;
-  int gblConfigTriggerCount;
+  int blockTCP;
+  int blockUDP;
+  int runCmdFirst;
+  int resolveHost;
+  int configTriggerCount;
+
+  SentryMode sentryMode;
 };
 
 extern struct ConfigData configData;
