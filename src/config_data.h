@@ -1,5 +1,11 @@
 #pragma once
 
+#define LOGFLAG_NONE 0x00
+#define LOGFLAG_DEBUG 0x1
+#define LOGFLAG_VERBOSE 0x2
+#define LOGFLAG_OUTPUT_STDOUT 0x4
+#define LOGFLAG_OUTPUT_SYSLOG 0x8
+
 enum SentryMode { SENTRY_MODE_NONE = 0, SENTRY_MODE_TCP, SENTRY_MODE_STCP, SENTRY_MODE_ATCP, SENTRY_MODE_UDP, SENTRY_MODE_SUDP, SENTRY_MODE_AUDP };
 
 struct ConfigData {
@@ -24,6 +30,8 @@ struct ConfigData {
   int configTriggerCount;
 
   enum SentryMode sentryMode;
+
+  uint8_t logFlags;
 };
 
 extern struct ConfigData configData;
