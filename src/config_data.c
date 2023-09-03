@@ -5,6 +5,6 @@
 
 struct ConfigData configData;
 
-void resetConfigData(struct ConfigData cd) {
-  memset(&cd, 0, sizeof(cd));
+void ResetConfigData(struct ConfigData *cd) {
+  memset(cd, 0, sizeof(struct ConfigData));
 }
