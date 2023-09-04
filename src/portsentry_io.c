@@ -48,8 +48,7 @@ void Log(char *logentry, ...) {
 }
 
 void Exit(int status) {
-  Log("securityalert: PortSentry is shutting down\n");
-  Log("adminalert: PortSentry is shutting down\n");
+  Log("PortSentry is shutting down\n");
 
   if (isSyslogOpen == TRUE) {
     closelog();
