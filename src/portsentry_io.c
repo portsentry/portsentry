@@ -19,6 +19,9 @@
 #include "portsentry.h"
 #include "portsentry_io.h"
 #include "portsentry_util.h"
+#include "config_data.h"
+
+static uint8_t isSyslogOpen = FALSE;
 
 /* Main logging function to surrogate syslog */
 void Log(char *logentry, ...) {
@@ -31,14 +34,28 @@ void Log(char *logentry, ...) {
 
   va_end(argsPtr);
 
-  openlog("portsentry", LOG_PID, SYSLOG_FACILITY);
-  syslog(SYSLOG_LEVEL, "%s", logbuffer);
-  closelog();
+  if (configData.logFlags & LOGFLAG_OUTPUT_STDOUT) {
+    printf("%s\n", logbuffer);
+  }
+
+  if (configData.logFlags & LOGFLAG_OUTPUT_SYSLOG) {
+    if(isSyslogOpen == FALSE) {
+      openlog("portsentry", LOG_PID, SYSLOG_FACILITY);
+      isSyslogOpen = TRUE;
+    }
+    syslog(SYSLOG_LEVEL, "%s", logbuffer);
+  }
 }
 
 void Exit(int status) {
   Log("securityalert: PortSentry is shutting down\n");
   Log("adminalert: PortSentry is shutting down\n");
+
+  if (isSyslogOpen == TRUE) {
+    closelog();
+    isSyslogOpen = FALSE;
+  }
+
   exit(status);
 }
 
