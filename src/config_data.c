@@ -1,7 +1,9 @@
 #include <limits.h>
 
+#include "config.h"
 #include "portsentry.h"
 #include "config_data.h"
+#include "portsentry_util.h"
 
 struct ConfigData configData;
 
@@ -14,6 +16,14 @@ void PostProcessConfig(struct ConfigData *cd) {
   if ((cd->logFlags & LOGFLAG_OUTPUT_STDOUT) == 0 && (cd->logFlags & LOGFLAG_OUTPUT_SYSLOG) == 0) {
     cd->logFlags |= LOGFLAG_OUTPUT_STDOUT;
   }
+
+  if (strlen(cd->configFile) == 0) {
+    if (strlen(CONFIG_FILE) > (sizeof(cd->configFile) - 1)) {
+      fprintf(stderr, "Error: Config file path too long\n");
+      Exit(EXIT_FAILURE);
+    }
+    SafeStrncpy(cd->configFile, CONFIG_FILE, sizeof(cd->configFile));
+  }
 }
 
 void PrintConfigData(const struct ConfigData cd) {
@@ -22,8 +32,6 @@ void PrintConfigData(const struct ConfigData cd) {
   printf("killRoute: %s\n", cd.killRoute);
   printf("killHostsDeny: %s\n", cd.killHostsDeny);
   printf("killRunCmd %s\n", cd.killRunCmd);
-
-  printf("detectionType: %s\n", cd.detectionType);
 
   printf("ports: %s\n", cd.ports);
   printf("parsedPorts: ");
@@ -36,6 +44,7 @@ void PrintConfigData(const struct ConfigData cd) {
 
   printf("advancedExclude: %s\n", cd.advancedExclude);
 
+  printf("configFile: %s\n", cd.configFile);
   printf("blockedFile: %s\n", cd.blockedFile);
   printf("historyFile: %s\n", cd.historyFile);
   printf("ignoreFile: %s\n", cd.ignoreFile);

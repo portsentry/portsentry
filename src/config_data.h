@@ -13,12 +13,12 @@ struct ConfigData {
   char killHostsDeny[MAXBUF];
   char killRunCmd[MAXBUF];
 
-  char detectionType[MAXBUF];
   char ports[MAXBUF];
   uint16_t parsedPorts[USHRT_MAX];
   char advancedExclude[MAXBUF];
   char portBanner[MAXBUF];
 
+  char configFile[PATH_MAX];
   char blockedFile[PATH_MAX];
   char historyFile[PATH_MAX];
   char ignoreFile[PATH_MAX];
