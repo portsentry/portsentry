@@ -4,6 +4,7 @@
 #include <getopt.h>
 
 #include "portsentry.h"
+#include "portsentry_util.h"
 #include "cmdline.h"
 #include "config_data.h"
 
@@ -14,6 +15,7 @@
 #define CMDLINE_SUDP  4
 #define CMDLINE_AUDP  5
 #define CMDLINE_LOGOUTPUT 'l'
+#define CMDLINE_CONFIGFILE 'c'
 #define CMDLINE_DAEMON    'D'
 #define CMDLINE_DEBUG     'd'
 #define CMDLINE_VERBOSE   'v'
@@ -34,6 +36,7 @@ struct ConfigData ParseCmdline(int argc, char **argv) {
     {"sudp", no_argument, 0, CMDLINE_SUDP},
     {"audp", no_argument, 0, CMDLINE_AUDP},
     {"logoutput", required_argument, 0, CMDLINE_LOGOUTPUT},
+    {"configfile", required_argument, 0, CMDLINE_CONFIGFILE},
     {"daemon", no_argument, 0, CMDLINE_DAEMON},
     {"debug", no_argument, 0, CMDLINE_DEBUG},
     {"verbose", no_argument, 0, CMDLINE_VERBOSE},
@@ -46,11 +49,11 @@ struct ConfigData ParseCmdline(int argc, char **argv) {
 
   while (1) {
     int option_index = 0;
-    opt = getopt_long_only(argc, argv, "l:DdvhV", long_options, &option_index);
+    opt = getopt_long_only(argc, argv, "l:c:DdvhV", long_options, &option_index);
 
     if (opt >= CMDLINE_TCP && opt <= CMDLINE_AUDP && cmdlineConfig.sentryMode != SENTRY_MODE_NONE) {
       fprintf(stderr, "Error: Only one mode can be specified\n");
-      exit(EXIT_FAILURE);
+      Exit(EXIT_FAILURE);
     } else if (opt == -1) {
       break;
     }
@@ -81,8 +84,15 @@ struct ConfigData ParseCmdline(int argc, char **argv) {
           cmdlineConfig.logFlags |= LOGFLAG_OUTPUT_SYSLOG;
         } else {
           fprintf(stderr, "Error: Invalid log output specified\n");
-          exit(EXIT_FAILURE);
+          Exit(EXIT_FAILURE);
         }
+        break;
+      case CMDLINE_CONFIGFILE:
+        if(strlen(optarg) >= (sizeof(cmdlineConfig.configFile) -1)) {
+          fprintf(stderr, "Error: Config file path too long\n");
+          Exit(EXIT_FAILURE);
+        }
+        SafeConfigFile(cmdlineConfig.configFile, optarg, sizeof(cmdlineConfig.configFile));
         break;
       case CMDLINE_DAEMON:
         cmdlineConfig.daemon = TRUE;
@@ -101,7 +111,7 @@ struct ConfigData ParseCmdline(int argc, char **argv) {
         break;
       default:
         printf("Unknown argument, getopt returned character code 0%o\n", opt);
-        exit(EXIT_FAILURE);
+        Exit(EXIT_FAILURE);
         break;
     }
   }
@@ -110,7 +120,7 @@ struct ConfigData ParseCmdline(int argc, char **argv) {
 
   if (cmdlineConfig.sentryMode == SENTRY_MODE_NONE) {
     fprintf(stderr, "Error: No sentry mode specified\n");
-    exit(EXIT_FAILURE);
+    Exit(EXIT_FAILURE);
   }
 
   if (cmdlineConfig.logFlags & LOGFLAG_DEBUG) {
@@ -133,10 +143,10 @@ static void Usage(void) {
   printf("--verbose, -v\tEnable verbose output\n");
   printf("--help, -h\tDisplay this help message\n");
   printf("--version, -V\tDisplay version information\n");
-  exit(EXIT_SUCCESS);
+  Exit(EXIT_SUCCESS);
 }
 
 static void Version(void) {
   printf("Portsentry version %d.%d\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR);
-  exit(EXIT_SUCCESS);
+  Exit(EXIT_SUCCESS);
 }
