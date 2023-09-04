@@ -32,8 +32,12 @@ struct ConfigData {
   enum SentryMode sentryMode;
 
   uint8_t logFlags;
+
+  uint8_t daemon;
 };
 
 extern struct ConfigData configData;
 
 void ResetConfigData(struct ConfigData *cd);
+void PostProcessConfig(struct ConfigData *cd);
+void PrintConfigData(const struct ConfigData cd);

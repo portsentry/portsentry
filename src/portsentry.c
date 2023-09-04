@@ -17,6 +17,7 @@
 /************************************************************************/
 
 #include "portsentry.h"
+#include "cmdline.h"
 #include "portsentry_io.h"
 #include "portsentry_util.h"
 #include "configfile.h"
@@ -24,25 +25,25 @@
 #include "state_machine.h"
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    Usage();
-    Exit(ERROR);
-  }
+  struct ConfigData cmdlineConfig;
+
+  cmdlineConfig = ParseCmdline(argc, argv);
+
+  ResetConfigData(&configData);
+
+  // Merge cmdline, config file and environment variables
 
   if ((geteuid()) && (getuid()) != 0) {
     printf("You need to be root to run this.\n");
     Exit(ERROR);
   }
 
-  resetConfigData(configData);
-
   /* Cheesy arg parser. Some systems don't support getopt and I don't want to
    * port it. */
   if ((strcmp(argv[1], "-tcp")) && (strcmp(argv[1], "-udp")) &&
       (strcmp(argv[1], "-stcp")) && (strcmp(argv[1], "-atcp")) &&
       (strcmp(argv[1], "-sudp")) && (strcmp(argv[1], "-audp")) != 0) {
-    Usage();
-    Exit(ERROR);
+    // FIXME: Remove this, we do real cmdline parsing now
   } else {
     /* This copies the startup type to a global for later use */
     if ((SafeStrncpy(configData.detectionType, strstr(argv[1], "-") + 1, MAXBUF)) == NULL) {
@@ -1064,21 +1065,6 @@ int DisposeUDP(char *target, int port) {
   }
 
   return (status);
-}
-
-/* duh */
-void Usage(void) {
-  printf("PortSentry - Port Scan Detector.\n");
-  printf("Copyright 1997-2003 Craig H. Rowland <craigrowland at users dot sourceforget dot net>\n");
-  printf("Licensing restrictions apply. Please see documentation\n");
-  printf("Version: %d.%d\n\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR);
-#ifdef SUPPORT_STEALTH
-  printf("usage: portsentry [-tcp -udp -stcp -atcp -sudp -audp]\n\n");
-#else
-  printf("Stealth scan detection not supported on this platform\n");
-  printf("usage: portsentry [-tcp -udp]\n\n");
-#endif
-  printf("*** PLEASE READ THE DOCS BEFORE USING *** \n\n");
 }
 
 #ifdef SUPPORT_STEALTH

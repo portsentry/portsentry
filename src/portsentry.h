@@ -70,7 +70,6 @@ int PortSentryModeTCP(void);
 int PortSentryModeUDP(void);
 int DisposeUDP(char *, int);
 int DisposeTCP(char *, int);
-void Usage(void);
 int SmartVerifyTCP(int);
 int SmartVerifyUDP(int);
 
