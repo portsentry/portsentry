@@ -26,82 +26,71 @@
 
 int main(int argc, char *argv[]) {
   struct ConfigData cmdlineConfig;
+  struct ConfigData fileConfig;
 
   cmdlineConfig = ParseCmdline(argc, argv);
 
-  ResetConfigData(&configData);
+  fileConfig = readConfigFile(&cmdlineConfig);
 
-  // Merge cmdline, config file and environment variables
+  SetConfigData(&fileConfig, &cmdlineConfig);
+
+  if (configData.logFlags & LOGFLAG_DEBUG) {
+    printf("Final Configuration:\n");
+    PrintConfigData(configData);
+  }
 
   if ((geteuid()) && (getuid()) != 0) {
     printf("You need to be root to run this.\n");
     Exit(ERROR);
   }
 
-  /* Cheesy arg parser. Some systems don't support getopt and I don't want to
-   * port it. */
-  if ((strcmp(argv[1], "-tcp")) && (strcmp(argv[1], "-udp")) &&
-      (strcmp(argv[1], "-stcp")) && (strcmp(argv[1], "-atcp")) &&
-      (strcmp(argv[1], "-sudp")) && (strcmp(argv[1], "-audp")) != 0) {
-    // FIXME: Remove this, we do real cmdline parsing now
-  } else {
-    /* This copies the startup type to a global for later use */
-    if ((SafeStrncpy(configData.detectionType, strstr(argv[1], "-") + 1, MAXBUF)) == NULL) {
-      Log("adminalert: ERROR: Error setting internal scan detection type.\n");
-      printf("ERROR: Error setting internal scan detection type.\n");
-      printf("ERROR: PortSentry is shutting down!\n");
-      Exit(ERROR);
-    } else if (readConfigFile() == ERROR) {
-      Exit(ERROR);
-    }
-#ifndef NODAEMON
-    else if (DaemonSeed() == ERROR) {
+  if (configData.daemon == TRUE) {
+    if (DaemonSeed() == ERROR) {
       Log("adminalert: ERROR: could not go into daemon mode. Shutting down.\n");
       printf("ERROR: could not go into daemon mode. Shutting down.\n");
       Exit(ERROR);
     }
-#endif
   }
 
-  if (strcmp(argv[1], "-tcp") == 0) {
+  if (configData.sentryMode ==  SENTRY_MODE_TCP) {
     if (PortSentryModeTCP() == ERROR) {
       Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
       Exit(ERROR);
     }
   }
 #ifdef SUPPORT_STEALTH
-  else if (strcmp(argv[1], "-stcp") == 0) {
+  else if (configData.sentryMode == SENTRY_MODE_STCP) {
     if (PortSentryStealthModeTCP() == ERROR) {
       Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
       Exit(ERROR);
     }
-  } else if (strcmp(argv[1], "-atcp") == 0) {
+  } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
     if (PortSentryAdvancedStealthModeTCP() == ERROR) {
       Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
       Exit(ERROR);
     }
-  } else if (strcmp(argv[1], "-sudp") == 0) {
+  } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
     if (PortSentryStealthModeUDP() == ERROR) {
       Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
       Exit(ERROR);
     }
-  } else if (strcmp(argv[1], "-audp") == 0) {
+  } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
     if (PortSentryAdvancedStealthModeUDP() == ERROR) {
       Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
       Exit(ERROR);
     }
   }
 #endif
-  else if (strcmp(argv[1], "-udp") == 0) {
+  else if (configData.sentryMode == SENTRY_MODE_UDP) {
     if (PortSentryModeUDP() == ERROR) {
       Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
       Exit(ERROR);
     }
   }
 
-  Exit(TRUE);
-  /* shuts up compiler warning */
-  return (0);
+  Exit(EXIT_SUCCESS);
+
+  return 0;
 }
 
 
@@ -988,29 +977,29 @@ int DisposeTCP(char *target, int port) {
     /* run external command first, hosts.deny second, dead route last */
     if (configData.runCmdFirst) {
       if (strlen(configData.killRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
+        if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
       if (strlen(configData.killHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.killHostsDeny, configData.detectionType) != TRUE)
+        if (KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
       if (strlen(configData.killRoute) > 0)
-        if (KillRoute(target, port, configData.killRoute, configData.detectionType) != TRUE)
+        if (KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
     } else { /* run hosts.deny first, dead route second, external command last */
       if (strlen(configData.killHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.killHostsDeny, configData.detectionType) != TRUE)
+        if (KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
       if (strlen(configData.killRoute) > 0)
-        if (KillRoute(target, port, configData.killRoute, configData.detectionType) != TRUE)
+        if (KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
       if (strlen(configData.killRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
+        if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
     }
   } else if (configData.blockTCP == 2) {
     /* run external command only */
     if (strlen(configData.killRunCmd) > 0)
-      if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
+      if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
         status = FALSE;
   } else {
     Log("attackalert: Ignoring TCP response per configuration file setting.");
@@ -1036,29 +1025,29 @@ int DisposeUDP(char *target, int port) {
     /* run external command first, hosts.deny second, dead route last */
     if (configData.runCmdFirst) {
       if (strlen(configData.killRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
+        if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
       if (strlen(configData.killHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.killHostsDeny, configData.detectionType) != TRUE)
+        if (KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
       if (strlen(configData.killRoute) > 0)
-        if (KillRoute(target, port, configData.killRoute, configData.detectionType) != TRUE)
+        if (KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
     } else { /* run hosts.deny first, dead route second, external command last */
       if (strlen(configData.killHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.killHostsDeny, configData.detectionType) != TRUE)
+        if (KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
       if (strlen(configData.killRoute) > 0)
-        if (KillRoute(target, port, configData.killRoute, configData.detectionType) != TRUE)
+        if (KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
       if (strlen(configData.killRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
+        if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
           status = FALSE;
     }
   } else if (configData.blockUDP == 2) {
     /* run external command only */
     if (strlen(configData.killRunCmd) > 0)
-      if (KillRunCmd(target, port, configData.killRunCmd, configData.detectionType) != TRUE)
+      if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
         status = FALSE;
   } else {
     Log("attackalert: Ignoring UDP response per configuration file setting.");
