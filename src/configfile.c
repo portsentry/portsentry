@@ -96,7 +96,7 @@ struct ConfigData readConfigFile(void) {
 
 static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line) {
 #ifdef DEBUG
-    Log("debug: setConfiguration: %s keySize: %u valueSize: %d configData.sentryMode: %s", buffer, keySize, valueSize, configData.sentryMode);
+    Log("debug: setConfiguration: %s keySize: %u valueSize: %d configData.sentryMode: %s", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
 #endif
 
   if (strncmp(buffer, "BLOCK_TCP", keySize) == 0) {
