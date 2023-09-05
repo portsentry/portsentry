@@ -528,8 +528,7 @@ int SubstString(const char *replace, const char *find, const char *target, char 
 
 #ifdef DEBUG
   Log("debug: SubstString: Processing string: %s %d", target, strlen(target));
-  Log("debug: SubstString: Processing search text: %s %d", replace,
-      strlen(replace));
+  Log("debug: SubstString: Processing search text: %s %d", replace, strlen(replace));
   Log("debug: SubstString: Processing replace text: %s %d", find, strlen(find));
 #endif
 
