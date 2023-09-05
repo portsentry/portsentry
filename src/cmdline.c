@@ -141,6 +141,8 @@ static void Usage(void) {
   printf("--sudp, -sudp\tSet Stealth UDP mode\n");
   printf("--audp, -audp\tSet Advanced UDP mode\n");
   printf("--logoutput, -l [stdout|syslog] - Set Log output (default to stdout)\n");
+  printf("--configfile, -c <path> - Set config file path\n");
+  printf("--daemon, -D\tRun as a daemon\n");
   printf("--debug, -d\tEnable debugging output\n");
   printf("--verbose, -v\tEnable verbose output\n");
   printf("--help, -h\tDisplay this help message\n");
