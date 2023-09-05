@@ -35,7 +35,7 @@ void Log(char *logentry, ...) {
   va_end(argsPtr);
 
   if (configData.logFlags & LOGFLAG_OUTPUT_STDOUT) {
-    printf("%s\n", logbuffer);
+    printf("%s", logbuffer);
   }
 
   if (configData.logFlags & LOGFLAG_OUTPUT_SYSLOG) {
