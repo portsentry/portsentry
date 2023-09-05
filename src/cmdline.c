@@ -88,11 +88,11 @@ struct ConfigData ParseCmdline(int argc, char **argv) {
         }
         break;
       case CMDLINE_CONFIGFILE:
-        if(strlen(optarg) >= (sizeof(cmdlineConfig.configFile) -1)) {
+        if(strlen(optarg) >= (sizeof(cmdlineConfig.configFile) - 1)) {
           fprintf(stderr, "Error: Config file path too long\n");
           Exit(EXIT_FAILURE);
         }
-        SafeConfigFile(cmdlineConfig.configFile, optarg, sizeof(cmdlineConfig.configFile));
+        SafeStrncpy(cmdlineConfig.configFile, optarg, sizeof(cmdlineConfig.configFile));
         break;
       case CMDLINE_DAEMON:
         cmdlineConfig.daemon = TRUE;
@@ -127,6 +127,8 @@ struct ConfigData ParseCmdline(int argc, char **argv) {
     printf("Command Line Configuration:\n");
     PrintConfigData(cmdlineConfig);
   }
+
+  return cmdlineConfig;
 }
 
 static void Usage(void) {
