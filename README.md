@@ -24,7 +24,7 @@ The build.sh script provides a convenient way to build, clean and run tests:
 ### Running CMake manually
 There are a number of compile-time options which can be specified. The most import (and required flag is) **CMAKE_BUILD_TYPE**. It should be set to either **Debug** or **Release**.
 
-Two other very important (recommended) flags are: **NODAEMON** and **SUPPORT_STEALTH**. Set NODAEMON to ON if you plan on running via a daemon service like systemd. In addition, you will in 99% of cases want to set SUPPORT_STEALTH to ON.
+One other very important (recommended) flag is: **SUPPORT_STEALTH**. You will in 99% of cases want to set SUPPORT_STEALTH to ON.
 
 #### Compilation Examples
 
@@ -32,7 +32,7 @@ Two other very important (recommended) flags are: **NODAEMON** and **SUPPORT_STE
 ```
 mkdir release
 cd release
-cmake .. -D CMAKE_BUILD_TYPE=Release -D NODAEMON=ON -D SUPPORT_STEALTH=ON
+cmake .. -D CMAKE_BUILD_TYPE=Release -D SUPPORT_STEALTH=ON
 cmake --build . -v
 ```
 
@@ -40,7 +40,7 @@ cmake --build . -v
 ```
 mkdir debug
 cd debug
-cmake .. -D CMAKE_BUILD_TYPE=Debug -D NODAEMON=ON -D SUPPORT_STEALTH=ON
+cmake .. -D CMAKE_BUILD_TYPE=Debug -D SUPPORT_STEALTH=ON
 cmake --build . -v
 ```
 
