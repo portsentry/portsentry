@@ -70,3 +70,24 @@ void PrintConfigData(const struct ConfigData cd) {
 
   printf("daemon: %s\n", cd.daemon == TRUE ? "true" : "false");
 }
+
+char *GetSentryModeString(const enum SentryMode sentryMode) {
+  switch (sentryMode) {
+    case SENTRY_MODE_NONE:
+      return "none";
+    case SENTRY_MODE_TCP:
+      return "tcp";
+    case SENTRY_MODE_STCP:
+      return "stcp";
+    case SENTRY_MODE_ATCP:
+      return "atcp";
+    case SENTRY_MODE_UDP:
+      return "udp";
+    case SENTRY_MODE_SUDP:
+      return "sudp";
+    case SENTRY_MODE_AUDP:
+      return "audp";
+    default:
+      return "unknown";
+  }
+}
