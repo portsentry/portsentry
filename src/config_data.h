@@ -42,3 +42,4 @@ void ResetConfigData(struct ConfigData *cd);
 void PostProcessConfig(struct ConfigData *cd);
 void PrintConfigData(const struct ConfigData cd);
 char *GetSentryModeString(const enum SentryMode sentryMode);
+void SetConfigData(const struct ConfigData *fileConfig, const struct ConfigData *cmdlineConfig);

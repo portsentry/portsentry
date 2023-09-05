@@ -91,3 +91,11 @@ char *GetSentryModeString(const enum SentryMode sentryMode) {
       return "unknown";
   }
 }
+
+void SetConfigData(const struct ConfigData *fileConfig, const struct ConfigData *cmdlineConfig) {
+  memcpy(&configData, fileConfig, sizeof(struct ConfigData));
+  configData.sentryMode = cmdlineConfig->sentryMode;
+  configData.logFlags = cmdlineConfig->logFlags;
+  memcpy(configData.configFile, cmdlineConfig->configFile, sizeof(configData.configFile));
+  configData.daemon = cmdlineConfig->daemon;
+}
