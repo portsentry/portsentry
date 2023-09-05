@@ -14,22 +14,23 @@ static void stripTrailingSpace(char *buffer);
 static ssize_t getSizeToQuote(char *buffer);
 void validateConfig(void);
 
-int readConfigFile(void) {
+struct ConfigData readConfigFile(void) {
+  struct ConfigData fileConfig;
   FILE *config;
   char buffer[MAXBUF], *ptr;
   size_t keySize, line = 0;
   ssize_t valueSize;
 
-  // FIXME: Validate that configData.detectionType is a valid type
+  ResetConfigData(&fileConfig);
 
   /* Set defaults */
-  if (strncmp(configData.detectionType, "atcp", 4) == 0 || strncmp(configData.detectionType, "audp", 4) == 0) {
-    strcpy(configData.ports, "1024");
+  if (configData.sentryMode == SENTRY_MODE_ATCP || configData.sentryMode == SENTRY_MODE_AUDP) {
+    strcpy(fileConfig.ports, "1024");
   }
 
-  if ((config = fopen(CONFIG_FILE, "r")) == NULL) {
-    Log("adminalert: ERROR: Cannot open config file: %s.\n", CONFIG_FILE);
-    return ERROR;
+  if ((config = fopen(configData.configFile, "r")) == NULL) {
+    Log("adminalert: ERROR: Cannot open config file: %s.\n", configData.configFile);
+    Exit(EXIT_FAILURE);
   }
 
   while (fgets(buffer, MAXBUF, config) != NULL) {
@@ -44,7 +45,7 @@ int readConfigFile(void) {
     if ((keySize = getKeySize(buffer)) == 0) {
       Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
       fclose(config);
-      return ERROR;
+      Exit(EXIT_FAILURE);
     }
 
     ptr = buffer + keySize;
@@ -53,7 +54,7 @@ int readConfigFile(void) {
     if (*ptr != '=') {
       Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
       fclose(config);
-      return ERROR;
+      Exit(EXIT_FAILURE);
     }
     ptr++;
 
@@ -62,14 +63,14 @@ int readConfigFile(void) {
     if (*ptr != '"') {
       Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
       fclose(config);
-      return ERROR;
+      Exit(EXIT_FAILURE);
     }
     ptr++;
 
     if ((valueSize = getSizeToQuote(ptr)) == ERROR) {
       Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
       fclose(config);
-      return ERROR;
+      Exit(EXIT_FAILURE);
     }
 
     setConfiguration(buffer, keySize, ptr, valueSize, line);
@@ -79,11 +80,11 @@ int readConfigFile(void) {
 
 
   /* Add implied config file entries */
-  if (strncmp(configData.detectionType, "atcp", 4) == 0) {
+  if (configData.sentryMode == SENTRY_MODE_ATCP) {
     if (strlen(configData.ports) == 0) {
       snprintf(configData.ports, MAXBUF, "%d", ADVANCED_MODE_PORT_TCP);
     }
-  } else if (strncmp(configData.detectionType, "audp", 4) == 0) {
+  } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
     if (strlen(configData.ports) == 0) {
       snprintf(configData.ports, MAXBUF, "%d", ADVANCED_MODE_PORT_UDP);
     }
@@ -91,13 +92,11 @@ int readConfigFile(void) {
 
   /* Make sure config is valid */
   validateConfig();
-
-  return TRUE;
 }
 
 static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line) {
 #ifdef DEBUG
-    Log("debug: setConfiguration: %s keySize: %u valueSize: %d configData.detectionType: %s", buffer, keySize, valueSize, configData.detectionType);
+    Log("debug: setConfiguration: %s keySize: %u valueSize: %d configData.sentryMode: %s", buffer, keySize, valueSize, configData.sentryMode);
 #endif
 
   if (strncmp(buffer, "BLOCK_TCP", keySize) == 0) {
@@ -165,9 +164,9 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
     }
     if (strlen(configData.blockedFile) < (PATH_MAX - 5)) {
       strncat(configData.blockedFile, ".", 1);
-      strncat(configData.blockedFile, configData.detectionType, 4);
+      strncat(configData.blockedFile, GetSentryModeString(configData.sentryMode), 4);
     } else {
-      Log("adminalert: ERROR: Blocked filename is too long to append detection type file extension: %s\n", configData.blockedFile);
+      Log("adminalert: ERROR: Blocked filename is too long to append sentry mode file extension: %s\n", configData.blockedFile);
       exit(1);
     }
 
@@ -186,42 +185,42 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       exit(1);
     }
   } else if (strncmp(buffer, "TCP_PORTS", keySize) == 0) {
-    if (strncmp(configData.detectionType, "tcp", 3) == 0 || strncmp(configData.detectionType, "stcp", 4) == 0) {
+    if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP) {
       if (copyPrintableString(ptr, configData.ports, MAXBUF) == FALSE) {
       Log("adminalert: ERROR: Unable to copy TCP ports\n");
       exit(1);
       }
     }
   } else if (strncmp(buffer, "UDP_PORTS", keySize) == 0) {
-    if ((strncmp(configData.detectionType, "udp", 3) == 0 || strncmp(configData.detectionType, "sudp", 4) == 0)) {
+    if (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP) {
       if (copyPrintableString(ptr, configData.ports, MAXBUF) == FALSE) {
         Log("adminalert: ERROR: Unable to copy UDP ports\n");
         exit(1);
       }
     }
   } else if (strncmp(buffer, "ADVANCED_PORTS_TCP", keySize) == 0) {
-    if (strncmp(configData.detectionType, "atcp", 4) == 0) {
+    if (configData.sentryMode == SENTRY_MODE_ATCP) {
       if (copyPrintableString(ptr, configData.ports, MAXBUF) == FALSE) {
         Log("adminalert: ERROR: Unable to copy advanced TCP ports\n");
         exit(1);
       }
     }
   } else if (strncmp(buffer, "ADVANCED_PORTS_UDP", keySize) == 0) {
-    if (strncmp(configData.detectionType, "audp", 4) == 0) {
+    if (configData.sentryMode == SENTRY_MODE_AUDP) {
       if (copyPrintableString(ptr, configData.ports, MAXBUF) == FALSE) {
         Log("adminalert: ERROR: Unable to copy advanced UDP ports\n");
         exit(1);
       }
     }
   } else if (strncmp(buffer, "ADVANCED_EXCLUDE_TCP", keySize) == 0) {
-    if (strncmp(configData.detectionType, "atcp", 4) == 0) {
+    if (configData.sentryMode == SENTRY_MODE_ATCP) {
       if (copyPrintableString(ptr, configData.advancedExclude, MAXBUF) == FALSE) {
         Log("adminalert: ERROR: Unable to copy advanced exclude TCP ports\n");
         exit(1);
       }
     }
   } else if (strncmp(buffer, "ADVANCED_EXCLUDE_UDP", keySize) == 0) {
-    if (strncmp(configData.detectionType, "audp", 4) == 0) {
+    if (configData.sentryMode == SENTRY_MODE_AUDP) {
       if (copyPrintableString(ptr, configData.advancedExclude, MAXBUF) == FALSE) {
         Log("adminalert: ERROR: Unable to copy advanced exclude UDP ports\n");
         exit(1);
