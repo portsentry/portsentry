@@ -7,7 +7,6 @@ set(SYSLOG_FACILITY LOG_DAEMON CACHE STRING "Syslog facility to use")
 set(SYSLOG_LEVEL LOG_NOTICE CACHE STRING "Syslog level to use")
 set(MAXSTATE 50 CACHE STRING "Maximum number of hosts to keep in a \"previous connect\" state engine")
 
-option(NODAEMON "Don't daemonize" OFF)
 option(SUPPORT_STEALTH "Enable stealth mode" OFF)
 
 configure_file(config.h.in config.h)
@@ -26,10 +25,6 @@ target_compile_definitions(portsentry PUBLIC LINUX)
 target_compile_definitions(portsentry PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 
 target_link_libraries(portsentry PRIVATE $<$<CONFIG:Debug>:efence>)
-
-if (NODAEMON)
-  target_compile_definitions(portsentry PUBLIC NODAEMON)
-endif()
 
 if (SUPPORT_STEALTH)
   target_compile_definitions(portsentry PUBLIC SUPPORT_STEALTH)
