@@ -127,16 +127,14 @@ int CompareIPs(char *target, char *ignoreAddr, int ignoreNetmaskBits) {
   targetAddr = inet_addr(target);
   netmaskAddr = htonl(0xFFFFFFFF << (32 - ignoreNetmaskBits));
 
-#ifdef DEBUG
-  Log("debug: target %s", target);
-  Log("debug: ignoreAddr %s", ignoreAddr);
-  Log("debug: ignoreNetmaskBits %d", ignoreNetmaskBits);
-  Log("debug: ipAddr %lu", ipAddr);
-  Log("debug: targetAddr %lu", targetAddr);
-  Log("debug: netmask %x", netmaskAddr);
-  Log("debug: mix ipAddr %lu", (ipAddr & netmaskAddr));
-  Log("debug: mix target %lu", (targetAddr & netmaskAddr));
-#endif
+  Debug("target %s", target);
+  Debug("ignoreAddr %s", ignoreAddr);
+  Debug("ignoreNetmaskBits %d", ignoreNetmaskBits);
+  Debug("ipAddr %lu", ipAddr);
+  Debug("targetAddr %lu", targetAddr);
+  Debug("netmask %x", netmaskAddr);
+  Debug("mix ipAddr %lu", (ipAddr & netmaskAddr));
+  Debug("mix target %lu", (targetAddr & netmaskAddr));
 
   /* Network portion mask & op and return */
   if ((ipAddr & netmaskAddr) == (targetAddr & netmaskAddr))
@@ -153,15 +151,12 @@ int NeverBlock(char *target, char *filename) {
   int dest = 0, netmaskBits = 0;
   size_t count = 0;
 
-#ifdef DEBUG
-  Log("debug: NeverBlock: Opening ignore file: %s ", filename);
-#endif
+  Debug("NeverBlock: Opening ignore file: %s ", filename);
+
   if ((input = fopen(filename, "r")) == NULL)
     return (ERROR);
 
-#ifdef DEBUG
-  Log("debug: NeverBlock: Doing lookup for host: %s ", target);
-#endif
+  Debug("NeverBlock: Doing lookup for host: %s ", target);
 
   while (fgets(buffer, MAXBUF, input) != NULL) {
     /* Reset destination counter */
@@ -199,18 +194,14 @@ int NeverBlock(char *target, char *filename) {
     }
 
     if (CompareIPs(target, tempBuffer, netmaskBits)) {
-#ifdef DEBUG
-      Log("debug: NeverBlock: Host: %s found in ignore file with netmask %s", target, netmaskBuffer);
-#endif
+      Debug("NeverBlock: Host: %s found in ignore file with netmask %s", target, netmaskBuffer);
 
       fclose(input);
       return (TRUE);
     }
   } /* end while() */
 
-#ifdef DEBUG
-  Log("debug: NeverBlock: Host: %s NOT found in ignore file", target);
-#endif
+  Debug("NeverBlock: Host: %s NOT found in ignore file", target);
 
   fclose(input);
   return (FALSE);
@@ -228,9 +219,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   current_time = time(0);
   tmptr = localtime_r(&current_time, &tm);
 
-#ifdef DEBUG
-  Log("debug: WriteBlocked: Opening block file: %s ", blockedFilename);
-#endif
+  Debug("WriteBlocked: Opening block file: %s ", blockedFilename);
 
   if ((output = fopen(blockedFilename, "a")) == NULL) {
     Log("adminalert: ERROR: Cannot open blocked file: %s.", blockedFilename);
@@ -243,9 +232,8 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
     blockedStatus = TRUE;
   }
 
-#ifdef DEBUG
-  Log("debug: WriteBlocked: Opening history file: %s ", historyFilename);
-#endif
+  Debug("WriteBlocked: Opening history file: %s ", historyFilename);
+
   if ((output = fopen(historyFilename, "a")) == NULL) {
     Log("adminalert: ERROR: Cannot open history file: %s.", historyFilename);
     historyStatus = FALSE;
@@ -266,9 +254,8 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
 /* This will bind a socket to a port. It works for UDP/TCP */
 int BindSocket(int sockfd, int port) {
   struct sockaddr_in server;
-#ifdef DEBUG
-  Log("debug: BindSocket: Binding to port: %d", port);
-#endif
+
+  Debug("BindSocket: Binding to port: %d", port);
 
   bzero((char *)&server, sizeof(server));
   server.sin_family = AF_INET;
@@ -276,14 +263,10 @@ int BindSocket(int sockfd, int port) {
   server.sin_port = htons(port);
 
   if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
-#ifdef DEBUG
-    Log("debug: BindSocket: Binding failed");
-#endif
+    Debug("BindSocket: Binding failed");
     return (ERROR);
   } else {
-#ifdef DEBUG
-    Log("debug: BindSocket: Binding successful. Doing listen");
-#endif
+    Debug("BindSocket: Binding successful. Doing listen");
     listen(sockfd, 5);
     return (TRUE);
   }
@@ -293,9 +276,7 @@ int BindSocket(int sockfd, int port) {
 int OpenTCPSocket(void) {
   int sockfd;
 
-#ifdef DEBUG
-  Log("debug: OpenTCPSocket: opening TCP socket");
-#endif
+  Debug("OpenTCPSocket: opening TCP socket");
 
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     return (ERROR);
@@ -307,9 +288,7 @@ int OpenTCPSocket(void) {
 int OpenUDPSocket(void) {
   int sockfd;
 
-#ifdef DEBUG
-  Log("debug: openUDPSocket opening UDP socket");
-#endif
+  Debug("openUDPSocket opening UDP socket");
 
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     return (ERROR);
@@ -322,9 +301,7 @@ int OpenUDPSocket(void) {
 int OpenRAWTCPSocket(void) {
   int sockfd;
 
-#ifdef DEBUG
-  Log("debug: OpenRAWTCPSocket: opening RAW TCP socket");
-#endif
+  Debug("OpenRAWTCPSocket: opening RAW TCP socket");
 
   if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP)) < 0)
     return (ERROR);
@@ -336,9 +313,7 @@ int OpenRAWTCPSocket(void) {
 int OpenRAWUDPSocket(void) {
   int sockfd;
 
-#ifdef DEBUG
-  Log("debug: OpenRAWUDPSocket: opening RAW UDP socket");
-#endif
+  Debug("OpenRAWUDPSocket: opening RAW UDP socket");
 
   if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP)) < 0)
     return (ERROR);
@@ -380,9 +355,7 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
     return (ERROR);
   }
 
-#ifdef DEBUG
-  Log("debug: KillRoute: running route command: %s", commandStringFinal);
-#endif
+  Debug("KillRoute: running route command: %s", commandStringFinal);
 
   /* Kill the bastard and report a status */
   killStatus = system(commandStringFinal);
@@ -456,9 +429,7 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
 
   snprintf(portString, MAXBUF, "%d", port);
 
-#ifdef DEBUG
-  Log("debug: KillHostsDeny: parsing string for block: %s", killString);
-#endif
+  Debug("KillHostsDeny: parsing string for block: %s", killString);
 
   substStatus =
       SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
@@ -480,9 +451,7 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
     return (ERROR);
   }
 
-#ifdef DEBUG
-  Log("debug: KillHostsDeny: result string for block: %s", commandStringFinal);
-#endif
+  Debug("KillHostsDeny: result string for block: %s", commandStringFinal);
 
   if ((output = fopen(WRAPPER_HOSTS_DENY, "a")) == NULL) {
     Log("adminalert: cannot open hosts.deny file: %s for blocking.", WRAPPER_HOSTS_DENY);
@@ -503,9 +472,8 @@ int IsBlocked(char *target, char *filename) {
   char *ipOffset;
   size_t count;
 
-#ifdef DEBUG
-  Log("debug: IsBlocked: Opening block file: %s ", filename);
-#endif
+  Debug("IsBlocked: Opening block file: %s ", filename);
+
   if ((input = fopen(filename, "r")) == NULL) {
     Log("adminalert: ERROR: Cannot open blocked file: %s for reading. Will create.", filename);
     return (FALSE);
@@ -522,17 +490,13 @@ int IsBlocked(char *target, char *filename) {
         }
       }
       if (strcmp(target, tempBuffer) == 0) {
-#ifdef DEBUG
-        Log("debug: isBlocked: Host: %s found in blocked file", target);
-#endif
+        Debug("isBlocked: Host: %s found in blocked file", target);
         fclose(input);
         return (TRUE);
       }
     }
   }
-#ifdef DEBUG
-  Log("debug: IsBlocked: Host: %s NOT found in blocked file", target);
-#endif
+  Debug("IsBlocked: Host: %s NOT found in blocked file", target);
   fclose(input);
   return (FALSE);
 }
@@ -554,18 +518,14 @@ int SubstString(const char *replace, const char *find, const char *target, char 
   char tempString[MAXBUF], *tempStringPtr;
   size_t replaceCount = 0;
 
-#ifdef DEBUG
-  Log("debug: SubstString: Processing string: %s %d", target, strlen(target));
-  Log("debug: SubstString: Processing search text: %s %d", replace, strlen(replace));
-  Log("debug: SubstString: Processing replace text: %s %d", find, strlen(find));
-#endif
+  Debug("SubstString: Processing string: %s %d", target, strlen(target));
+  Debug("SubstString: Processing search text: %s %d", replace, strlen(replace));
+  Debug("SubstString: Processing replace text: %s %d", find, strlen(find));
 
   /* string not found in target */
   if (strstr(target, find) == NULL) {
     strncpy(result, target, MAXBUF);
-#ifdef DEBUG
-    Log("debug: SubstString: Result string: %s", result);
-#endif
+    Debug("SubstString: Result string: %s", result);
     return (numberOfSubst);
   } else if ((strlen(target)) + (strlen(replace)) + (strlen(find)) > MAXBUF) { /* String/victim/target too long */
     return (ERROR);
@@ -591,9 +551,7 @@ int SubstString(const char *replace, const char *find, const char *target, char 
   }
 
   strncpy(result, tempString, MAXBUF);
-#ifdef DEBUG
-  Log("debug: SubstString: Result string: %s", result);
-#endif
+  Debug("SubstString: Result string: %s", result);
   return (numberOfSubst);
 }
 

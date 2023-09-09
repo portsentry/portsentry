@@ -34,10 +34,7 @@ int CheckStateEngine(char *target) {
         /* if we've exceeded we can stop this noise */
         if (++gotOne >= configData.configTriggerCount) {
           scanDetectTrigger = TRUE;
-#ifdef DEBUG
-          Log("debug: CheckStateEngine: host: %s has exceeded trigger value: %d",
-              gblScanDetectHost[count], configData.configTriggerCount);
-#endif
+          Debug("CheckStateEngine: host: %s has exceeded trigger value: %d", gblScanDetectHost[count], configData.configTriggerCount);
           break;
         }
       } else {
@@ -57,11 +54,8 @@ int CheckStateEngine(char *target) {
       gblScanDetectCount++;
     }
 
-#ifdef DEBUG
     for (count = 0; count < MAXSTATE; count++)
-      Log("debug: CheckStateEngine: state engine host: %s -> position: %d Detected: %d",
-          gblScanDetectHost[count], count, scanDetectTrigger);
-#endif
+      Debug("CheckStateEngine: state engine host: %s -> position: %d Detected: %d", gblScanDetectHost[count], count, scanDetectTrigger);
     /* end catch to set state if configData.configTriggerCount == 0 */
     if (gotOne >= configData.configTriggerCount)
       scanDetectTrigger = TRUE;

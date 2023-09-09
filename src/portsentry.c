@@ -691,9 +691,7 @@ int PortSentryModeTCP(void) {
       Log("adminalert: ERROR: select call failed. Shutting down.");
       return (ERROR);
     } else if (selectResult == 0) {
-#ifdef DEBUG
-      Log("Select timeout");
-#endif
+      Debug("Select timeout");
     } else if (selectResult > 0) { /* select is reporting a waiting socket. Poll them all to find out which */
       for (count = 0; count < boundPortCount; count++) {
         if (FD_ISSET(openSockfd[count], &selectFds)) {
@@ -823,9 +821,7 @@ int PortSentryModeUDP(void) {
       Log("adminalert: ERROR: select call failed. Shutting down.");
       return (ERROR);
     } else if (selectResult == 0) {
-#ifdef DEBUG
-      Log("Select timeout");
-#endif
+      Debug("Select timeout");
     } else if (selectResult > 0) { /* select is reporting a waiting socket. Poll them all to find out which */
       for (count = 0; count < portCount; count++) {
         if (FD_ISSET(openSockfd[count], &selectFds)) {
@@ -840,9 +836,7 @@ int PortSentryModeUDP(void) {
 
           /* copy the clients address into our buffer for nuking */
           SafeStrncpy(target, (char *)inet_ntoa(client.sin_addr), IPMAXBUF);
-#ifdef DEBUG
-          Log("debug: PortSentryModeUDP: accepted UDP connection from: %s", target);
-#endif
+          Debug("PortSentryModeUDP: accepted UDP connection from: %s", target);
           /* check if we should ignore this IP */
           result = NeverBlock(target, configData.ignoreFile);
           if (result == ERROR) {
@@ -889,14 +883,11 @@ int PortSentryModeUDP(void) {
 int DisposeTCP(char *target, int port) {
   int status = TRUE;
 
-#ifdef DEBUG
-  Log("debug: DisposeTCP: disposing of host %s on port %d with option: %d", target, port, configData.blockTCP);
-  Log("debug: DisposeTCP: killRunCmd: %s", configData.killRunCmd);
-  Log("debug: DisposeTCP: configData.runCmdFirst: %d", configData.runCmdFirst);
-  Log("debug: DisposeTCP: killHostsDeny: %s", configData.killHostsDeny);
-  Log("debug: DisposeTCP: killRoute: %s  %d", configData.killRoute,
-      strlen(configData.killRoute));
-#endif
+  Debug("DisposeTCP: disposing of host %s on port %d with option: %d", target, port, configData.blockTCP);
+  Debug("DisposeTCP: killRunCmd: %s", configData.killRunCmd);
+  Debug("DisposeTCP: configData.runCmdFirst: %d", configData.runCmdFirst);
+  Debug("DisposeTCP: killHostsDeny: %s", configData.killHostsDeny);
+  Debug("DisposeTCP: killRoute: %s  %d", configData.killRoute, strlen(configData.killRoute));
   /* Should we ignore TCP from active response? */
   if (configData.blockTCP == 1) {
     /* run external command first, hosts.deny second, dead route last */
@@ -937,14 +928,11 @@ int DisposeTCP(char *target, int port) {
 int DisposeUDP(char *target, int port) {
   int status = TRUE;
 
-#ifdef DEBUG
-  Log("debug: DisposeUDP: disposing of host %s on port %d with option: %d", target, port, configData.blockUDP);
-  Log("debug: DisposeUDP: killRunCmd: %d", configData.killRunCmd);
-  Log("debug: DisposeUDP: configData.runCmdFirst: %s", configData.runCmdFirst);
-  Log("debug: DisposeUDP: killHostsDeny: %s", configData.killHostsDeny);
-  Log("debug: DisposeUDP: killRoute: %s  %d", configData.killRoute,
-      strlen(configData.killRoute));
-#endif
+  Debug("DisposeUDP: disposing of host %s on port %d with option: %d", target, port, configData.blockUDP);
+  Debug("DisposeUDP: killRunCmd: %d", configData.killRunCmd);
+  Debug("DisposeUDP: configData.runCmdFirst: %s", configData.runCmdFirst);
+  Debug("DisposeUDP: killHostsDeny: %s", configData.killHostsDeny);
+  Debug("DisposeUDP: killRoute: %s  %d", configData.killRoute, strlen(configData.killRoute));
   /* Should we ignore TCP from active response? */
   if (configData.blockUDP == 1) {
     /* run external command first, hosts.deny second, dead route last */
@@ -1019,9 +1007,7 @@ int SmartVerifyTCP(int port) {
     return (FALSE);
   } else {
     if (BindSocket(testSockfd, port) == ERROR) {
-#ifdef DEBUG
-      Log("debug: SmartVerify: Smart-Verify Port In Use: %d", port);
-#endif
+      Debug("SmartVerify: Smart-Verify Port In Use: %d", port);
       close(testSockfd);
       return (TRUE);
     }
@@ -1045,9 +1031,7 @@ int SmartVerifyUDP(int port) {
     return (FALSE);
   } else {
     if (BindSocket(testSockfd, port) == ERROR) {
-#ifdef DEBUG
-      Log("debug: SmartVerify: Smart-Verify Port In Use: %d", port);
-#endif
+      Debug("SmartVerify: Smart-Verify Port In Use: %d", port);
       close(testSockfd);
       return (TRUE);
     }

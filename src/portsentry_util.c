@@ -48,9 +48,7 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
 char *CleanIpAddr(char *cleanAddr, const char *dirtyAddr) {
   int count = 0, maxdot = 0, maxoctet = 0;
 
-#ifdef DEBUG
-  Log("debug: cleanAddr: Cleaning Ip address: %s", dirtyAddr);
-#endif
+  Debug("cleanAddr: Cleaning Ip address: %s", dirtyAddr);
 
   memset(cleanAddr, '\0', IPMAXBUF);
   /* dirtyAddr must be valid */
@@ -77,9 +75,7 @@ char *CleanIpAddr(char *cleanAddr, const char *dirtyAddr) {
     }
   }
 
-#ifdef DEBUG
-  Log("debug: cleanAddr: Cleaned IpAddress: %s Dirty IpAddress: %s", cleanAddr, dirtyAddr);
-#endif
+  Debug("cleanAddr: Cleaned IpAddress: %s Dirty IpAddress: %s", cleanAddr, dirtyAddr);
 
   return (cleanAddr);
 }
@@ -98,9 +94,7 @@ int CleanAndResolve(char *resolvedHost, const char *unresolvedHost) {
   struct hostent *hostPtr = NULL;
   struct in_addr addr;
 
-#ifdef DEBUG
-  Log("debug: CleanAndResolv: Resolving address: %s", unresolvedHost);
-#endif
+  Debug("CleanAndResolv: Resolving address: %s", unresolvedHost);
 
   memset(resolvedHost, '\0', DNSMAXBUF);
   /* unresolvedHost must be valid */
@@ -117,9 +111,7 @@ int CleanAndResolve(char *resolvedHost, const char *unresolvedHost) {
   else
     snprintf(resolvedHost, DNSMAXBUF, "%s", unresolvedHost);
 
-#ifdef DEBUG
-  Log("debug: CleanAndResolve: Cleaned Resolved: %s Dirty Unresolved: %s", resolvedHost, unresolvedHost);
-#endif
+  Debug("CleanAndResolve: Cleaned Resolved: %s Dirty Unresolved: %s", resolvedHost, unresolvedHost);
 
   return (TRUE);
 }
