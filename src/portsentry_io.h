@@ -20,6 +20,8 @@
 /* prototypes */
 int WriteBlocked(char *, char *, int, char *, char *, char *);
 void Log(char *, ...);
+void Debug(char *logentry, ...);
+void Verbose(char *logentry, ...);
 void Exit(int);
 int DaemonSeed(void);
 int NeverBlock(char *, char *);

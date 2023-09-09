@@ -22,20 +22,17 @@
 #include "config_data.h"
 
 static uint8_t isSyslogOpen = FALSE;
+enum LogType { LogTypeNone, LogTypeDebug, LogTypeVerbose };
 
-/* Main logging function to surrogate syslog */
-void Log(char *logentry, ...) {
+static void LogEntry(enum LogType logType, char *logentry, va_list ap);
+
+static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr) {
   char logbuffer[MAXBUF];
-
-  va_list argsPtr;
-  va_start(argsPtr, logentry);
 
   vsnprintf(logbuffer, MAXBUF, logentry, argsPtr);
 
-  va_end(argsPtr);
-
   if (configData.logFlags & LOGFLAG_OUTPUT_STDOUT) {
-    printf("%s\n", logbuffer);
+    printf("%s%s\n", (logType == LogTypeDebug) ? "debug: " : "", logbuffer);
   }
 
   if (configData.logFlags & LOGFLAG_OUTPUT_SYSLOG) {
@@ -43,8 +40,39 @@ void Log(char *logentry, ...) {
       openlog("portsentry", LOG_PID, SYSLOG_FACILITY);
       isSyslogOpen = TRUE;
     }
-    syslog(SYSLOG_LEVEL, "%s", logbuffer);
+    syslog(SYSLOG_LEVEL, "%s%s", (logType == LogTypeDebug) ? "debug: " : "", logbuffer);
   }
+}
+
+void Log(char *logentry, ...) {
+  va_list argsPtr;
+  va_start(argsPtr, logentry);
+  LogEntry(LogTypeNone, logentry, argsPtr);
+  va_end(argsPtr);
+}
+
+void Debug(char *logentry, ...) {
+  va_list argsPtr;
+
+  if ((configData.logFlags & LOGFLAG_DEBUG) == 0) {
+    return;
+  }
+
+  va_start(argsPtr, logentry);
+  LogEntry(LogTypeDebug, logentry, argsPtr);
+  va_end(argsPtr);
+}
+
+void Verbose(char *logentry, ...) {
+  va_list argsPtr;
+
+  if ((configData.logFlags & LOGFLAG_VERBOSE) == 0) {
+    return;
+  }
+
+  va_start(argsPtr, logentry);
+  LogEntry(LogTypeVerbose, logentry, argsPtr);
+  va_end(argsPtr);
 }
 
 void Exit(int status) {
