@@ -295,11 +295,11 @@ int PortSentryStealthModeTCP(void) {
 /****************************************************************/
 int PortSentryAdvancedStealthModeTCP(void) {
   int result = TRUE, scanDetectTrigger = TRUE, hotPort = TRUE;
-  int openSockfd = 0, smartVerify = FALSE;
+  int openSockfd = 0, smartVerify = FALSE, i;
   unsigned int incomingPort = 0;
   unsigned int count = 0, inUsePorts[MAXSOCKS], portCount = 0;
   char target[IPMAXBUF];
-  char resolvedHost[DNSMAXBUF], *temp, *packetType;
+  char resolvedHost[DNSMAXBUF], *packetType;
   struct in_addr addr;
   struct iphdr ip;
   struct tcphdr tcp;
@@ -320,7 +320,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
 
   // FIXME: Don't add duplicate ports in inUsePorts
   if (configData.tcpAdvancedExcludePortsLength > 0) {
-    for (count = 0; count < configData.tcpAdvancedExcludePortsLength; count++) {
+    for (i = 0; i < configData.tcpAdvancedExcludePortsLength; i++) {
       inUsePorts[portCount++] = configData.tcpAdvancedExcludePorts[count];
       Log("Advanced mode will manually exclude port: %d ", inUsePorts[portCount - 1]);
     }
@@ -513,11 +513,11 @@ int PortSentryStealthModeUDP(void) {
 /****************************************************************/
 int PortSentryAdvancedStealthModeUDP(void) {
   int result = TRUE, scanDetectTrigger = TRUE, hotPort = TRUE;
-  int openSockfd = 0, smartVerify = FALSE;
+  int openSockfd = 0, smartVerify = FALSE, i;
   unsigned int incomingPort = 0;
   unsigned int count = 0, inUsePorts[MAXSOCKS], portCount = 0;
   char target[IPMAXBUF];
-  char resolvedHost[DNSMAXBUF], *temp;
+  char resolvedHost[DNSMAXBUF];
   struct in_addr addr;
   struct iphdr ip;
   struct udphdr udp;
@@ -538,7 +538,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
 
   // FIXME: Don't add duplicate ports in inUsePorts
   if (configData.udpAdvancedExcludePortsLength > 0) {
-    for (count = 0; count < configData.udpAdvancedExcludePortsLength; count++) {
+    for (i = 0; i < configData.udpAdvancedExcludePortsLength; i++) {
       inUsePorts[portCount++] = configData.udpAdvancedExcludePorts[count];
       Log("Advanced mode will manually exclude port: %d ", inUsePorts[portCount - 1]);
     }

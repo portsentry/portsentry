@@ -30,6 +30,7 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <limits.h>
+#include <stdint.h>
 #include <sys/param.h>
 #include <sys/types.h>
 #ifndef _LINUX_C_LIB_VERSION
