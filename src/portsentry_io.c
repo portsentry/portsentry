@@ -19,6 +19,9 @@
 #include "portsentry.h"
 #include "portsentry_io.h"
 #include "portsentry_util.h"
+#include "config_data.h"
+
+static uint8_t isSyslogOpen = FALSE;
 
 /* Main logging function to surrogate syslog */
 void Log(char *logentry, ...) {
@@ -31,14 +34,27 @@ void Log(char *logentry, ...) {
 
   va_end(argsPtr);
 
-  openlog("portsentry", LOG_PID, SYSLOG_FACILITY);
-  syslog(SYSLOG_LEVEL, "%s", logbuffer);
-  closelog();
+  if (configData.logFlags & LOGFLAG_OUTPUT_STDOUT) {
+    printf("%s", logbuffer);
+  }
+
+  if (configData.logFlags & LOGFLAG_OUTPUT_SYSLOG) {
+    if(isSyslogOpen == FALSE) {
+      openlog("portsentry", LOG_PID, SYSLOG_FACILITY);
+      isSyslogOpen = TRUE;
+    }
+    syslog(SYSLOG_LEVEL, "%s", logbuffer);
+  }
 }
 
 void Exit(int status) {
-  Log("securityalert: PortSentry is shutting down\n");
-  Log("adminalert: PortSentry is shutting down\n");
+  Log("PortSentry is shutting down\n");
+
+  if (isSyslogOpen == TRUE) {
+    closelog();
+    isSyslogOpen = FALSE;
+  }
+
   exit(status);
 }
 
@@ -479,7 +495,7 @@ int IsBlocked(char *target, char *filename) {
       }
       if (strcmp(target, tempBuffer) == 0) {
 #ifdef DEBUG
-        Log("debug: isBlocked: Host: %s found in blocked  file\n", target);
+        Log("debug: isBlocked: Host: %s found in blocked file\n", target);
 #endif
         fclose(input);
         return (TRUE);
@@ -512,8 +528,7 @@ int SubstString(const char *replace, const char *find, const char *target, char 
 
 #ifdef DEBUG
   Log("debug: SubstString: Processing string: %s %d", target, strlen(target));
-  Log("debug: SubstString: Processing search text: %s %d", replace,
-      strlen(replace));
+  Log("debug: SubstString: Processing search text: %s %d", replace, strlen(replace));
   Log("debug: SubstString: Processing replace text: %s %d", find, strlen(find));
 #endif
 

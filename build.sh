@@ -9,7 +9,7 @@ elif [ "$ACTION" == "debug" ]; then
   if [ ! -d "debug" ]; then
     mkdir debug
     cd debug
-    cmake .. -D CMAKE_BUILD_TYPE=Debug -D NODAEMON=ON -D SUPPORT_STEALTH=ON
+    cmake .. -D CMAKE_BUILD_TYPE=Debug -D SUPPORT_STEALTH=ON
     cd ..
   fi
   cd debug
@@ -19,7 +19,7 @@ elif [ "$ACTION" == "release" ]; then
   if [ ! -d "release" ]; then
     mkdir release
     cd release
-    cmake .. -D CMAKE_BUILD_TYPE=Release -D NODAEMON=ON -D SUPPORT_STEALTH=ON
+    cmake .. -D CMAKE_BUILD_TYPE=Release -D SUPPORT_STEALTH=ON
     cd ..
   fi
   cd release

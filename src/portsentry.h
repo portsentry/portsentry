@@ -30,6 +30,7 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <limits.h>
+#include <stdint.h>
 #include <sys/param.h>
 #include <sys/types.h>
 #ifndef _LINUX_C_LIB_VERSION
@@ -70,7 +71,6 @@ int PortSentryModeTCP(void);
 int PortSentryModeUDP(void);
 int DisposeUDP(char *, int);
 int DisposeTCP(char *, int);
-void Usage(void);
 int SmartVerifyTCP(int);
 int SmartVerifyUDP(int);
 

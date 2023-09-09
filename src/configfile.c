@@ -5,59 +5,30 @@
 #include "portsentry.h"
 #include "portsentry_io.h"
 #include "portsentry_util.h"
+#include "config_data.h"
 
-extern char gblKillRoute[MAXBUF];
-extern char gblKillHostsDeny[MAXBUF];
-extern char gblKillRunCmd[MAXBUF];
-extern char gblDetectionType[MAXBUF];
-extern char gblPorts[MAXBUF];
-extern char gblAdvancedExclude[MAXBUF];
-extern char gblPortBanner[MAXBUF];
-
-extern char gblBlockedFile[PATH_MAX];
-extern char gblHistoryFile[PATH_MAX];
-extern char gblIgnoreFile[PATH_MAX];
-
-extern int gblBlockTCP;
-extern int gblBlockUDP;
-extern int gblRunCmdFirst;
-extern int gblResolveHost;
-extern int gblConfigTriggerCount;
-
-static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line);
+static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
+static void validateConfig(struct ConfigData *fileConfig);
+static void mergeToConfigData(struct ConfigData *fileConfig);
 static char *skipSpaceAndTab(char *buffer);
 static size_t getKeySize(char *buffer);
 static void stripTrailingSpace(char *buffer);
 static ssize_t getSizeToQuote(char *buffer);
-void validateConfig(void);
+static int parsePortsList(char *str, uint16_t *ports, int *portsLength, const int maxPorts);
+static int StrToUint16_t(const char *str, uint16_t *val);
 
-int readConfigFile(void) {
+void readConfigFile(void) {
+  struct ConfigData fileConfig;
   FILE *config;
   char buffer[MAXBUF], *ptr;
   size_t keySize, line = 0;
   ssize_t valueSize;
 
-  // FIXME: Validate that gblDetectionType is a valid type
+  ResetConfigData(&fileConfig);
 
-  /* Set defaults */
-  bzero(gblKillRoute, MAXBUF);
-  bzero(gblKillHostsDeny, MAXBUF);
-  bzero(gblKillRunCmd, MAXBUF);
-  bzero(gblPorts, MAXBUF);
-  bzero(gblAdvancedExclude, MAXBUF);
-  bzero(gblPortBanner, MAXBUF);
-
-  bzero(gblBlockedFile, PATH_MAX);
-  bzero(gblHistoryFile, PATH_MAX);
-  bzero(gblIgnoreFile, PATH_MAX);
-
-  if (strncmp(gblDetectionType, "atcp", 4) == 0 || strncmp(gblDetectionType, "audp", 4) == 0) {
-    strcpy(gblPorts, "1024");
-  }
-
-  if ((config = fopen(CONFIG_FILE, "r")) == NULL) {
-    Log("adminalert: ERROR: Cannot open config file: %s.\n", CONFIG_FILE);
-    return ERROR;
+  if ((config = fopen(configData.configFile, "r")) == NULL) {
+    fprintf(stderr, "Cannot open config file: %s.\n", configData.configFile);
+    Exit(EXIT_FAILURE);
   }
 
   while (fgets(buffer, MAXBUF, config) != NULL) {
@@ -70,219 +41,239 @@ int readConfigFile(void) {
     stripTrailingSpace(buffer);
 
     if ((keySize = getKeySize(buffer)) == 0) {
-      Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
+      fprintf(stderr, "Invalid config file entry at line %lu\n", line);
       fclose(config);
-      return ERROR;
+      Exit(EXIT_FAILURE);
     }
 
     ptr = buffer + keySize;
     ptr = skipSpaceAndTab(ptr);
 
     if (*ptr != '=') {
-      Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
+      fprintf(stderr, "Invalid config file entry at line %lu\n", line);
       fclose(config);
-      return ERROR;
+      Exit(EXIT_FAILURE);
     }
     ptr++;
 
     ptr = skipSpaceAndTab(ptr);
 
     if (*ptr != '"') {
-      Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
+      fprintf(stderr, "Invalid config file entry at line %lu\n", line);
       fclose(config);
-      return ERROR;
+      Exit(EXIT_FAILURE);
     }
     ptr++;
 
     if ((valueSize = getSizeToQuote(ptr)) == ERROR) {
-      Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
+      fprintf(stderr, "Invalid config file entry at line %lu\n", line);
       fclose(config);
-      return ERROR;
+      Exit(EXIT_FAILURE);
     }
 
-    setConfiguration(buffer, keySize, ptr, valueSize, line);
+    setConfiguration(buffer, keySize, ptr, valueSize, line, &fileConfig);
   }
 
   fclose(config);
 
-
-  /* Add implied config file entries */
-  if (strncmp(gblDetectionType, "atcp", 4) == 0) {
-    if (strlen(gblPorts) == 0) {
-      snprintf(gblPorts, MAXBUF, "%d", ADVANCED_MODE_PORT_TCP);
-    }
-  } else if (strncmp(gblDetectionType, "audp", 4) == 0) {
-    if (strlen(gblPorts) == 0) {
-      snprintf(gblPorts, MAXBUF, "%d", ADVANCED_MODE_PORT_UDP);
-    }
-  }
+  // Set default values if not set in config file
+  if(fileConfig.tcpAdvancedPort == 0)
+    fileConfig.tcpAdvancedPort = ADVANCED_MODE_PORT_TCP;
+  if(fileConfig.udpAdvancedPort == 0)
+    fileConfig.udpAdvancedPort = ADVANCED_MODE_PORT_UDP;
 
   /* Make sure config is valid */
-  validateConfig();
+  validateConfig(&fileConfig);
 
-  return TRUE;
+  mergeToConfigData(&fileConfig);
 }
 
-static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line) {
+static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig) {
 #ifdef DEBUG
-    Log("debug: setConfiguration: %s keySize: %u valueSize: %d gblDetectionType: %s", buffer, keySize, valueSize, gblDetectionType);
+    fprintf(stderr, "setConfiguration: %s keySize: %lu valueSize: %ld sentryMode: %s\n", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
 #endif
 
   if (strncmp(buffer, "BLOCK_TCP", keySize) == 0) {
     if (strncmp(ptr, "1", valueSize) == 0) {
-      gblBlockTCP = TRUE;
+      fileConfig->blockTCP = TRUE;
     } else if (strncmp(ptr, "0", valueSize) == 0) {
-      gblBlockTCP = FALSE;
+      fileConfig->blockTCP = FALSE;
     } else {
-      Log("adminalert: ERROR: Invalid config file entry for BLOCK_TCP\n");
+      fprintf(stderr, "Invalid config file entry for BLOCK_TCP\n");
       exit(1);
     }
   } else if (strncmp(buffer, "BLOCK_UDP", keySize) == 0) {
     if (strncmp(ptr, "1", valueSize) == 0) {
-      gblBlockUDP = TRUE;
+      fileConfig->blockUDP = TRUE;
     } else if (strncmp(ptr, "0", valueSize) == 0) {
-      gblBlockUDP = FALSE;
+      fileConfig->blockUDP = FALSE;
     } else {
-      Log("adminalert: ERROR: Invalid config file entry for BLOCK_UDP\n");
+      fprintf(stderr, "Invalid config file entry for BLOCK_UDP\n");
       exit(1);
     }
   } else if (strncmp(buffer, "RESOLVE_HOST", keySize) == 0) {
     if (strncmp(ptr, "1", valueSize) == 0) {
-      gblResolveHost = TRUE;
+      fileConfig->resolveHost = TRUE;
     } else if (strncmp(ptr, "0", valueSize) == 0) {
-      gblResolveHost = FALSE;
+      fileConfig->resolveHost = FALSE;
     } else {
-      Log("adminalert: ERROR: Invalid config file entry for RESOLVE_HOST\n");
+      fprintf(stderr, "Invalid config file entry for RESOLVE_HOST\n");
       exit(1);
     }
   } else if (strncmp(buffer, "SCAN_TRIGGER", keySize) == 0) {
-    gblConfigTriggerCount = getLong(ptr);
+    fileConfig->configTriggerCount = getLong(ptr);
 
-    if (gblConfigTriggerCount < 0) {
-      Log("adminalert: ERROR: Invalid config file entry for SCAN_TRIGGER\n");
+    if (fileConfig->configTriggerCount < 0) {
+      fprintf(stderr, "Invalid config file entry for SCAN_TRIGGER\n");
       exit(1);
     }
   } else if (strncmp(buffer, "KILL_ROUTE", keySize) == 0) {
-    if (copyPrintableString(ptr, gblKillRoute, MAXBUF) == FALSE) {
-      Log("adminalert: ERROR: Unable to copy kill route\n");
+    if (copyPrintableString(ptr, fileConfig->killRoute, MAXBUF) == FALSE) {
+      fprintf(stderr, "Unable to copy kill route\n");
       exit(1);
     }
   } else if (strncmp(buffer, "KILL_HOSTS_DENY", keySize) == 0) {
-    if (copyPrintableString(ptr, gblKillHostsDeny, MAXBUF) == FALSE) {
-      Log("adminalert: ERROR: Unable to copy kill hosts deny\n");
+    if (copyPrintableString(ptr, fileConfig->killHostsDeny, MAXBUF) == FALSE) {
+      fprintf(stderr, "Unable to copy kill hosts deny\n");
       exit(1);
     }
   } else if (strncmp(buffer, "KILL_RUN_CMD", keySize) == 0) {
-    if (copyPrintableString(ptr, gblKillRunCmd, MAXBUF) == FALSE) {
-      Log("adminalert: ERROR: Unable to copy kill run command\n");
+    if (copyPrintableString(ptr, fileConfig->killRunCmd, MAXBUF) == FALSE) {
+      fprintf(stderr, "Unable to copy kill run command\n");
       exit(1);
     }
   } else if (strncmp(buffer, "KILL_RUN_CMD_FIRST", keySize) == 0) {
     if (strncmp(ptr, "1", valueSize) == 0) {
-      gblRunCmdFirst = TRUE;
+      fileConfig->runCmdFirst = TRUE;
     } else if (strncmp(ptr, "0", valueSize) == 0) {
-      gblRunCmdFirst = FALSE;
+      fileConfig->runCmdFirst = FALSE;
     } else {
-      Log("adminalert: ERROR: Invalid config file entry for KILL_RUN_CMD_FIRST\n");
+      fprintf(stderr, "Invalid config file entry for KILL_RUN_CMD_FIRST\n");
       exit(1);
     }
   } else if (strncmp(buffer, "BLOCKED_FILE", keySize) == 0) {
-    if (copyPrintableString(ptr, gblBlockedFile, PATH_MAX) == FALSE) {
-      Log("adminalert: ERROR: Unable to copy blocked file path\n");
+    if (copyPrintableString(ptr, fileConfig->blockedFile, PATH_MAX) == FALSE) {
+      fprintf(stderr, "Unable to copy blocked file path\n");
       exit(1);
     }
-    if (strlen(gblBlockedFile) < (PATH_MAX - 5)) {
-      strncat(gblBlockedFile, ".", 1);
-      strncat(gblBlockedFile, gblDetectionType, 4);
+    if (strlen(fileConfig->blockedFile) < (PATH_MAX - 5)) {
+      strncat(fileConfig->blockedFile, ".", 1);
+      strncat(fileConfig->blockedFile, GetSentryModeString(configData.sentryMode), 4);
     } else {
-      Log("adminalert: ERROR: Blocked filename is too long to append detection type file extension: %s\n", gblBlockedFile);
+      fprintf(stderr, "Blocked filename is too long to append sentry mode file extension: %s\n", fileConfig->blockedFile);
       exit(1);
     }
 
-    if (testFileAccess(gblBlockedFile, "w") == FALSE) {
-      Log("adminalert: ERROR: Unable to open block file for writing: %s\n", gblBlockedFile);
+    if (testFileAccess(fileConfig->blockedFile, "w") == FALSE) {
+      fprintf(stderr, "Unable to open block file for writing: %s\n", fileConfig->blockedFile);
       exit(1);
     }
   } else if (strncmp(buffer, "HISTORY_FILE", keySize) == 0) {
-    if (copyPrintableString(ptr, gblHistoryFile, PATH_MAX) == FALSE) {
-      Log("adminalert: ERROR: Unable to copy history file path\n");
+    if (copyPrintableString(ptr, fileConfig->historyFile, PATH_MAX) == FALSE) {
+      fprintf(stderr, "Unable to copy history file path\n");
       exit(1);
     }
   } else if (strncmp(buffer, "IGNORE_FILE", keySize) == 0) {
-    if (copyPrintableString(ptr, gblIgnoreFile, PATH_MAX) == FALSE) {
-      Log("adminalert: ERROR: Unable to copy ignore file path\n");
+    if (copyPrintableString(ptr, fileConfig->ignoreFile, PATH_MAX) == FALSE) {
+      fprintf(stderr, "Unable to copy ignore file path\n");
       exit(1);
     }
   } else if (strncmp(buffer, "TCP_PORTS", keySize) == 0) {
-    if (strncmp(gblDetectionType, "tcp", 3) == 0 || strncmp(gblDetectionType, "stcp", 4) == 0) {
-      if (copyPrintableString(ptr, gblPorts, MAXBUF) == FALSE) {
-      Log("adminalert: ERROR: Unable to copy TCP ports\n");
-      exit(1);
-      }
+    if (parsePortsList(ptr, fileConfig->tcpPorts, &fileConfig->tcpPortsLength, MAXSOCKS) == FALSE) {
+      fprintf(stderr, "Unable to parse TCP_PORTS directive in config file\n");
+      Exit(1);
     }
   } else if (strncmp(buffer, "UDP_PORTS", keySize) == 0) {
-    if ((strncmp(gblDetectionType, "udp", 3) == 0 || strncmp(gblDetectionType, "sudp", 4) == 0)) {
-      if (copyPrintableString(ptr, gblPorts, MAXBUF) == FALSE) {
-        Log("adminalert: ERROR: Unable to copy UDP ports\n");
-        exit(1);
-      }
+    if (parsePortsList(ptr, fileConfig->udpPorts, &fileConfig->udpPortsLength, MAXSOCKS) == FALSE) {
+      fprintf(stderr, "Unable to parse UDP_PORTS directive in config file\n");
+      Exit(1);
     }
   } else if (strncmp(buffer, "ADVANCED_PORTS_TCP", keySize) == 0) {
-    if (strncmp(gblDetectionType, "atcp", 4) == 0) {
-      if (copyPrintableString(ptr, gblPorts, MAXBUF) == FALSE) {
-        Log("adminalert: ERROR: Unable to copy advanced TCP ports\n");
-        exit(1);
-      }
+    if (StrToUint16_t(ptr, &fileConfig->tcpAdvancedPort) == FALSE) {
+      fprintf(stderr, "Unable to parse ADVANCED_PORTS_TCP\n");
+      Exit(1);
     }
+
+    fprintf(stderr, "ADVANCED_PORTS_TCP = %d\n", fileConfig->tcpAdvancedPort);
   } else if (strncmp(buffer, "ADVANCED_PORTS_UDP", keySize) == 0) {
-    if (strncmp(gblDetectionType, "audp", 4) == 0) {
-      if (copyPrintableString(ptr, gblPorts, MAXBUF) == FALSE) {
-        Log("adminalert: ERROR: Unable to copy advanced UDP ports\n");
-        exit(1);
-      }
+    if (StrToUint16_t(ptr, &fileConfig->udpAdvancedPort) == FALSE) {
+      fprintf(stderr, "Unable to parse ADVANCED_PORTS_UDP\n");
+      Exit(1);
     }
+    
+    fprintf(stderr, "ADVANCED_PORTS_UDP = %d\n", fileConfig->udpAdvancedPort);
   } else if (strncmp(buffer, "ADVANCED_EXCLUDE_TCP", keySize) == 0) {
-    if (strncmp(gblDetectionType, "atcp", 4) == 0) {
-      if (copyPrintableString(ptr, gblAdvancedExclude, MAXBUF) == FALSE) {
-        Log("adminalert: ERROR: Unable to copy advanced exclude TCP ports\n");
-        exit(1);
-      }
+    if (parsePortsList(ptr, fileConfig->tcpAdvancedExcludePorts, &fileConfig->tcpAdvancedExcludePortsLength, UINT16_MAX) == FALSE) {
+      fprintf(stderr, "Unable to parse ADVANCED_EXCLUDE_TCP\n");
+      Exit(1);
     }
   } else if (strncmp(buffer, "ADVANCED_EXCLUDE_UDP", keySize) == 0) {
-    if (strncmp(gblDetectionType, "audp", 4) == 0) {
-      if (copyPrintableString(ptr, gblAdvancedExclude, MAXBUF) == FALSE) {
-        Log("adminalert: ERROR: Unable to copy advanced exclude UDP ports\n");
-        exit(1);
-      }
+    if (parsePortsList(ptr, fileConfig->udpAdvancedExcludePorts, &fileConfig->udpAdvancedExcludePortsLength, UINT16_MAX) == FALSE) {
+      fprintf(stderr, "Unable to parse ADVANCED_EXCLUDE_UDP\n");
+      Exit(1);
     }
   } else if (strncmp(buffer, "PORT_BANNER", keySize) == 0) {
-    copyPrintableString(ptr, gblPortBanner, MAXBUF);
+    copyPrintableString(ptr, fileConfig->portBanner, MAXBUF);
   } else {
-    Log("adminalert: ERROR: Invalid config file entry at line %lu\n", line);
+    fprintf(stderr, "Invalid config file entry at line %lu\n", line);
     exit(1);
   }
 }
 
-void validateConfig(void) {
-  // FIXME: When validating gblPorts / gblExcludePorts, make sure the combination w/ gblDetectionType is valid
-  // Advanced Ports: If not set, default to 1024
-  // Wait with this function until the config file (and cmdline) is stored in a struct fulle parsed
-#ifdef DEBUG
-  Log("debug: gblBlockTCP: %d\n", gblBlockTCP);
-  Log("debug: gblBlockUDP: %d\n", gblBlockUDP);
-  Log("debug: gblResolveHost: %d\n", gblResolveHost);
-  Log("debug: gblConfigTriggerCount: %u\n", gblConfigTriggerCount);
-  Log("debug: gblKillRoute: %s\n", gblKillRoute);
-  Log("debug: gblKillHostsDeny: %s\n", gblKillHostsDeny);
-  Log("debug: gblKillRunCmd: %s\n", gblKillRunCmd);
-  Log("debug: gblRunCmdFirst: %d\n", gblRunCmdFirst);
-  Log("debug: gblPorts: %s\n", gblPorts);
-  Log("debug: gblAdvancedExclude: %s\n", gblAdvancedExclude);
-  Log("debug: gblPortBanner: %s\n", gblPortBanner);
-  Log("debug: gblBlockedFile: %s\n", gblBlockedFile);
-  Log("debug: gblHistoryFile: %s\n", gblHistoryFile);
-  Log("debug: gblIgnoreFile: %s\n", gblIgnoreFile);
-#endif
+static void validateConfig(struct ConfigData *fileConfig) {
+  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP) {
+    if (fileConfig->tcpPortsLength == 0) {
+      fprintf(stderr, "Selected mode: %s, but no TCP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
+      exit(1);
+    }
+  } else if (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP) {
+    if (fileConfig->udpPortsLength == 0) {
+      fprintf(stderr, "Selected mode: %s, but no UDP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
+      exit(1);
+    }
+  } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
+    if (fileConfig->tcpAdvancedPort == 0) {
+      fprintf(stderr, "Selected mode: %s, but no ADVANCED_PORTS_TCP specified in config file\n", GetSentryModeString(configData.sentryMode));
+      exit(1);
+    }
+  } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
+    if (fileConfig->udpAdvancedPort == 0) {
+      fprintf(stderr, "Selected mode: %s, but no ADVANCED_PORTS_UDP specified in config file\n", GetSentryModeString(configData.sentryMode));
+      exit(1);
+    }
+  }
+
+  if (strlen(fileConfig->ignoreFile) == 0) {
+    fprintf(stderr, "No IGNORE_FILE specified in config file\n");
+    exit(1);
+  }
+
+  if (strlen(fileConfig->historyFile) == 0) {
+    fprintf(stderr, "No HISTORY_FILE specified in config file\n");
+    exit(1);
+  }
+
+  if (strlen(fileConfig->blockedFile) == 0) {
+    fprintf(stderr, "No BLOCK_FILE specified in config file\n");
+    exit(1);
+  }
+}
+
+static void mergeToConfigData(struct ConfigData *fileConfig) {
+  struct ConfigData temp;
+
+  // backup current configData (at this point,it's assumed the configData holds the cmdline options)
+  memcpy(&temp, &configData, sizeof(struct ConfigData));
+
+  // Set values from config file to be the "base" configData
+  memcpy(&configData, fileConfig, sizeof(struct ConfigData));
+
+  // Overlay values from the backup (cmdline) onto the configData
+  // None of the options below are settable via the config file so they need to be added
+  configData.sentryMode = temp.sentryMode;
+  configData.logFlags = temp.logFlags;
+  memcpy(configData.configFile, temp.configFile, sizeof(configData.configFile));
+  configData.daemon = temp.daemon;
 }
 
 static char *skipSpaceAndTab(char *buffer) {
@@ -338,4 +329,53 @@ static ssize_t getSizeToQuote(char *buffer) {
   }
 
   return valueSize;
+}
+
+static int parsePortsList(char *str, uint16_t *ports, int *portsLength, const int maxPorts) {
+  int count;
+  char *temp, *p = str;
+
+  if (strlen(str) == 0) {
+    return FALSE;
+  }
+
+  for (count = 0; count < maxPorts; count++) {
+    if ((temp = strtok(p, ",")) == NULL) {
+      break;
+    }
+
+    p = NULL;
+
+    if (StrToUint16_t(temp, &ports[count]) == FALSE) {
+      return FALSE;
+    }
+  }
+
+  if ((*portsLength = count) == 0) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+static int StrToUint16_t(const char *str, uint16_t *val) {
+  char *endptr;
+  long value;
+
+  errno = 0;
+  value = strtol(str, &endptr, 10);
+
+  // Stingy error checking
+  // errno set indicates malformed input
+  // endptr == str indicates no digits found
+  // *endptr != '\0' indicates non-digit characters found, however, our config file tokens ends in \" so we allow that corner case
+  // value > UINT16_MAX indicates value is too large, since ports can only be 0-65535
+  // value <= 0: Don't allow port 0 (or negative ports)
+  if (errno != 0 || endptr == str || (*endptr != '\0' && *endptr != '\"') || value > UINT16_MAX || value <= 0) {
+    return FALSE;
+  }
+
+  *val = (uint16_t)value;
+
+  return TRUE;
 }
