@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 
   if (configData.daemon == TRUE) {
     if (DaemonSeed() == ERROR) {
-      Log("adminalert: ERROR: could not go into daemon mode. Shutting down.\n");
+      Log("adminalert: ERROR: could not go into daemon mode. Shutting down.");
       printf("ERROR: could not go into daemon mode. Shutting down.\n");
       Exit(ERROR);
     }
@@ -51,36 +51,36 @@ int main(int argc, char *argv[]) {
 
   if (configData.sentryMode ==  SENTRY_MODE_TCP) {
     if (PortSentryModeTCP() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
+      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
   }
 #ifdef SUPPORT_STEALTH
   else if (configData.sentryMode == SENTRY_MODE_STCP) {
     if (PortSentryStealthModeTCP() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
+      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
     if (PortSentryAdvancedStealthModeTCP() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
+      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
   } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
     if (PortSentryStealthModeUDP() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
+      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
   } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
     if (PortSentryAdvancedStealthModeUDP() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
+      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
   }
 #endif
   else if (configData.sentryMode == SENTRY_MODE_UDP) {
     if (PortSentryModeUDP() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.\n");
+      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
   }
@@ -109,7 +109,7 @@ int PacketReadTCP(int socket, struct iphdr *ipPtr, struct tcphdr *tcpPtr) {
 
   if ((ipPtr->ihl < 5) || (ipPtr->ihl > 15)) {
     addr.s_addr = (u_int)ipPtr->saddr;
-    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s\n", ipPtr->ihl, inet_ntoa(addr));
+    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", ipPtr->ihl, inet_ntoa(addr));
     return (FALSE);
   } else {
     memcpy(tcpPtr, (struct tcphdr *)(packetBuffer + ((ipPtr->ihl) * 4)), sizeof(struct tcphdr));
@@ -133,7 +133,7 @@ int PacketReadUDP(int socket, struct iphdr *ipPtr, struct udphdr *udpPtr) {
 
   if ((ipPtr->ihl < 5) || (ipPtr->ihl > 15)) {
     addr.s_addr = (u_int)ipPtr->saddr;
-    Log("attackalert: Illegal IP header length detected in UDP packet: %d from (possible) host: %s\n", ipPtr->ihl, inet_ntoa(addr));
+    Log("attackalert: Illegal IP header length detected in UDP packet: %d from (possible) host: %s", ipPtr->ihl, inet_ntoa(addr));
     return (FALSE);
   } else {
     memcpy(udpPtr, (struct udphdr *)(packetBuffer + ((ipPtr->ihl) * 4)), sizeof(struct udphdr));
@@ -157,32 +157,32 @@ static int EvalPortsInUse(int *portCount, int *ports) {
     portList = configData.udpPorts;
     openSocket = OpenUDPSocket;
   } else {
-    Log("Invalid sentry mode in EvalPortsInUse\n");
+    Log("Invalid sentry mode in EvalPortsInUse");
     return (FALSE);
   }
 
   for (i=0; i < portsLength; i++) {
-    Log("Going into stealth listen mode on port: %d\n", portList[i]);
+    Log("Going into stealth listen mode on port: %d", portList[i]);
     if ((openSockfd = openSocket()) == ERROR) {
-      Log("Could not open socket. Aborting\n");
+      Log("Could not open socket. Aborting");
       return FALSE;
     }
 
     if (BindSocket(openSockfd, portList[i]) == ERROR) {
-      Log("Socket %d is in use and will not be monitored. Attempting to continue\n", portList[i]);
+      Log("Socket %d is in use and will not be monitored. Attempting to continue", portList[i]);
     } else {
       gotBound = TRUE;
       ports[(*portCount)++] = portList[i];
     }
 
     if (close(openSockfd) == -1) {
-      Log("Could not close socket %d: (errno: %d). Aborting\n", openSockfd, errno);
+      Log("Could not close socket %d: (errno: %d). Aborting", openSockfd, errno);
       return FALSE;
     }
   }
 
   if (gotBound == FALSE) {
-    Log("No ports were bound. Aborting\n");
+    Log("No ports were bound. Aborting");
   }
 
   return gotBound;
@@ -213,11 +213,11 @@ int PortSentryStealthModeTCP(void) {
 
   /* Open our raw socket for network IO */
   if ((openSockfd = OpenRAWTCPSocket()) == ERROR) {
-    Log("adminalert: ERROR: could not open RAW TCP socket. Aborting.\n");
+    Log("adminalert: ERROR: could not open RAW TCP socket. Aborting.");
     return (ERROR);
   }
 
-  Log("adminalert: PortSentry is now active and listening.\n");
+  Log("adminalert: PortSentry is now active and listening.");
 
   /* main detection loop */
   for (;;) {
@@ -241,7 +241,7 @@ int PortSentryStealthModeTCP(void) {
           result = NeverBlock(target, configData.ignoreFile);
 
           if (result == ERROR) {
-            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
+            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.");
             result = FALSE;
           }
 
@@ -251,7 +251,7 @@ int PortSentryStealthModeTCP(void) {
             if (scanDetectTrigger == TRUE) {
               if (configData.resolveHost) {/* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
+                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
                 }
               } else {
@@ -309,7 +309,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
   /* try to bind to all ports below 1024, any that are taken we exclude later */
   for (count = 0; count < configData.tcpAdvancedPort; count++) {
     if ((openSockfd = OpenTCPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open TCP socket. Aborting.\n");
+      Log("adminalert: ERROR: could not open TCP socket. Aborting.");
       return (ERROR);
     }
     if (BindSocket(openSockfd, count) == ERROR)
@@ -329,15 +329,15 @@ int PortSentryAdvancedStealthModeTCP(void) {
   }
 
   for (count = 0; count < portCount; count++)
-    Log("adminalert: Advanced Stealth scan detection mode activated. Ignored TCP port: %d\n", inUsePorts[count]);
+    Log("adminalert: Advanced Stealth scan detection mode activated. Ignored TCP port: %d", inUsePorts[count]);
 
   /* open raw socket for reading */
   if ((openSockfd = OpenRAWTCPSocket()) == ERROR) {
-    Log("adminalert: ERROR: could not open RAW TCP socket. Aborting.\n");
+    Log("adminalert: ERROR: could not open RAW TCP socket. Aborting.");
     return (ERROR);
   }
 
-  Log("adminalert: PortSentry is now active and listening.\n");
+  Log("adminalert: PortSentry is now active and listening.");
 
   /* main detection loop */
   for (;;) {
@@ -369,7 +369,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
           result = NeverBlock(target, configData.ignoreFile);
 
           if (result == ERROR) {
-            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
+            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.");
             result = FALSE;
           }
 
@@ -380,7 +380,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
             if (scanDetectTrigger == TRUE) {
               if (configData.resolveHost) { /* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
+                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
                 }
               } else {
@@ -437,11 +437,11 @@ int PortSentryStealthModeUDP(void) {
   }
 
   if ((openSockfd = OpenRAWUDPSocket()) == ERROR) {
-    Log("adminalert: ERROR: could not open RAW UDP socket. Aborting.\n");
+    Log("adminalert: ERROR: could not open RAW UDP socket. Aborting.");
     return (ERROR);
   }
 
-  Log("adminalert: PortSentry is now active and listening.\n");
+  Log("adminalert: PortSentry is now active and listening.");
 
   /* main detection loop */
   for (;;) {
@@ -462,7 +462,7 @@ int PortSentryStealthModeUDP(void) {
         result = NeverBlock(target, configData.ignoreFile);
 
         if (result == ERROR) {
-          Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
+          Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.");
           result = FALSE;
         }
 
@@ -472,7 +472,7 @@ int PortSentryStealthModeUDP(void) {
           if (scanDetectTrigger == TRUE) {
             if (configData.resolveHost) { /* Do they want DNS resolution? */
               if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
+                Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
                 snprintf(resolvedHost, DNSMAXBUF, "%s", target);
               }
             } else {
@@ -527,7 +527,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
   /* try to bind to all ports below 1024, any that are taken we exclude later */
   for (count = 0; count < configData.udpAdvancedPort; count++) {
     if ((openSockfd = OpenUDPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open UDP socket. Aborting.\n");
+      Log("adminalert: ERROR: could not open UDP socket. Aborting.");
       return (ERROR);
     }
     if (BindSocket(openSockfd, count) == ERROR)
@@ -547,15 +547,15 @@ int PortSentryAdvancedStealthModeUDP(void) {
   }
 
   for (count = 0; count < portCount; count++) {
-    Log("adminalert: Advanced Stealth scan detection mode activated. Ignored UDP port: %d\n", inUsePorts[count]);
+    Log("adminalert: Advanced Stealth scan detection mode activated. Ignored UDP port: %d", inUsePorts[count]);
   }
 
   if ((openSockfd = OpenRAWUDPSocket()) == ERROR) {
-    Log("adminalert: ERROR: could not open RAW UDP socket. Aborting.\n");
+    Log("adminalert: ERROR: could not open RAW UDP socket. Aborting.");
     return (ERROR);
   }
 
-  Log("adminalert: PortSentry is now active and listening.\n");
+  Log("adminalert: PortSentry is now active and listening.");
 
   /* main detection loop */
   for (;;) {
@@ -585,7 +585,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
         result = NeverBlock(target, configData.ignoreFile);
 
         if (result == ERROR) {
-          Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
+          Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.");
           result = FALSE;
         }
 
@@ -596,7 +596,7 @@ int PortSentryAdvancedStealthModeUDP(void) {
           if (scanDetectTrigger == TRUE) {
             if (configData.resolveHost) { /* Do they want DNS resolution? */
               if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
+                Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
                 snprintf(resolvedHost, DNSMAXBUF, "%s", target);
               }
             } else {
@@ -654,14 +654,14 @@ int PortSentryModeTCP(void) {
   FD_ZERO(&selectFds);
 
   for (count = 0; count < configData.tcpPortsLength; count++) {
-    Log("adminalert: Going into listen mode on TCP port: %d\n", configData.tcpPorts[count]);
+    Log("adminalert: Going into listen mode on TCP port: %d", configData.tcpPorts[count]);
     if ((openSockfd[boundPortCount] = OpenTCPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open TCP socket. Aborting.\n");
+      Log("adminalert: ERROR: could not open TCP socket. Aborting.");
       return (ERROR);
     }
 
     if (BindSocket(openSockfd[boundPortCount], configData.tcpPorts[count]) == ERROR) {
-      Log("adminalert: ERROR: could not bind TCP socket: %d. Attempting to continue\n", configData.tcpPorts[count]);
+      Log("adminalert: ERROR: could not bind TCP socket: %d. Attempting to continue", configData.tcpPorts[count]);
     } else { /* well we at least bound to one socket so we'll continue */
       boundPortCount++;
     }
@@ -669,13 +669,13 @@ int PortSentryModeTCP(void) {
 
   /* if we didn't bind to anything then abort */
   if (boundPortCount == 0) {
-    Log("adminalert: ERROR: could not bind ANY TCP sockets. Shutting down.\n");
+    Log("adminalert: ERROR: could not bind ANY TCP sockets. Shutting down.");
     return (ERROR);
   }
 
   length = sizeof(client);
 
-  Log("adminalert: PortSentry is now active and listening.\n");
+  Log("adminalert: PortSentry is now active and listening.");
 
   /* main loop for multiplexing/resetting */
   for (;;) {
@@ -688,7 +688,7 @@ int PortSentryModeTCP(void) {
 
     /* something blew up */
     if (selectResult < 0) {
-      Log("adminalert: ERROR: select call failed. Shutting down.\n");
+      Log("adminalert: ERROR: select call failed. Shutting down.");
       return (ERROR);
     } else if (selectResult == 0) {
 #ifdef DEBUG
@@ -709,7 +709,7 @@ int PortSentryModeTCP(void) {
           result = NeverBlock(target, configData.ignoreFile);
 
           if (result == ERROR) {
-            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
+            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.");
             result = FALSE;
           }
 
@@ -729,7 +729,7 @@ int PortSentryModeTCP(void) {
               close(incomingSockfd);
               if (configData.resolveHost) { /* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
+                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
                 }
               } else {
@@ -789,13 +789,13 @@ int PortSentryModeUDP(void) {
   FD_ZERO(&selectFds);
 
   for (count = 0; count < configData.udpPortsLength; count++) {
-    Log("adminalert: Going into listen mode on UDP port: %d\n", configData.udpPorts[count]);
+    Log("adminalert: Going into listen mode on UDP port: %d", configData.udpPorts[count]);
     if ((openSockfd[boundPortCount] = OpenUDPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open UDP socket. Aborting\n");
+      Log("adminalert: ERROR: could not open UDP socket. Aborting");
       return (ERROR);
     }
     if (BindSocket(openSockfd[boundPortCount], configData.udpPorts[count]) == ERROR) {
-      Log("adminalert: ERROR: could not bind UDP socket: %d. Attempting to continue\n", configData.udpPorts[count]);
+      Log("adminalert: ERROR: could not bind UDP socket: %d. Attempting to continue", configData.udpPorts[count]);
     } else { /* well we at least bound to one socket so we'll continue */
       boundPortCount++;
     }
@@ -803,12 +803,12 @@ int PortSentryModeUDP(void) {
 
   /* if we didn't bind to anything then abort */
   if (boundPortCount == 0) {
-    Log("adminalert: ERROR: could not bind ANY UDP sockets. Shutting down.\n");
+    Log("adminalert: ERROR: could not bind ANY UDP sockets. Shutting down.");
     return (ERROR);
   }
 
   length = sizeof(client);
-  Log("adminalert: PortSentry is now active and listening.\n");
+  Log("adminalert: PortSentry is now active and listening.");
 
   /* main loop for multiplexing/resetting */
   for (;;) {
@@ -820,7 +820,7 @@ int PortSentryModeUDP(void) {
     selectResult = select(MAXSOCKS, &selectFds, NULL, NULL, (struct timeval *)NULL);
 
     if (selectResult < 0) {
-      Log("adminalert: ERROR: select call failed. Shutting down.\n");
+      Log("adminalert: ERROR: select call failed. Shutting down.");
       return (ERROR);
     } else if (selectResult == 0) {
 #ifdef DEBUG
@@ -834,19 +834,19 @@ int PortSentryModeUDP(void) {
           /* know that this person is a jerk */
           if (recvfrom(openSockfd[count], buffer, 1, 0,
                        (struct sockaddr *)&client, &length) < 0) {
-            Log("adminalert: ERROR: could not accept incoming socket for UDP port: %d\n", configData.udpPorts[count]);
+            Log("adminalert: ERROR: could not accept incoming socket for UDP port: %d", configData.udpPorts[count]);
             break;
           }
 
           /* copy the clients address into our buffer for nuking */
           SafeStrncpy(target, (char *)inet_ntoa(client.sin_addr), IPMAXBUF);
 #ifdef DEBUG
-          Log("debug: PortSentryModeUDP: accepted UDP connection from: %s\n", target);
+          Log("debug: PortSentryModeUDP: accepted UDP connection from: %s", target);
 #endif
           /* check if we should ignore this IP */
           result = NeverBlock(target, configData.ignoreFile);
           if (result == ERROR) {
-            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.\n");
+            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.");
             result = FALSE;
           }
           if (result == FALSE) {
@@ -859,7 +859,7 @@ int PortSentryModeUDP(void) {
 
               if (configData.resolveHost) { /* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.\n");
+                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
                 }
               } else {
@@ -1015,7 +1015,7 @@ int SmartVerifyTCP(int port) {
    * the connection */
 
   if ((testSockfd = OpenTCPSocket()) == ERROR) {
-    Log("adminalert: ERROR: could not open TCP socket to smart-verify.\n");
+    Log("adminalert: ERROR: could not open TCP socket to smart-verify.");
     return (FALSE);
   } else {
     if (BindSocket(testSockfd, port) == ERROR) {
@@ -1041,7 +1041,7 @@ int SmartVerifyUDP(int port) {
    * the connection */
 
   if ((testSockfd = OpenUDPSocket()) == ERROR) {
-    Log("adminalert: ERROR: could not open UDP socket to smart-verify.\n");
+    Log("adminalert: ERROR: could not open UDP socket to smart-verify.");
     return (FALSE);
   } else {
     if (BindSocket(testSockfd, port) == ERROR) {

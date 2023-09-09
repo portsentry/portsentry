@@ -35,7 +35,7 @@ int CheckStateEngine(char *target) {
         if (++gotOne >= configData.configTriggerCount) {
           scanDetectTrigger = TRUE;
 #ifdef DEBUG
-          Log("debug: CheckStateEngine: host: %s has exceeded trigger value: %d\n",
+          Log("debug: CheckStateEngine: host: %s has exceeded trigger value: %d",
               gblScanDetectHost[count], configData.configTriggerCount);
 #endif
           break;
@@ -59,7 +59,7 @@ int CheckStateEngine(char *target) {
 
 #ifdef DEBUG
     for (count = 0; count < MAXSTATE; count++)
-      Log("debug: CheckStateEngine: state engine host: %s -> position: %d Detected: %d\n",
+      Log("debug: CheckStateEngine: state engine host: %s -> position: %d Detected: %d",
           gblScanDetectHost[count], count, scanDetectTrigger);
 #endif
     /* end catch to set state if configData.configTriggerCount == 0 */
@@ -68,8 +68,8 @@ int CheckStateEngine(char *target) {
   }
 
   if (configData.configTriggerCount > MAXSTATE) {
-    Log("securityalert: WARNING: Trigger value %d is larger than state engine capacity of %d.\n", configData.configTriggerCount, MAXSTATE);
-    Log("Adjust the value lower or recompile with a larger state engine value.\n", MAXSTATE);
+    Log("securityalert: WARNING: Trigger value %d is larger than state engine capacity of %d.", configData.configTriggerCount, MAXSTATE);
+    Log("Adjust the value lower or recompile with a larger state engine value.", MAXSTATE);
     Log("securityalert: Blocking host anyway because of invalid trigger value");
     scanDetectTrigger = TRUE;
   }
