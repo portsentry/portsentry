@@ -7,14 +7,17 @@
 #include "portsentry_util.h"
 #include "config_data.h"
 
-static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig, struct ConfigData *cmdlineConfig);
+static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
+static void validateConfig(struct ConfigData *fileConfig);
+static void mergeToConfigData(struct ConfigData *fileConfig);
 static char *skipSpaceAndTab(char *buffer);
 static size_t getKeySize(char *buffer);
 static void stripTrailingSpace(char *buffer);
 static ssize_t getSizeToQuote(char *buffer);
-void validateConfig(struct ConfigData *fileConfig);
+static int parsePortsList(char *str, uint16_t *ports, int *portsLength, const int maxPorts);
+static int StrToUint16_t(const char *str, uint16_t *val);
 
-struct ConfigData readConfigFile(struct ConfigData *cmdlineConfig) {
+void readConfigFile(void) {
   struct ConfigData fileConfig;
   FILE *config;
   char buffer[MAXBUF], *ptr;
@@ -23,13 +26,8 @@ struct ConfigData readConfigFile(struct ConfigData *cmdlineConfig) {
 
   ResetConfigData(&fileConfig);
 
-  /* Set defaults */
-  if (cmdlineConfig->sentryMode == SENTRY_MODE_ATCP || cmdlineConfig->sentryMode == SENTRY_MODE_AUDP) {
-    strcpy(fileConfig.ports, "1024");
-  }
-
-  if ((config = fopen(cmdlineConfig->configFile, "r")) == NULL) {
-    fprintf(stderr, "Cannot open config file: %s.\n", cmdlineConfig->configFile);
+  if ((config = fopen(configData.configFile, "r")) == NULL) {
+    fprintf(stderr, "Cannot open config file: %s.\n", configData.configFile);
     Exit(EXIT_FAILURE);
   }
 
@@ -73,32 +71,26 @@ struct ConfigData readConfigFile(struct ConfigData *cmdlineConfig) {
       Exit(EXIT_FAILURE);
     }
 
-    setConfiguration(buffer, keySize, ptr, valueSize, line, &fileConfig, cmdlineConfig);
+    setConfiguration(buffer, keySize, ptr, valueSize, line, &fileConfig);
   }
 
   fclose(config);
 
-
-  /* Add implied config file entries */
-  if (cmdlineConfig->sentryMode == SENTRY_MODE_ATCP) {
-    if (strlen(fileConfig.ports) == 0) {
-      snprintf(fileConfig.ports, MAXBUF, "%d", ADVANCED_MODE_PORT_TCP);
-    }
-  } else if (cmdlineConfig->sentryMode == SENTRY_MODE_AUDP) {
-    if (strlen(fileConfig.ports) == 0) {
-      snprintf(fileConfig.ports, MAXBUF, "%d", ADVANCED_MODE_PORT_UDP);
-    }
-  }
+  // Set default values if not set in config file
+  if(fileConfig.tcpAdvancedPort == 0)
+    fileConfig.tcpAdvancedPort = ADVANCED_MODE_PORT_TCP;
+  if(fileConfig.udpAdvancedPort == 0)
+    fileConfig.udpAdvancedPort = ADVANCED_MODE_PORT_UDP;
 
   /* Make sure config is valid */
   validateConfig(&fileConfig);
 
-  return fileConfig;
+  mergeToConfigData(&fileConfig);
 }
 
-static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig, struct ConfigData *cmdlineConfig) {
+static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig) {
 #ifdef DEBUG
-    fprintf(stderr, "setConfiguration: %s keySize: %lu valueSize: %ld sentryMode: %s\n", buffer, keySize, valueSize, GetSentryModeString(cmdlineConfig->sentryMode));
+    fprintf(stderr, "setConfiguration: %s keySize: %lu valueSize: %ld sentryMode: %s\n", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
 #endif
 
   if (strncmp(buffer, "BLOCK_TCP", keySize) == 0) {
@@ -166,7 +158,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
     }
     if (strlen(fileConfig->blockedFile) < (PATH_MAX - 5)) {
       strncat(fileConfig->blockedFile, ".", 1);
-      strncat(fileConfig->blockedFile, GetSentryModeString(cmdlineConfig->sentryMode), 4);
+      strncat(fileConfig->blockedFile, GetSentryModeString(configData.sentryMode), 4);
     } else {
       fprintf(stderr, "Blocked filename is too long to append sentry mode file extension: %s\n", fileConfig->blockedFile);
       exit(1);
@@ -187,46 +179,38 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       exit(1);
     }
   } else if (strncmp(buffer, "TCP_PORTS", keySize) == 0) {
-    if (cmdlineConfig->sentryMode == SENTRY_MODE_TCP || cmdlineConfig->sentryMode == SENTRY_MODE_STCP) {
-      if (copyPrintableString(ptr, fileConfig->ports, MAXBUF) == FALSE) {
-      fprintf(stderr, "Unable to copy TCP ports\n");
-      exit(1);
-      }
+    if (parsePortsList(ptr, fileConfig->tcpPorts, &fileConfig->tcpPortsLength, MAXSOCKS) == FALSE) {
+      fprintf(stderr, "Unable to parse TCP_PORTS directive in config file\n");
+      Exit(1);
     }
   } else if (strncmp(buffer, "UDP_PORTS", keySize) == 0) {
-    if (cmdlineConfig->sentryMode == SENTRY_MODE_UDP || cmdlineConfig->sentryMode == SENTRY_MODE_SUDP) {
-      if (copyPrintableString(ptr, fileConfig->ports, MAXBUF) == FALSE) {
-        fprintf(stderr, "Unable to copy UDP ports\n");
-        exit(1);
-      }
+    if (parsePortsList(ptr, fileConfig->udpPorts, &fileConfig->udpPortsLength, MAXSOCKS) == FALSE) {
+      fprintf(stderr, "Unable to parse UDP_PORTS directive in config file\n");
+      Exit(1);
     }
   } else if (strncmp(buffer, "ADVANCED_PORTS_TCP", keySize) == 0) {
-    if (cmdlineConfig->sentryMode == SENTRY_MODE_ATCP) {
-      if (copyPrintableString(ptr, fileConfig->ports, MAXBUF) == FALSE) {
-        fprintf(stderr, "Unable to copy advanced TCP ports\n");
-        exit(1);
-      }
+    if (StrToUint16_t(ptr, &fileConfig->tcpAdvancedPort) == FALSE) {
+      fprintf(stderr, "Unable to parse ADVANCED_PORTS_TCP\n");
+      Exit(1);
     }
+
+    fprintf(stderr, "ADVANCED_PORTS_TCP = %d\n", fileConfig->tcpAdvancedPort);
   } else if (strncmp(buffer, "ADVANCED_PORTS_UDP", keySize) == 0) {
-    if (cmdlineConfig->sentryMode == SENTRY_MODE_AUDP) {
-      if (copyPrintableString(ptr, fileConfig->ports, MAXBUF) == FALSE) {
-        fprintf(stderr, "Unable to copy advanced UDP ports\n");
-        exit(1);
-      }
+    if (StrToUint16_t(ptr, &fileConfig->udpAdvancedPort) == FALSE) {
+      fprintf(stderr, "Unable to parse ADVANCED_PORTS_UDP\n");
+      Exit(1);
     }
+    
+    fprintf(stderr, "ADVANCED_PORTS_UDP = %d\n", fileConfig->udpAdvancedPort);
   } else if (strncmp(buffer, "ADVANCED_EXCLUDE_TCP", keySize) == 0) {
-    if (cmdlineConfig->sentryMode == SENTRY_MODE_ATCP) {
-      if (copyPrintableString(ptr, fileConfig->advancedExclude, MAXBUF) == FALSE) {
-        fprintf(stderr, "Unable to copy advanced exclude TCP ports\n");
-        exit(1);
-      }
+    if (parsePortsList(ptr, fileConfig->tcpAdvancedExcludePorts, &fileConfig->tcpAdvancedExcludePortsLength, UINT16_MAX) == FALSE) {
+      fprintf(stderr, "Unable to parse ADVANCED_EXCLUDE_TCP\n");
+      Exit(1);
     }
   } else if (strncmp(buffer, "ADVANCED_EXCLUDE_UDP", keySize) == 0) {
-    if (cmdlineConfig->sentryMode == SENTRY_MODE_AUDP) {
-      if (copyPrintableString(ptr, fileConfig->advancedExclude, MAXBUF) == FALSE) {
-        fprintf(stderr, "Unable to copy advanced exclude UDP ports\n");
-        exit(1);
-      }
+    if (parsePortsList(ptr, fileConfig->udpAdvancedExcludePorts, &fileConfig->udpAdvancedExcludePortsLength, UINT16_MAX) == FALSE) {
+      fprintf(stderr, "Unable to parse ADVANCED_EXCLUDE_UDP\n");
+      Exit(1);
     }
   } else if (strncmp(buffer, "PORT_BANNER", keySize) == 0) {
     copyPrintableString(ptr, fileConfig->portBanner, MAXBUF);
@@ -236,26 +220,60 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
   }
 }
 
-void validateConfig(struct ConfigData *fileConfig) {
-  // FIXME: When validating configData.ports / configData.excludePorts, make sure the combination w/ configData.detectionType is valid
-  // Advanced Ports: If not set, default to 1024
-  // Wait with this function until the config file (and cmdline) is stored in a struct fulle parsed
-#ifdef DEBUG
-  fprintf(stderr, "blockTCP: %d\n", fileConfig->blockTCP);
-  fprintf(stderr, "blockUDP: %d\n", fileConfig->blockUDP);
-  fprintf(stderr, "resolveHost: %d\n", fileConfig->resolveHost);
-  fprintf(stderr, "configTriggerCount: %u\n", fileConfig->configTriggerCount);
-  fprintf(stderr, "killRoute: %s\n", fileConfig->killRoute);
-  fprintf(stderr, "killHostsDeny: %s\n", fileConfig->killHostsDeny);
-  fprintf(stderr, "killRunCmd: %s\n", fileConfig->killRunCmd);
-  fprintf(stderr, "runCmdFirst: %d\n", fileConfig->runCmdFirst);
-  fprintf(stderr, "ports: %s\n", fileConfig->ports);
-  fprintf(stderr, "advancedExclude: %s\n", fileConfig->advancedExclude);
-  fprintf(stderr, "portBanner: %s\n", fileConfig->portBanner);
-  fprintf(stderr, "blockedFile: %s\n", fileConfig->blockedFile);
-  fprintf(stderr, "historyFile: %s\n", fileConfig->historyFile);
-  fprintf(stderr, "ignoreFile: %s\n", fileConfig->ignoreFile);
-#endif
+static void validateConfig(struct ConfigData *fileConfig) {
+  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP) {
+    if (fileConfig->tcpPortsLength == 0) {
+      fprintf(stderr, "Selected mode: %s, but no TCP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
+      exit(1);
+    }
+  } else if (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP) {
+    if (fileConfig->udpPortsLength == 0) {
+      fprintf(stderr, "Selected mode: %s, but no UDP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
+      exit(1);
+    }
+  } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
+    if (fileConfig->tcpAdvancedPort == 0) {
+      fprintf(stderr, "Selected mode: %s, but no ADVANCED_PORTS_TCP specified in config file\n", GetSentryModeString(configData.sentryMode));
+      exit(1);
+    }
+  } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
+    if (fileConfig->udpAdvancedPort == 0) {
+      fprintf(stderr, "Selected mode: %s, but no ADVANCED_PORTS_UDP specified in config file\n", GetSentryModeString(configData.sentryMode));
+      exit(1);
+    }
+  }
+
+  if (strlen(fileConfig->ignoreFile) == 0) {
+    fprintf(stderr, "No IGNORE_FILE specified in config file\n");
+    exit(1);
+  }
+
+  if (strlen(fileConfig->historyFile) == 0) {
+    fprintf(stderr, "No HISTORY_FILE specified in config file\n");
+    exit(1);
+  }
+
+  if (strlen(fileConfig->blockedFile) == 0) {
+    fprintf(stderr, "No BLOCK_FILE specified in config file\n");
+    exit(1);
+  }
+}
+
+static void mergeToConfigData(struct ConfigData *fileConfig) {
+  struct ConfigData temp;
+
+  // backup current configData (at this point,it's assumed the configData holds the cmdline options)
+  memcpy(&temp, &configData, sizeof(struct ConfigData));
+
+  // Set values from config file to be the "base" configData
+  memcpy(&configData, fileConfig, sizeof(struct ConfigData));
+
+  // Overlay values from the backup (cmdline) onto the configData
+  // None of the options below are settable via the config file so they need to be added
+  configData.sentryMode = temp.sentryMode;
+  configData.logFlags = temp.logFlags;
+  memcpy(configData.configFile, temp.configFile, sizeof(configData.configFile));
+  configData.daemon = temp.daemon;
 }
 
 static char *skipSpaceAndTab(char *buffer) {
@@ -311,4 +329,53 @@ static ssize_t getSizeToQuote(char *buffer) {
   }
 
   return valueSize;
+}
+
+static int parsePortsList(char *str, uint16_t *ports, int *portsLength, const int maxPorts) {
+  int count;
+  char *temp, *p = str;
+
+  if (strlen(str) == 0) {
+    return FALSE;
+  }
+
+  for (count = 0; count < maxPorts; count++) {
+    if ((temp = strtok(p, ",")) == NULL) {
+      break;
+    }
+
+    p = NULL;
+
+    if (StrToUint16_t(temp, &ports[count]) == FALSE) {
+      return FALSE;
+    }
+  }
+
+  if ((*portsLength = count) == 0) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+static int StrToUint16_t(const char *str, uint16_t *val) {
+  char *endptr;
+  long value;
+
+  errno = 0;
+  value = strtol(str, &endptr, 10);
+
+  // Stingy error checking
+  // errno set indicates malformed input
+  // endptr == str indicates no digits found
+  // *endptr != '\0' indicates non-digit characters found, however, our config file tokens ends in \" so we allow that corner case
+  // value > UINT16_MAX indicates value is too large, since ports can only be 0-65535
+  // value <= 0: Don't allow port 0 (or negative ports)
+  if (errno != 0 || endptr == str || (*endptr != '\0' && *endptr != '\"') || value > UINT16_MAX || value <= 0) {
+    return FALSE;
+  }
+
+  *val = (uint16_t)value;
+
+  return TRUE;
 }

@@ -495,7 +495,7 @@ int IsBlocked(char *target, char *filename) {
       }
       if (strcmp(target, tempBuffer) == 0) {
 #ifdef DEBUG
-        Log("debug: isBlocked: Host: %s found in blocked  file\n", target);
+        Log("debug: isBlocked: Host: %s found in blocked file\n", target);
 #endif
         fclose(input);
         return (TRUE);

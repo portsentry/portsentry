@@ -33,16 +33,32 @@ void PrintConfigData(const struct ConfigData cd) {
   printf("killHostsDeny: %s\n", cd.killHostsDeny);
   printf("killRunCmd %s\n", cd.killRunCmd);
 
-  printf("ports: %s\n", cd.ports);
-  printf("parsedPorts: ");
-  for(i=0; i<USHRT_MAX; i++) {
-    if (cd.parsedPorts[i] == 0)
-      break;
-    printf("%d ", cd.parsedPorts[i]);
+  printf("tcpPorts (%d): ", cd.tcpPortsLength);
+  for (i=0; i < cd.tcpPortsLength; i++) {
+    printf("%d ", cd.tcpPorts[i]);
   }
   printf("\n");
 
-  printf("advancedExclude: %s\n", cd.advancedExclude);
+  printf("udpPorts (%d): ", cd.udpPortsLength);
+  for (i=0; i < cd.udpPortsLength; i++) {
+    printf("%d ", cd.udpPorts[i]);
+  }
+  printf("\n");
+
+  printf("tcpAdvancedPort: %d\n", cd.tcpAdvancedPort);
+  printf("udpAdvancedPort: %d\n", cd.udpAdvancedPort);
+
+  printf("tcpAdvancedExcludePorts (%d): ", cd.tcpAdvancedExcludePortsLength);
+  for (i=0; i < cd.tcpAdvancedExcludePortsLength; i++) {
+    printf("%d ", cd.tcpAdvancedExcludePorts[i]);
+  }
+  printf("\n");
+
+  printf("udpAdvancedExcludePorts (%d): ", cd.udpAdvancedExcludePortsLength);
+  for (i=0; i < cd.udpAdvancedExcludePortsLength; i++) {
+    printf("%d ", cd.udpAdvancedExcludePorts[i]);
+  }
+  printf("\n");
 
   printf("configFile: %s\n", cd.configFile);
   printf("blockedFile: %s\n", cd.blockedFile);
@@ -90,12 +106,4 @@ char *GetSentryModeString(const enum SentryMode sentryMode) {
     default:
       return "unknown";
   }
-}
-
-void SetConfigData(const struct ConfigData *fileConfig, const struct ConfigData *cmdlineConfig) {
-  memcpy(&configData, fileConfig, sizeof(struct ConfigData));
-  configData.sentryMode = cmdlineConfig->sentryMode;
-  configData.logFlags = cmdlineConfig->logFlags;
-  memcpy(configData.configFile, cmdlineConfig->configFile, sizeof(configData.configFile));
-  configData.daemon = cmdlineConfig->daemon;
 }

@@ -25,7 +25,7 @@
 static void Usage(void);
 static void Version(void);
 
-struct ConfigData ParseCmdline(int argc, char **argv) {
+void ParseCmdline(int argc, char **argv) {
   int opt;
   struct ConfigData cmdlineConfig;
   const struct option long_options[] = {
@@ -116,19 +116,20 @@ struct ConfigData ParseCmdline(int argc, char **argv) {
     }
   }
 
-  PostProcessConfig(&cmdlineConfig);
-
   if (cmdlineConfig.sentryMode == SENTRY_MODE_NONE) {
     fprintf(stderr, "Error: No sentry mode specified\n");
     Exit(EXIT_FAILURE);
   }
+
+  PostProcessConfig(&cmdlineConfig);
 
   if (cmdlineConfig.logFlags & LOGFLAG_DEBUG) {
     printf("Command Line Configuration:\n");
     PrintConfigData(cmdlineConfig);
   }
 
-  return cmdlineConfig;
+  // Set the global config to the values gotten from the command line
+  memcpy(&configData, &cmdlineConfig, sizeof(struct ConfigData));
 }
 
 static void Usage(void) {

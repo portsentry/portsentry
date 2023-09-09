@@ -13,9 +13,19 @@ struct ConfigData {
   char killHostsDeny[MAXBUF];
   char killRunCmd[MAXBUF];
 
-  char ports[MAXBUF];
-  uint16_t parsedPorts[USHRT_MAX];
-  char advancedExclude[MAXBUF];
+  uint16_t tcpPorts[MAXSOCKS];
+  int tcpPortsLength;
+  uint16_t udpPorts[MAXSOCKS];
+  int udpPortsLength;
+
+  uint16_t tcpAdvancedPort;
+  uint16_t udpAdvancedPort;
+
+  uint16_t tcpAdvancedExcludePorts[UINT16_MAX];
+  int tcpAdvancedExcludePortsLength;
+  uint16_t udpAdvancedExcludePorts[UINT16_MAX];
+  int udpAdvancedExcludePortsLength;
+
   char portBanner[MAXBUF];
 
   char configFile[PATH_MAX];
