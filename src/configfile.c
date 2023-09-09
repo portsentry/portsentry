@@ -100,7 +100,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       fileConfig->blockTCP = FALSE;
     } else {
       fprintf(stderr, "Invalid config file entry for BLOCK_TCP\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "BLOCK_UDP", keySize) == 0) {
     if (strncmp(ptr, "1", valueSize) == 0) {
@@ -109,7 +109,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       fileConfig->blockUDP = FALSE;
     } else {
       fprintf(stderr, "Invalid config file entry for BLOCK_UDP\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "RESOLVE_HOST", keySize) == 0) {
     if (strncmp(ptr, "1", valueSize) == 0) {
@@ -118,29 +118,29 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       fileConfig->resolveHost = FALSE;
     } else {
       fprintf(stderr, "Invalid config file entry for RESOLVE_HOST\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "SCAN_TRIGGER", keySize) == 0) {
     fileConfig->configTriggerCount = getLong(ptr);
 
     if (fileConfig->configTriggerCount < 0) {
       fprintf(stderr, "Invalid config file entry for SCAN_TRIGGER\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "KILL_ROUTE", keySize) == 0) {
     if (copyPrintableString(ptr, fileConfig->killRoute, MAXBUF) == FALSE) {
       fprintf(stderr, "Unable to copy kill route\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "KILL_HOSTS_DENY", keySize) == 0) {
     if (copyPrintableString(ptr, fileConfig->killHostsDeny, MAXBUF) == FALSE) {
       fprintf(stderr, "Unable to copy kill hosts deny\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "KILL_RUN_CMD", keySize) == 0) {
     if (copyPrintableString(ptr, fileConfig->killRunCmd, MAXBUF) == FALSE) {
       fprintf(stderr, "Unable to copy kill run command\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "KILL_RUN_CMD_FIRST", keySize) == 0) {
     if (strncmp(ptr, "1", valueSize) == 0) {
@@ -149,74 +149,74 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       fileConfig->runCmdFirst = FALSE;
     } else {
       fprintf(stderr, "Invalid config file entry for KILL_RUN_CMD_FIRST\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "BLOCKED_FILE", keySize) == 0) {
     if (copyPrintableString(ptr, fileConfig->blockedFile, PATH_MAX) == FALSE) {
       fprintf(stderr, "Unable to copy blocked file path\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
     if (strlen(fileConfig->blockedFile) < (PATH_MAX - 5)) {
       strncat(fileConfig->blockedFile, ".", 1);
       strncat(fileConfig->blockedFile, GetSentryModeString(configData.sentryMode), 4);
     } else {
       fprintf(stderr, "Blocked filename is too long to append sentry mode file extension: %s\n", fileConfig->blockedFile);
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
 
     if (testFileAccess(fileConfig->blockedFile, "w") == FALSE) {
       fprintf(stderr, "Unable to open block file for writing: %s\n", fileConfig->blockedFile);
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "HISTORY_FILE", keySize) == 0) {
     if (copyPrintableString(ptr, fileConfig->historyFile, PATH_MAX) == FALSE) {
       fprintf(stderr, "Unable to copy history file path\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "IGNORE_FILE", keySize) == 0) {
     if (copyPrintableString(ptr, fileConfig->ignoreFile, PATH_MAX) == FALSE) {
       fprintf(stderr, "Unable to copy ignore file path\n");
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "TCP_PORTS", keySize) == 0) {
     if (parsePortsList(ptr, fileConfig->tcpPorts, &fileConfig->tcpPortsLength, MAXSOCKS) == FALSE) {
       fprintf(stderr, "Unable to parse TCP_PORTS directive in config file\n");
-      Exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "UDP_PORTS", keySize) == 0) {
     if (parsePortsList(ptr, fileConfig->udpPorts, &fileConfig->udpPortsLength, MAXSOCKS) == FALSE) {
       fprintf(stderr, "Unable to parse UDP_PORTS directive in config file\n");
-      Exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "ADVANCED_PORTS_TCP", keySize) == 0) {
     if (StrToUint16_t(ptr, &fileConfig->tcpAdvancedPort) == FALSE) {
       fprintf(stderr, "Unable to parse ADVANCED_PORTS_TCP\n");
-      Exit(1);
+      Exit(EXIT_FAILURE);
     }
 
     fprintf(stderr, "ADVANCED_PORTS_TCP = %d\n", fileConfig->tcpAdvancedPort);
   } else if (strncmp(buffer, "ADVANCED_PORTS_UDP", keySize) == 0) {
     if (StrToUint16_t(ptr, &fileConfig->udpAdvancedPort) == FALSE) {
       fprintf(stderr, "Unable to parse ADVANCED_PORTS_UDP\n");
-      Exit(1);
+      Exit(EXIT_FAILURE);
     }
     
     fprintf(stderr, "ADVANCED_PORTS_UDP = %d\n", fileConfig->udpAdvancedPort);
   } else if (strncmp(buffer, "ADVANCED_EXCLUDE_TCP", keySize) == 0) {
     if (parsePortsList(ptr, fileConfig->tcpAdvancedExcludePorts, &fileConfig->tcpAdvancedExcludePortsLength, UINT16_MAX) == FALSE) {
       fprintf(stderr, "Unable to parse ADVANCED_EXCLUDE_TCP\n");
-      Exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "ADVANCED_EXCLUDE_UDP", keySize) == 0) {
     if (parsePortsList(ptr, fileConfig->udpAdvancedExcludePorts, &fileConfig->udpAdvancedExcludePortsLength, UINT16_MAX) == FALSE) {
       fprintf(stderr, "Unable to parse ADVANCED_EXCLUDE_UDP\n");
-      Exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "PORT_BANNER", keySize) == 0) {
     copyPrintableString(ptr, fileConfig->portBanner, MAXBUF);
   } else {
     fprintf(stderr, "Invalid config file entry at line %lu\n", line);
-    exit(1);
+    Exit(EXIT_FAILURE);
   }
 }
 
@@ -224,38 +224,38 @@ static void validateConfig(struct ConfigData *fileConfig) {
   if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP) {
     if (fileConfig->tcpPortsLength == 0) {
       fprintf(stderr, "Selected mode: %s, but no TCP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP) {
     if (fileConfig->udpPortsLength == 0) {
       fprintf(stderr, "Selected mode: %s, but no UDP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
     if (fileConfig->tcpAdvancedPort == 0) {
       fprintf(stderr, "Selected mode: %s, but no ADVANCED_PORTS_TCP specified in config file\n", GetSentryModeString(configData.sentryMode));
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
     if (fileConfig->udpAdvancedPort == 0) {
       fprintf(stderr, "Selected mode: %s, but no ADVANCED_PORTS_UDP specified in config file\n", GetSentryModeString(configData.sentryMode));
-      exit(1);
+      Exit(EXIT_FAILURE);
     }
   }
 
   if (strlen(fileConfig->ignoreFile) == 0) {
     fprintf(stderr, "No IGNORE_FILE specified in config file\n");
-    exit(1);
+    Exit(EXIT_FAILURE);
   }
 
   if (strlen(fileConfig->historyFile) == 0) {
     fprintf(stderr, "No HISTORY_FILE specified in config file\n");
-    exit(1);
+    Exit(EXIT_FAILURE);
   }
 
   if (strlen(fileConfig->blockedFile) == 0) {
     fprintf(stderr, "No BLOCK_FILE specified in config file\n");
-    exit(1);
+    Exit(EXIT_FAILURE);
   }
 }
 
