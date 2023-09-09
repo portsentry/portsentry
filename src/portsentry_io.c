@@ -35,7 +35,7 @@ void Log(char *logentry, ...) {
   va_end(argsPtr);
 
   if (configData.logFlags & LOGFLAG_OUTPUT_STDOUT) {
-    printf("%s", logbuffer);
+    printf("%s\n", logbuffer);
   }
 
   if (configData.logFlags & LOGFLAG_OUTPUT_SYSLOG) {
@@ -48,7 +48,7 @@ void Log(char *logentry, ...) {
 }
 
 void Exit(int status) {
-  Log("PortSentry is shutting down\n");
+  Log("PortSentry is shutting down");
 
   if (isSyslogOpen == TRUE) {
     closelog();
@@ -79,7 +79,7 @@ int DaemonSeed(void) {
   setsid();
   /* FIXME: This should perhaps he a fatal error, also maybe do better daemonizing */
   if (chdir("/") == -1) {
-    Log("adminalert: Unable to change to root directory during daemonizing (ignoring)\n");
+    Log("adminalert: Unable to change to root directory during daemonizing (ignoring)");
   }
   umask(077);
 
@@ -100,14 +100,14 @@ int CompareIPs(char *target, char *ignoreAddr, int ignoreNetmaskBits) {
   netmaskAddr = htonl(0xFFFFFFFF << (32 - ignoreNetmaskBits));
 
 #ifdef DEBUG
-  Log("debug: target %s\n", target);
-  Log("debug: ignoreAddr %s\n", ignoreAddr);
-  Log("debug: ignoreNetmaskBits %d\n", ignoreNetmaskBits);
-  Log("debug: ipAddr %lu\n", ipAddr);
-  Log("debug: targetAddr %lu\n", targetAddr);
-  Log("debug: netmask %x\n", netmaskAddr);
-  Log("debug: mix ipAddr %lu\n", (ipAddr & netmaskAddr));
-  Log("debug: mix target %lu\n", (targetAddr & netmaskAddr));
+  Log("debug: target %s", target);
+  Log("debug: ignoreAddr %s", ignoreAddr);
+  Log("debug: ignoreNetmaskBits %d", ignoreNetmaskBits);
+  Log("debug: ipAddr %lu", ipAddr);
+  Log("debug: targetAddr %lu", targetAddr);
+  Log("debug: netmask %x", netmaskAddr);
+  Log("debug: mix ipAddr %lu", (ipAddr & netmaskAddr));
+  Log("debug: mix target %lu", (targetAddr & netmaskAddr));
 #endif
 
   /* Network portion mask & op and return */
@@ -126,13 +126,13 @@ int NeverBlock(char *target, char *filename) {
   size_t count = 0;
 
 #ifdef DEBUG
-  Log("debug: NeverBlock: Opening ignore file: %s \n", filename);
+  Log("debug: NeverBlock: Opening ignore file: %s ", filename);
 #endif
   if ((input = fopen(filename, "r")) == NULL)
     return (ERROR);
 
 #ifdef DEBUG
-  Log("debug: NeverBlock: Doing lookup for host: %s \n", target);
+  Log("debug: NeverBlock: Doing lookup for host: %s ", target);
 #endif
 
   while (fgets(buffer, MAXBUF, input) != NULL) {
@@ -166,13 +166,13 @@ int NeverBlock(char *target, char *filename) {
     /* Convert netmaskBuffer to bits in netmask */
     netmaskBits = atoi(netmaskBuffer);
     if ((netmaskBits < 0) || (netmaskBits > 32)) {
-      Log("adminalert: Invalid netmask in config file: %s  Ignoring entry.\n", buffer);
+      Log("adminalert: Invalid netmask in config file: %s  Ignoring entry.", buffer);
       continue;
     }
 
     if (CompareIPs(target, tempBuffer, netmaskBits)) {
 #ifdef DEBUG
-      Log("debug: NeverBlock: Host: %s found in ignore file with netmask %s\n", target, netmaskBuffer);
+      Log("debug: NeverBlock: Host: %s found in ignore file with netmask %s", target, netmaskBuffer);
 #endif
 
       fclose(input);
@@ -181,7 +181,7 @@ int NeverBlock(char *target, char *filename) {
   } /* end while() */
 
 #ifdef DEBUG
-  Log("debug: NeverBlock: Host: %s NOT found in ignore file\n", target);
+  Log("debug: NeverBlock: Host: %s NOT found in ignore file", target);
 #endif
 
   fclose(input);
@@ -201,11 +201,11 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   tmptr = localtime_r(&current_time, &tm);
 
 #ifdef DEBUG
-  Log("debug: WriteBlocked: Opening block file: %s \n", blockedFilename);
+  Log("debug: WriteBlocked: Opening block file: %s ", blockedFilename);
 #endif
 
   if ((output = fopen(blockedFilename, "a")) == NULL) {
-    Log("adminalert: ERROR: Cannot open blocked file: %s.\n", blockedFilename);
+    Log("adminalert: ERROR: Cannot open blocked file: %s.", blockedFilename);
     blockedStatus = FALSE;
   } else {
     fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
@@ -216,10 +216,10 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   }
 
 #ifdef DEBUG
-  Log("debug: WriteBlocked: Opening history file: %s \n", historyFilename);
+  Log("debug: WriteBlocked: Opening history file: %s ", historyFilename);
 #endif
   if ((output = fopen(historyFilename, "a")) == NULL) {
-    Log("adminalert: ERROR: Cannot open history file: %s.\n", historyFilename);
+    Log("adminalert: ERROR: Cannot open history file: %s.", historyFilename);
     historyStatus = FALSE;
   } else {
     fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
@@ -239,7 +239,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
 int BindSocket(int sockfd, int port) {
   struct sockaddr_in server;
 #ifdef DEBUG
-  Log("debug: BindSocket: Binding to port: %d\n", port);
+  Log("debug: BindSocket: Binding to port: %d", port);
 #endif
 
   bzero((char *)&server, sizeof(server));
@@ -249,12 +249,12 @@ int BindSocket(int sockfd, int port) {
 
   if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
 #ifdef DEBUG
-    Log("debug: BindSocket: Binding failed\n");
+    Log("debug: BindSocket: Binding failed");
 #endif
     return (ERROR);
   } else {
 #ifdef DEBUG
-    Log("debug: BindSocket: Binding successful. Doing listen\n");
+    Log("debug: BindSocket: Binding successful. Doing listen");
 #endif
     listen(sockfd, 5);
     return (TRUE);
@@ -266,7 +266,7 @@ int OpenTCPSocket(void) {
   int sockfd;
 
 #ifdef DEBUG
-  Log("debug: OpenTCPSocket: opening TCP socket\n");
+  Log("debug: OpenTCPSocket: opening TCP socket");
 #endif
 
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -280,7 +280,7 @@ int OpenUDPSocket(void) {
   int sockfd;
 
 #ifdef DEBUG
-  Log("debug: openUDPSocket opening UDP socket\n");
+  Log("debug: openUDPSocket opening UDP socket");
 #endif
 
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -295,7 +295,7 @@ int OpenRAWTCPSocket(void) {
   int sockfd;
 
 #ifdef DEBUG
-  Log("debug: OpenRAWTCPSocket: opening RAW TCP socket\n");
+  Log("debug: OpenRAWTCPSocket: opening RAW TCP socket");
 #endif
 
   if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP)) < 0)
@@ -309,7 +309,7 @@ int OpenRAWUDPSocket(void) {
   int sockfd;
 
 #ifdef DEBUG
-  Log("debug: OpenRAWUDPSocket: opening RAW UDP socket\n");
+  Log("debug: OpenRAWUDPSocket: opening RAW UDP socket");
 #endif
 
   if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP)) < 0)
@@ -333,27 +333,27 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   substStatus =
       SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
-    Log("adminalert: No target variable specified in KILL_ROUTE option. Skipping.\n");
+    Log("adminalert: No target variable specified in KILL_ROUTE option. Skipping.");
     return (ERROR);
   } else if (substStatus == ERROR) {
-    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_ROUTE. Skipping.\n");
+    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_ROUTE. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(portString, "$PORT$", commandStringTemp,
                   commandStringTemp2) == ERROR) {
-    Log("adminalert: Error trying to parse $PORT$ Token for KILL_ROUTE. Skipping.\n");
+    Log("adminalert: Error trying to parse $PORT$ Token for KILL_ROUTE. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(detectionType, "$MODE$", commandStringTemp2,
                   commandStringFinal) == ERROR) {
-    Log("adminalert: Error trying to parse $MODE$ Token for KILL_ROUTE. Skipping.\n");
+    Log("adminalert: Error trying to parse $MODE$ Token for KILL_ROUTE. Skipping.");
     return (ERROR);
   }
 
 #ifdef DEBUG
-  Log("debug: KillRoute: running route command: %s\n", commandStringFinal);
+  Log("debug: KillRoute: running route command: %s", commandStringFinal);
 #endif
 
   /* Kill the bastard and report a status */
@@ -384,17 +384,17 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
 
   /* Tokens are not required, but we check for an error anyway */
   if (SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp) == ERROR) {
-    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_RUN_CMD. Skipping.\n");
+    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_RUN_CMD. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
-    Log("adminalert: Error trying to parse $PORT$ Token for KILL_RUN_CMD. Skipping.\n");
+    Log("adminalert: Error trying to parse $PORT$ Token for KILL_RUN_CMD. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
-    Log("adminalert: Error trying to parse $MODE$ Token for KILL_RUN_CMD. Skipping.\n");
+    Log("adminalert: Error trying to parse $MODE$ Token for KILL_RUN_CMD. Skipping.");
     return (ERROR);
   }
 
@@ -429,31 +429,31 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
   snprintf(portString, MAXBUF, "%d", port);
 
 #ifdef DEBUG
-  Log("debug: KillHostsDeny: parsing string for block: %s\n", killString);
+  Log("debug: KillHostsDeny: parsing string for block: %s", killString);
 #endif
 
   substStatus =
       SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
-    Log("adminalert: No target variable specified in KILL_HOSTS_DENY option. Skipping.\n");
+    Log("adminalert: No target variable specified in KILL_HOSTS_DENY option. Skipping.");
     return (ERROR);
   } else if (substStatus == ERROR) {
-    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_HOSTS_DENY. Skipping.\n");
+    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_HOSTS_DENY. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
-    Log("adminalert: Error trying to parse $PORT$ Token for KILL_HOSTS_DENY. Skipping.\n");
+    Log("adminalert: Error trying to parse $PORT$ Token for KILL_HOSTS_DENY. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
-    Log("adminalert: Error trying to parse $MODE$ Token for KILL_HOSTS_DENY. Skipping.\n");
+    Log("adminalert: Error trying to parse $MODE$ Token for KILL_HOSTS_DENY. Skipping.");
     return (ERROR);
   }
 
 #ifdef DEBUG
-  Log("debug: KillHostsDeny: result string for block: %s\n", commandStringFinal);
+  Log("debug: KillHostsDeny: result string for block: %s", commandStringFinal);
 #endif
 
   if ((output = fopen(WRAPPER_HOSTS_DENY, "a")) == NULL) {
@@ -476,10 +476,10 @@ int IsBlocked(char *target, char *filename) {
   size_t count;
 
 #ifdef DEBUG
-  Log("debug: IsBlocked: Opening block file: %s \n", filename);
+  Log("debug: IsBlocked: Opening block file: %s ", filename);
 #endif
   if ((input = fopen(filename, "r")) == NULL) {
-    Log("adminalert: ERROR: Cannot open blocked file: %s for reading. Will create.\n", filename);
+    Log("adminalert: ERROR: Cannot open blocked file: %s for reading. Will create.", filename);
     return (FALSE);
   }
 
@@ -495,7 +495,7 @@ int IsBlocked(char *target, char *filename) {
       }
       if (strcmp(target, tempBuffer) == 0) {
 #ifdef DEBUG
-        Log("debug: isBlocked: Host: %s found in blocked file\n", target);
+        Log("debug: isBlocked: Host: %s found in blocked file", target);
 #endif
         fclose(input);
         return (TRUE);
@@ -503,7 +503,7 @@ int IsBlocked(char *target, char *filename) {
     }
   }
 #ifdef DEBUG
-  Log("debug: IsBlocked: Host: %s NOT found in blocked file\n", target);
+  Log("debug: IsBlocked: Host: %s NOT found in blocked file", target);
 #endif
   fclose(input);
   return (FALSE);
