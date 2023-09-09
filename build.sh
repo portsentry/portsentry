@@ -30,8 +30,9 @@ elif [ "$ACTION" == "sast" ]; then
   rsync -avz ../portsentry /tmp/
   codeql database create /tmp/portsentry/codeqldb --language=cpp --source-root=/tmp/portsentry
   codeql database analyze /tmp/portsentry/codeqldb --format=csv --output=/tmp/portsentry/codeqlout.csv
-  echo "========== CodeQL Results =========="
+  echo "========== CodeQL Results Start =========="
   cat /tmp/portsentry/codeqlout.csv
+  echo "========== CodeQL Results End =========="
 
   semgrep scan --config=auto
   flawfinder src
