@@ -45,8 +45,11 @@
 #include "portsentry_util.h"
 
 #ifdef SUPPORT_STEALTH
+#include <netinet/tcp.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
+
   #ifdef LINUX
-    #include "portsentry_tcpip.h"
     #include <netinet/in_systm.h>
   #endif
 
