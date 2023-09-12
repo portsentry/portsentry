@@ -17,6 +17,11 @@ void PostProcessConfig(struct ConfigData *cd) {
     cd->logFlags |= LOGFLAG_OUTPUT_STDOUT;
   }
 
+  if (cd->daemon == TRUE) {
+    cd->logFlags &= ~LOGFLAG_OUTPUT_STDOUT;
+    cd->logFlags |= LOGFLAG_OUTPUT_SYSLOG;
+  }
+
   if (strlen(cd->configFile) == 0) {
     if (strlen(CONFIG_FILE) > (sizeof(cd->configFile) - 1)) {
       fprintf(stderr, "Error: Config file path too long\n");
