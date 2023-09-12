@@ -71,6 +71,8 @@ void readConfigFile(void) {
       Exit(EXIT_FAILURE);
     }
 
+    *(ptr + valueSize) = '\0'; // Remove trailing quote
+
     setConfiguration(buffer, keySize, ptr, valueSize, line, &fileConfig);
   }
 
@@ -366,10 +368,9 @@ static int StrToUint16_t(const char *str, uint16_t *val) {
   // Stingy error checking
   // errno set indicates malformed input
   // endptr == str indicates no digits found
-  // *endptr != '\0' indicates non-digit characters found, however, our config file tokens ends in \" so we allow that corner case
   // value > UINT16_MAX indicates value is too large, since ports can only be 0-65535
   // value <= 0: Don't allow port 0 (or negative ports)
-  if (errno != 0 || endptr == str || (*endptr != '\0' && *endptr != '\"') || value > UINT16_MAX || value <= 0) {
+  if (errno != 0 || endptr == str || *endptr != '\0' || value > UINT16_MAX || value <= 0) {
     return FALSE;
   }
 
