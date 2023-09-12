@@ -50,7 +50,7 @@ void readConfigFile(void) {
     ptr = skipSpaceAndTab(ptr);
 
     if (*ptr != '=') {
-      fprintf(stderr, "Invalid config file entry at line %lu\n", line);
+      fprintf(stderr, "Invalid character found after config key. Require equals (=) after key. Line %lu\n", line);
       fclose(config);
       Exit(EXIT_FAILURE);
     }
@@ -59,14 +59,14 @@ void readConfigFile(void) {
     ptr = skipSpaceAndTab(ptr);
 
     if (*ptr != '"') {
-      fprintf(stderr, "Invalid config file entry at line %lu\n", line);
+      fprintf(stderr, "Invalid value on line %lu, require quote character (\") to start value\n", line);
       fclose(config);
       Exit(EXIT_FAILURE);
     }
     ptr++;
 
     if ((valueSize = getSizeToQuote(ptr)) == ERROR) {
-      fprintf(stderr, "Invalid config file entry at line %lu\n", line);
+      fprintf(stderr, "Invalid value at line %lu, require an end quote character (\") at end of value\n", line);
       fclose(config);
       Exit(EXIT_FAILURE);
     }
