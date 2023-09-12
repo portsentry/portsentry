@@ -128,18 +128,18 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "KILL_ROUTE", keySize) == 0) {
-    if (copyPrintableString(ptr, fileConfig->killRoute, MAXBUF) == FALSE) {
-      fprintf(stderr, "Unable to copy kill route\n");
+    if (snprintf(fileConfig->killRoute, MAXBUF, "%s", ptr) >= MAXBUF) {
+      fprintf(stderr, "KILL_ROUTE value too long\n");
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "KILL_HOSTS_DENY", keySize) == 0) {
-    if (copyPrintableString(ptr, fileConfig->killHostsDeny, MAXBUF) == FALSE) {
-      fprintf(stderr, "Unable to copy kill hosts deny\n");
+    if (snprintf(fileConfig->killHostsDeny, MAXBUF, "%s", ptr) >= MAXBUF) {
+      fprintf(stderr, "KILL_HOSTS_DENY value too long\n");
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "KILL_RUN_CMD", keySize) == 0) {
-    if (copyPrintableString(ptr, fileConfig->killRunCmd, MAXBUF) == FALSE) {
-      fprintf(stderr, "Unable to copy kill run command\n");
+    if(snprintf(fileConfig->killRunCmd, MAXBUF, "%s", ptr) >= MAXBUF) {
+      fprintf(stderr, "KILL_RUN_CMD value too long\n");
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "KILL_RUN_CMD_FIRST", keySize) == 0) {
@@ -152,15 +152,8 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "BLOCKED_FILE", keySize) == 0) {
-    if (copyPrintableString(ptr, fileConfig->blockedFile, PATH_MAX) == FALSE) {
-      fprintf(stderr, "Unable to copy blocked file path\n");
-      Exit(EXIT_FAILURE);
-    }
-    if (strlen(fileConfig->blockedFile) < (PATH_MAX - 5)) {
-      strncat(fileConfig->blockedFile, ".", 1);
-      strncat(fileConfig->blockedFile, GetSentryModeString(configData.sentryMode), 4);
-    } else {
-      fprintf(stderr, "Blocked filename is too long to append sentry mode file extension: %s\n", fileConfig->blockedFile);
+    if (snprintf(fileConfig->blockedFile, PATH_MAX, "%s.%s", ptr, GetSentryModeString(configData.sentryMode)) >= PATH_MAX) {
+      fprintf(stderr, "BLOCKED_FILE path value too long\n");
       Exit(EXIT_FAILURE);
     }
 
@@ -169,13 +162,13 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "HISTORY_FILE", keySize) == 0) {
-    if (copyPrintableString(ptr, fileConfig->historyFile, PATH_MAX) == FALSE) {
-      fprintf(stderr, "Unable to copy history file path\n");
+    if (snprintf(fileConfig->historyFile, PATH_MAX, "%s", ptr) >= PATH_MAX) {
+      fprintf(stderr, "HISTORY_FILE path value too long\n");
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "IGNORE_FILE", keySize) == 0) {
-    if (copyPrintableString(ptr, fileConfig->ignoreFile, PATH_MAX) == FALSE) {
-      fprintf(stderr, "Unable to copy ignore file path\n");
+    if (snprintf(fileConfig->ignoreFile, PATH_MAX, "%s", ptr) >= PATH_MAX) {
+      fprintf(stderr, "IGNORE_FILE path value too long\n");
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "TCP_PORTS", keySize) == 0) {
@@ -200,7 +193,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       fprintf(stderr, "Unable to parse ADVANCED_PORTS_UDP\n");
       Exit(EXIT_FAILURE);
     }
-    
+
     fprintf(stderr, "ADVANCED_PORTS_UDP = %d\n", fileConfig->udpAdvancedPort);
   } else if (strncmp(buffer, "ADVANCED_EXCLUDE_TCP", keySize) == 0) {
     if (parsePortsList(ptr, fileConfig->tcpAdvancedExcludePorts, &fileConfig->tcpAdvancedExcludePortsLength, UINT16_MAX) == FALSE) {
@@ -213,7 +206,10 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "PORT_BANNER", keySize) == 0) {
-    copyPrintableString(ptr, fileConfig->portBanner, MAXBUF);
+    if (snprintf(fileConfig->portBanner, MAXBUF, "%s", ptr) >= MAXBUF) {
+      fprintf(stderr, "PORT_BANNER value too long\n");
+      Exit(EXIT_FAILURE);
+    }
   } else {
     fprintf(stderr, "Invalid config file entry at line %lu\n", line);
     Exit(EXIT_FAILURE);
@@ -257,6 +253,17 @@ static void validateConfig(struct ConfigData *fileConfig) {
     fprintf(stderr, "No BLOCK_FILE specified in config file\n");
     Exit(EXIT_FAILURE);
   }
+
+/*
+ * TODO: Add validation for the following:
+    fileConfig->killRoute
+    fileConfig->killHostsDeny
+    fileConfig->killRunCmd
+    fileConfig->blockedFile
+    fileConfig->historyFile
+    fileConfig->ignoreFile
+    fileConfig->portBanner
+  */
 }
 
 static void mergeToConfigData(struct ConfigData *fileConfig) {

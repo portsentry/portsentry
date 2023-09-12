@@ -555,32 +555,6 @@ int SubstString(const char *replace, const char *find, const char *target, char 
   return (numberOfSubst);
 }
 
-int copyPrintableString(char *ptr, char *configToken, size_t maxbuf) {
-  size_t count = 0;
-
-  if(maxbuf == 0) {
-    return FALSE;
-  }
-
-  while (count < maxbuf - 1) {
-    if ((isprint(*ptr)) && *ptr != '"') {
-      configToken[count] = *ptr;
-    } else {
-      break;
-    }
-    count++;
-    ptr++;
-  }
-
-  configToken[count] = '\0';
-
-  if (count == maxbuf - 1) {
-    return FALSE;
-  }
-
-  return TRUE;
-}
-
 int testFileAccess(char *filename, char *mode) {
   FILE *testFile;
 

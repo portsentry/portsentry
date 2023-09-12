@@ -39,5 +39,4 @@ int KillRunCmd(char *, int, char *, char *);
 int IsBlocked(char *, char *);
 int SubstString(const char *, const char *, const char *, char *);
 int CompareIPs(char *, char *, int);
-int copyPrintableString(char *, char *, size_t);
 int testFileAccess(char *, char *);
