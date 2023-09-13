@@ -22,9 +22,7 @@ The build.sh script provides a convenient way to build, clean and run tests:
 - ./build.sh sast - Run sast scanners
 
 ### Running CMake manually
-There are a number of compile-time options which can be specified. The most import (and required flag is) **CMAKE_BUILD_TYPE**. It should be set to either **Debug** or **Release**.
-
-One other very important (recommended) flag is: **SUPPORT_STEALTH**. You will in 99% of cases want to set SUPPORT_STEALTH to ON.
+Required flag is: **CMAKE_BUILD_TYPE**. It should be set to either **Debug** or **Release**.
 
 #### Compilation Examples
 
@@ -32,7 +30,7 @@ One other very important (recommended) flag is: **SUPPORT_STEALTH**. You will in
 ```
 mkdir release
 cd release
-cmake .. -D CMAKE_BUILD_TYPE=Release -D SUPPORT_STEALTH=ON
+cmake .. -D CMAKE_BUILD_TYPE=Release
 cmake --build . -v
 ```
 
@@ -40,7 +38,7 @@ cmake --build . -v
 ```
 mkdir debug
 cd debug
-cmake .. -D CMAKE_BUILD_TYPE=Debug -D SUPPORT_STEALTH=ON
+cmake .. -D CMAKE_BUILD_TYPE=Debug
 cmake --build . -v
 ```
 
