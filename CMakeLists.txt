@@ -17,9 +17,6 @@ if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
   target_compile_options(portsentry PUBLIC -Wall -Wextra -pedantic -Werror -Wformat-security -Wstack-protector -fstack-protector-strong -pie -fPIE -D_FORTIFY_SOURCE=2)
 endif()
 
-# FIXME: Hack to get correct build conditions under linux. Platform should be evaluated/selected later
-target_compile_definitions(portsentry PUBLIC LINUX)
-
 target_compile_definitions(portsentry PUBLIC SUPPORT_STEALTH)
 
 target_link_libraries(portsentry PRIVATE $<$<CONFIG:Debug>:efence>)
