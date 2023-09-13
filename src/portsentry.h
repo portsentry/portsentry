@@ -49,10 +49,6 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 
-  #ifdef LINUX
-    #include <netinet/in_systm.h>
-  #endif
-
 #define TCPPACKETLEN 80
 #define UDPPACKETLEN 68
 #endif /* SUPPORT_STEALTH */
