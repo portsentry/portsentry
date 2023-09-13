@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(Portsentry VERSION 1.3)
+project(Portsentry VERSION 2.0)
 
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
