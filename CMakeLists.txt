@@ -22,8 +22,6 @@ endif()
 # FIXME: Hack to get correct build conditions under linux. Platform should be evaluated/selected later
 target_compile_definitions(portsentry PUBLIC LINUX)
 
-target_compile_definitions(portsentry PRIVATE $<$<CONFIG:Debug>:DEBUG>)
-
 target_link_libraries(portsentry PRIVATE $<$<CONFIG:Debug>:efence>)
 
 if (SUPPORT_STEALTH)
