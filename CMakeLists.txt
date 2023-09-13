@@ -7,8 +7,6 @@ set(SYSLOG_FACILITY LOG_DAEMON CACHE STRING "Syslog facility to use")
 set(SYSLOG_LEVEL LOG_NOTICE CACHE STRING "Syslog level to use")
 set(MAXSTATE 50 CACHE STRING "Maximum number of hosts to keep in a \"previous connect\" state engine")
 
-option(SUPPORT_STEALTH "Enable stealth mode" OFF)
-
 configure_file(config.h.in config.h)
 
 add_executable(portsentry src/config_data.c src/configfile.c  src/portsentry.c  src/portsentry_io.c  src/portsentry_util.c src/state_machine.c src/cmdline.c)
@@ -22,11 +20,9 @@ endif()
 # FIXME: Hack to get correct build conditions under linux. Platform should be evaluated/selected later
 target_compile_definitions(portsentry PUBLIC LINUX)
 
-target_link_libraries(portsentry PRIVATE $<$<CONFIG:Debug>:efence>)
+target_compile_definitions(portsentry PUBLIC SUPPORT_STEALTH)
 
-if (SUPPORT_STEALTH)
-  target_compile_definitions(portsentry PUBLIC SUPPORT_STEALTH)
-endif()
+target_link_libraries(portsentry PRIVATE $<$<CONFIG:Debug>:efence>)
 
 install(TARGETS portsentry DESTINATION usr/sbin)
 install(FILES examples/portsentry.conf DESTINATION etc/portsentry)
