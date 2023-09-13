@@ -2,10 +2,10 @@
 
 ACTION=$1
 
-if [ "$ACTION" == "clean" ]; then
+if [ "$ACTION" = "clean" ]; then
   rm -rf debug release
   exit 0
-elif [ "$ACTION" == "debug" ]; then
+elif [ "$ACTION" = "debug" ]; then
   if [ ! -d "debug" ]; then
     mkdir debug
     cd debug
@@ -15,7 +15,7 @@ elif [ "$ACTION" == "debug" ]; then
   cd debug
   cmake --build . -v
   exit 0
-elif [ "$ACTION" == "release" ]; then
+elif [ "$ACTION" = "release" ]; then
   if [ ! -d "release" ]; then
     mkdir release
     cd release
@@ -25,7 +25,7 @@ elif [ "$ACTION" == "release" ]; then
   cd release
   cmake --build . -v
   exit 0
-elif [ "$ACTION" == "sast" ]; then
+elif [ "$ACTION" = "sast" ]; then
   rm -rf /tmp/portsentry
   rsync -avz ../portsentry /tmp/
   codeql database create /tmp/portsentry/codeqldb --language=cpp --source-root=/tmp/portsentry
