@@ -14,7 +14,7 @@ add_executable(portsentry src/config_data.c src/configfile.c  src/portsentry.c  
 target_include_directories(portsentry PUBLIC "${PROJECT_BINARY_DIR}")
 
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-  target_compile_options(portsentry PUBLIC -Wall -Wextra -pedantic -Werror -Wformat-security -Wstack-protector -mmitigate-rop -fstack-protector-strong -pie -fPIE -D_FORTIFY_SOURCE=2)
+  target_compile_options(portsentry PUBLIC -Wall -Wextra -pedantic -Werror -Wformat-security -Wstack-protector -fstack-protector-strong -pie -fPIE -D_FORTIFY_SOURCE=2)
 endif()
 
 # FIXME: Hack to get correct build conditions under linux. Platform should be evaluated/selected later
