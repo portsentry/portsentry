@@ -24,6 +24,23 @@
 #include "config_data.h"
 #include "state_machine.h"
 
+static int PortSentryModeTCP(void);
+static int PortSentryModeUDP(void);
+static int DisposeUDP(char *, int);
+static int DisposeTCP(char *, int);
+static int SmartVerifyTCP(int);
+static int SmartVerifyUDP(int);
+
+#ifdef SUPPORT_STEALTH
+static int PortSentryStealthModeTCP(void);
+static int PortSentryAdvancedStealthModeTCP(void);
+static int PortSentryStealthModeUDP(void);
+static int PortSentryAdvancedStealthModeUDP(void);
+static char * ReportPacketType(struct tcphdr);
+static int PacketReadTCP(int, struct iphdr *, struct tcphdr *);
+static int PacketReadUDP(int, struct iphdr *, struct udphdr *);
+#endif
+
 static int EvalPortsInUse(int *portCount, int *ports);
 
 int main(int argc, char *argv[]) {
@@ -95,7 +112,7 @@ int main(int argc, char *argv[]) {
 
 /* Read in a TCP packet taking into account IP options and other */
 /* errors */
-int PacketReadTCP(int socket, struct iphdr *ipPtr, struct tcphdr *tcpPtr) {
+static int PacketReadTCP(int socket, struct iphdr *ipPtr, struct tcphdr *tcpPtr) {
   char packetBuffer[TCPPACKETLEN];
   struct in_addr addr;
 
@@ -119,7 +136,7 @@ int PacketReadTCP(int socket, struct iphdr *ipPtr, struct tcphdr *tcpPtr) {
 
 /* Read in a UDP packet taking into account IP options and other */
 /* errors */
-int PacketReadUDP(int socket, struct iphdr *ipPtr, struct udphdr *udpPtr) {
+static int PacketReadUDP(int socket, struct iphdr *ipPtr, struct udphdr *udpPtr) {
   char packetBuffer[UDPPACKETLEN];
   struct in_addr addr;
 
@@ -195,7 +212,7 @@ static int EvalPortsInUse(int *portCount, int *ports) {
 /* then open a raw socket to look for packets matching the port. */
 /*                                                              */
 /****************************************************************/
-int PortSentryStealthModeTCP(void) {
+static int PortSentryStealthModeTCP(void) {
   int portCount2, ports2[MAXSOCKS];
   int count = 0, scanDetectTrigger = TRUE, result = TRUE;
   int openSockfd = 0, incomingPort = 0;
@@ -293,7 +310,7 @@ int PortSentryStealthModeTCP(void) {
 /* regardless of TCP flags set                                  */
 /*                                                              */
 /****************************************************************/
-int PortSentryAdvancedStealthModeTCP(void) {
+static int PortSentryAdvancedStealthModeTCP(void) {
   int result = TRUE, scanDetectTrigger = TRUE, hotPort = TRUE;
   int openSockfd = 0, smartVerify = FALSE, i;
   unsigned int incomingPort = 0;
@@ -420,7 +437,7 @@ int PortSentryAdvancedStealthModeTCP(void) {
 /* then open a raw socket to look for packets matching the port. */
 /*                                                              */
 /****************************************************************/
-int PortSentryStealthModeUDP(void) {
+static int PortSentryStealthModeUDP(void) {
   int portCount2 = 0, ports2[MAXSOCKS], result = TRUE;
   int count = 0, scanDetectTrigger = TRUE;
   int openSockfd = 0, incomingPort = 0;
@@ -511,7 +528,7 @@ int PortSentryStealthModeUDP(void) {
 /* This is a very dangerous option and is for advanced users    */
 /*                                                              */
 /****************************************************************/
-int PortSentryAdvancedStealthModeUDP(void) {
+static int PortSentryAdvancedStealthModeUDP(void) {
   int result = TRUE, scanDetectTrigger = TRUE, hotPort = TRUE;
   int openSockfd = 0, smartVerify = FALSE, i;
   unsigned int incomingPort = 0;
@@ -766,7 +783,7 @@ int PortSentryModeTCP(void) {
 /* here.                                                        */
 /*                                                              */
 /****************************************************************/
-int PortSentryModeUDP(void) {
+static int PortSentryModeUDP(void) {
   struct sockaddr_in client;
   socklen_t length;
   int openSockfd[MAXSOCKS], result = TRUE;
@@ -880,7 +897,7 @@ int PortSentryModeUDP(void) {
 } /* end UDP PortSentry */
 
 /* kill the TCP connection depending on config option */
-int DisposeTCP(char *target, int port) {
+static int DisposeTCP(char *target, int port) {
   int status = TRUE;
 
   Debug("DisposeTCP: disposing of host %s on port %d with option: %d", target, port, configData.blockTCP);
@@ -925,7 +942,7 @@ int DisposeTCP(char *target, int port) {
 }
 
 /* kill the UDP connection depending on config option */
-int DisposeUDP(char *target, int port) {
+static int DisposeUDP(char *target, int port) {
   int status = TRUE;
 
   Debug("DisposeUDP: disposing of host %s on port %d with option: %d", target, port, configData.blockUDP);
@@ -971,7 +988,7 @@ int DisposeUDP(char *target, int port) {
 
 #ifdef SUPPORT_STEALTH
 /* This takes a tcp packet and reports what type of scan it is */
-char *ReportPacketType(struct tcphdr tcpPkt) {
+static char *ReportPacketType(struct tcphdr tcpPkt) {
   static char packetDesc[MAXBUF];
   static char *packetDescPtr = packetDesc;
 
@@ -994,7 +1011,7 @@ char *ReportPacketType(struct tcphdr tcpPkt) {
   return (packetDescPtr);
 }
 
-int SmartVerifyTCP(int port) {
+static int SmartVerifyTCP(int port) {
   int testSockfd;
 
   /* Ok here is where we "Smart-Verify" the socket. If the port was previously
@@ -1017,7 +1034,7 @@ int SmartVerifyTCP(int port) {
   return (FALSE);
 }
 
-int SmartVerifyUDP(int port) {
+static int SmartVerifyUDP(int port) {
   int testSockfd;
 
   /* Ok here is where we "Smart-Verify" the socket. If the port was previously

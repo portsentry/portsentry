@@ -64,21 +64,3 @@
 
 /* Really is about 1025, but we don't need the length for our purposes */
 #define DNSMAXBUF 255
-
-/* prototypes */
-int PortSentryModeTCP(void);
-int PortSentryModeUDP(void);
-int DisposeUDP(char *, int);
-int DisposeTCP(char *, int);
-int SmartVerifyTCP(int);
-int SmartVerifyUDP(int);
-
-#ifdef SUPPORT_STEALTH
-int PortSentryStealthModeTCP(void);
-int PortSentryAdvancedStealthModeTCP(void);
-int PortSentryStealthModeUDP(void);
-int PortSentryAdvancedStealthModeUDP(void);
-char * ReportPacketType(struct tcphdr);
-int PacketReadTCP(int, struct iphdr *, struct tcphdr *);
-int PacketReadUDP(int, struct iphdr *, struct udphdr *);
-#endif
