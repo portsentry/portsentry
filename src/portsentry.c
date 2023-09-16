@@ -36,9 +36,8 @@ static int PortSentryStealthModeTCP(void);
 static int PortSentryAdvancedStealthModeTCP(void);
 static int PortSentryStealthModeUDP(void);
 static int PortSentryAdvancedStealthModeUDP(void);
-static char * ReportPacketType(struct tcphdr);
-static int PacketReadTCP(int, struct iphdr *, struct tcphdr *);
-static int PacketReadUDP(int, struct iphdr *, struct udphdr *);
+static int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct iphdr **ipPtr, void **transportPtr);
+static char * ReportPacketType(struct tcphdr *);
 #endif
 
 static int EvalPortsInUse(int *portCount, int *ports);
@@ -110,52 +109,35 @@ int main(int argc, char *argv[]) {
 
 #ifdef SUPPORT_STEALTH
 
-/* Read in a TCP packet taking into account IP options and other */
-/* errors */
-static int PacketReadTCP(int socket, struct iphdr *ipPtr, struct tcphdr *tcpPtr) {
-  char packetBuffer[TCPPACKETLEN];
+/* Read packet IP and transport headers and set ipPtr/transportPtr to their correct location
+ * transportPtr is either a struct tcphdr * or struct udphdr *
+ */
+static int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct iphdr **ipPtr, void **transportPtr) {
+  size_t ipHeaderLength;
   struct in_addr addr;
 
-  bzero(ipPtr, sizeof(struct iphdr));
-  bzero(tcpPtr, sizeof(struct tcphdr));
-
-  if (read(socket, packetBuffer, TCPPACKETLEN) == ERROR)
-    return (ERROR);
-
-  memcpy(ipPtr, (struct iphdr *)packetBuffer, sizeof(struct iphdr));
-
-  if ((ipPtr->ihl < 5) || (ipPtr->ihl > 15)) {
-    addr.s_addr = (u_int)ipPtr->saddr;
-    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", ipPtr->ihl, inet_ntoa(addr));
-    return (FALSE);
-  } else {
-    memcpy(tcpPtr, (struct tcphdr *)(packetBuffer + ((ipPtr->ihl) * 4)), sizeof(struct tcphdr));
-    return (TRUE);
+  if(read(socket, packetBuffer, packetBufferSize) == -1) {
+    Log("adminalert: ERROR: Could not read from socket %d: (errno: %d). Aborting", socket, errno);
+    return ERROR;
   }
-}
 
-/* Read in a UDP packet taking into account IP options and other */
-/* errors */
-static int PacketReadUDP(int socket, struct iphdr *ipPtr, struct udphdr *udpPtr) {
-  char packetBuffer[UDPPACKETLEN];
-  struct in_addr addr;
+  *ipPtr = (struct iphdr *)packetBuffer;
 
-  bzero(ipPtr, sizeof(struct iphdr));
-  bzero(udpPtr, sizeof(struct udphdr));
-
-  if (read(socket, packetBuffer, UDPPACKETLEN) == ERROR)
-    return (ERROR);
-
-  memcpy(ipPtr, (struct iphdr *)packetBuffer, sizeof(struct iphdr));
-
-  if ((ipPtr->ihl < 5) || (ipPtr->ihl > 15)) {
-    addr.s_addr = (u_int)ipPtr->saddr;
-    Log("attackalert: Illegal IP header length detected in UDP packet: %d from (possible) host: %s", ipPtr->ihl, inet_ntoa(addr));
+  if (((*ipPtr)->ihl < 5) || ((*ipPtr)->ihl > 15)) {
+    addr.s_addr = (u_int)(*ipPtr)->saddr;
+    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", (*ipPtr)->ihl, inet_ntoa(addr));
     return (FALSE);
-  } else {
-    memcpy(udpPtr, (struct udphdr *)(packetBuffer + ((ipPtr->ihl) * 4)), sizeof(struct udphdr));
-    return (TRUE);
   }
+
+  ipHeaderLength = (*ipPtr)->ihl * 4;
+
+  if (ipHeaderLength > packetBufferSize) {
+    Log("adminalert: ERROR: IP header length (%d) is larger than packet buffer size (%d). Aborting", ipHeaderLength, packetBufferSize);
+    return FALSE;
+  }
+
+  *transportPtr = (void *)(packetBuffer + ipHeaderLength);
+  return TRUE;
 }
 
 static int EvalPortsInUse(int *portCount, int *ports) {
@@ -218,9 +200,10 @@ static int PortSentryStealthModeTCP(void) {
   int openSockfd = 0, incomingPort = 0;
   char target[IPMAXBUF];
   char resolvedHost[DNSMAXBUF], *packetType;
+  char packetBuffer[TCPPACKETLEN];
   struct in_addr addr;
-  struct iphdr ip;
-  struct tcphdr tcp;
+  struct iphdr *ip;
+  struct tcphdr *tcp;
 
   /* ok, now check if they have a network daemon on the socket already, if they
    * do then skip that port because it will cause false alarms */
@@ -238,13 +221,13 @@ static int PortSentryStealthModeTCP(void) {
 
   /* main detection loop */
   for (;;) {
-    if (PacketReadTCP(openSockfd, &ip, &tcp) != TRUE)
+    if (PacketRead(openSockfd, packetBuffer, TCPPACKETLEN, &ip, (void **)&tcp) != TRUE)
       continue;
 
-    incomingPort = ntohs(tcp.dest);
+    incomingPort = ntohs(tcp->dest);
 
     /* check for an ACK/RST to weed out established connections in case the user is monitoring high ephemeral port numbers */
-    if ((tcp.ack != 1) && (tcp.rst != 1)) {
+    if ((tcp->ack != 1) && (tcp->rst != 1)) {
       /* this iterates the list of ports looking for a match */
       for (count = 0; count < portCount2; count++) {
         if (incomingPort == ports2[count]) {
@@ -252,7 +235,7 @@ static int PortSentryStealthModeTCP(void) {
             break;
 
           /* copy the clients address into our buffer for nuking */
-          addr.s_addr = (u_int)ip.saddr;
+          addr.s_addr = (u_int)ip->saddr;
           SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
           /* check if we should ignore this IP */
           result = NeverBlock(target, configData.ignoreFile);
@@ -278,7 +261,7 @@ static int PortSentryStealthModeTCP(void) {
               packetType = ReportPacketType(tcp);
               Log("attackalert: %s from host: %s/%s to TCP port: %d", packetType, resolvedHost, target, ports2[count]);
               /* Report on options present */
-              if (ip.ihl > 5)
+              if (ip->ihl > 5)
                 Log("attackalert: Packet from host: %s/%s to TCP port: %d has IP options set (detection avoidance technique).",
                     resolvedHost, target, ports2[count]);
 
@@ -317,9 +300,10 @@ static int PortSentryAdvancedStealthModeTCP(void) {
   unsigned int count = 0, inUsePorts[MAXSOCKS], portCount = 0;
   char target[IPMAXBUF];
   char resolvedHost[DNSMAXBUF], *packetType;
+  char packetBuffer[TCPPACKETLEN];
   struct in_addr addr;
-  struct iphdr ip;
-  struct tcphdr tcp;
+  struct iphdr *ip;
+  struct tcphdr *tcp;
 
   Log("adminalert: Advanced mode will monitor first %d ports", configData.tcpAdvancedPort);
 
@@ -358,14 +342,14 @@ static int PortSentryAdvancedStealthModeTCP(void) {
 
   /* main detection loop */
   for (;;) {
-    if (PacketReadTCP(openSockfd, &ip, &tcp) != TRUE)
+    if (PacketRead(openSockfd, packetBuffer, TCPPACKETLEN, &ip, (void **)&tcp) != TRUE)
       continue;
 
-    incomingPort = ntohs(tcp.dest);
+    incomingPort = ntohs(tcp->dest);
 
     /* don't monitor packets with ACK set (established) or RST */
     /* This could be a hole in some cases */
-    if ((tcp.ack != 1) && (tcp.rst != 1)) {
+    if ((tcp->ack != 1) && (tcp->rst != 1)) {
       /* check if we should ignore this connection to this port */
       for (count = 0; count < portCount; count++) {
         if ((incomingPort == inUsePorts[count]) || (incomingPort >= configData.tcpAdvancedPort)) {
@@ -380,7 +364,7 @@ static int PortSentryAdvancedStealthModeTCP(void) {
         smartVerify = SmartVerifyTCP(incomingPort);
 
         if (smartVerify != TRUE) {
-          addr.s_addr = (u_int)ip.saddr;
+          addr.s_addr = (u_int)ip->saddr;
           SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
           /* check if we should ignore this IP */
           result = NeverBlock(target, configData.ignoreFile);
@@ -407,7 +391,7 @@ static int PortSentryAdvancedStealthModeTCP(void) {
               packetType = ReportPacketType(tcp);
               Log("attackalert: %s from host: %s/%s to TCP port: %u", packetType, resolvedHost, target, incomingPort);
               /* Report on options present */
-              if (ip.ihl > 5)
+              if (ip->ihl > 5)
                 Log("attackalert: Packet from host: %s/%s to TCP port: %u has IP options set (detection avoidance technique).",
                     resolvedHost, target, incomingPort);
 
@@ -443,9 +427,10 @@ static int PortSentryStealthModeUDP(void) {
   int openSockfd = 0, incomingPort = 0;
   char target[IPMAXBUF];
   char resolvedHost[DNSMAXBUF];
+  char packetBuffer[UDPPACKETLEN];
   struct in_addr addr;
-  struct iphdr ip;
-  struct udphdr udp;
+  struct iphdr *ip;
+  struct udphdr *udp;
 
   /* ok, now check if they have a network daemon on the socket already, if they
    * do then skip that port because it will cause false alarms */
@@ -462,10 +447,10 @@ static int PortSentryStealthModeUDP(void) {
 
   /* main detection loop */
   for (;;) {
-    if (PacketReadUDP(openSockfd, &ip, &udp) != TRUE)
+    if (PacketRead(openSockfd, packetBuffer, UDPPACKETLEN, &ip, (void **)&udp) != TRUE)
       continue;
 
-    incomingPort = ntohs(udp.dest);
+    incomingPort = ntohs(udp->dest);
 
     /* this iterates the list of ports looking for a match */
     for (count = 0; count < portCount2; count++) {
@@ -473,7 +458,7 @@ static int PortSentryStealthModeUDP(void) {
         if (SmartVerifyUDP(incomingPort) == TRUE)
           break;
 
-        addr.s_addr = (u_int)ip.saddr;
+        addr.s_addr = (u_int)ip->saddr;
         SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
         /* check if we should ignore this IP */
         result = NeverBlock(target, configData.ignoreFile);
@@ -498,7 +483,7 @@ static int PortSentryStealthModeUDP(void) {
 
             Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, ports2[count]);
             /* Report on options present */
-            if (ip.ihl > 5)
+            if (ip->ihl > 5)
               Log("attackalert: Packet from host: %s/%s to UDP port: %d has IP options set (detection avoidance technique).",
                   resolvedHost, target, incomingPort);
 
@@ -535,9 +520,10 @@ static int PortSentryAdvancedStealthModeUDP(void) {
   unsigned int count = 0, inUsePorts[MAXSOCKS], portCount = 0;
   char target[IPMAXBUF];
   char resolvedHost[DNSMAXBUF];
+  char packetBuffer[UDPPACKETLEN];
   struct in_addr addr;
-  struct iphdr ip;
-  struct udphdr udp;
+  struct iphdr *ip;
+  struct udphdr *udp;
 
   Log("adminalert: Advanced mode will monitor first %d ports", configData.udpAdvancedPort);
 
@@ -576,10 +562,10 @@ static int PortSentryAdvancedStealthModeUDP(void) {
 
   /* main detection loop */
   for (;;) {
-    if (PacketReadUDP(openSockfd, &ip, &udp) != TRUE)
+    if (PacketRead(openSockfd, packetBuffer, UDPPACKETLEN, &ip, (void **)&udp) != TRUE)
       continue;
 
-    incomingPort = ntohs(udp.dest);
+    incomingPort = ntohs(udp->dest);
 
     /* check if we should ignore this connection to this port */
     for (count = 0; count < portCount; count++) {
@@ -596,7 +582,7 @@ static int PortSentryAdvancedStealthModeUDP(void) {
 
       if (smartVerify != TRUE) {
         /* copy the clients address into our buffer for nuking */
-        addr.s_addr = (u_int)ip.saddr;
+        addr.s_addr = (u_int)ip->saddr;
         SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
         /* check if we should ignore this IP */
         result = NeverBlock(target, configData.ignoreFile);
@@ -622,7 +608,7 @@ static int PortSentryAdvancedStealthModeUDP(void) {
 
             Log("attackalert: UDP scan from host: %s/%s to UDP port: %u", resolvedHost, target, incomingPort);
             /* Report on options present */
-            if (ip.ihl > 5)
+            if (ip->ihl > 5)
               Log("attackalert: Packet from host: %s/%s to UDP port: %u has IP options set (detection avoidance technique).", resolvedHost, target, incomingPort);
 
             /* check if this target is already blocked */
@@ -988,25 +974,25 @@ static int DisposeUDP(char *target, int port) {
 
 #ifdef SUPPORT_STEALTH
 /* This takes a tcp packet and reports what type of scan it is */
-static char *ReportPacketType(struct tcphdr tcpPkt) {
+static char *ReportPacketType(struct tcphdr *tcpPkt) {
   static char packetDesc[MAXBUF];
   static char *packetDescPtr = packetDesc;
 
-  if ((tcpPkt.syn == 0) && (tcpPkt.fin == 0) && (tcpPkt.ack == 0) &&
-      (tcpPkt.psh == 0) && (tcpPkt.rst == 0) && (tcpPkt.urg == 0))
+  if ((tcpPkt->syn == 0) && (tcpPkt->fin == 0) && (tcpPkt->ack == 0) &&
+      (tcpPkt->psh == 0) && (tcpPkt->rst == 0) && (tcpPkt->urg == 0))
     snprintf(packetDesc, MAXBUF, " TCP NULL scan");
-  else if ((tcpPkt.fin == 1) && (tcpPkt.urg == 1) && (tcpPkt.psh == 1))
+  else if ((tcpPkt->fin == 1) && (tcpPkt->urg == 1) && (tcpPkt->psh == 1))
     snprintf(packetDesc, MAXBUF, "TCP XMAS scan");
-  else if ((tcpPkt.fin == 1) && (tcpPkt.syn != 1) && (tcpPkt.ack != 1) &&
-           (tcpPkt.psh != 1) && (tcpPkt.rst != 1) && (tcpPkt.urg != 1))
+  else if ((tcpPkt->fin == 1) && (tcpPkt->syn != 1) && (tcpPkt->ack != 1) &&
+           (tcpPkt->psh != 1) && (tcpPkt->rst != 1) && (tcpPkt->urg != 1))
     snprintf(packetDesc, MAXBUF, "TCP FIN scan");
-  else if ((tcpPkt.syn == 1) && (tcpPkt.fin != 1) && (tcpPkt.ack != 1) &&
-           (tcpPkt.psh != 1) && (tcpPkt.rst != 1) && (tcpPkt.urg != 1))
+  else if ((tcpPkt->syn == 1) && (tcpPkt->fin != 1) && (tcpPkt->ack != 1) &&
+           (tcpPkt->psh != 1) && (tcpPkt->rst != 1) && (tcpPkt->urg != 1))
     snprintf(packetDesc, MAXBUF, "TCP SYN/Normal scan");
   else
     snprintf(packetDesc, MAXBUF,
              "Unknown Type: TCP Packet Flags: SYN: %d FIN: %d ACK: %d PSH: %d URG: %d RST: %d",
-             tcpPkt.syn, tcpPkt.fin, tcpPkt.ack, tcpPkt.psh, tcpPkt.urg, tcpPkt.rst);
+             tcpPkt->syn, tcpPkt->fin, tcpPkt->ack, tcpPkt->psh, tcpPkt->urg, tcpPkt->rst);
 
   return (packetDescPtr);
 }
