@@ -24,12 +24,16 @@
 #include "portsentry_util.h"
 #include "state_machine.h"
 
+enum ProtocolType {
+  PROTOCOL_TCP,
+  PROTOCOL_UDP
+};
+
 static int PortSentryModeTCP(void);
 static int PortSentryModeUDP(void);
 static int DisposeUDP(char *, int);
 static int DisposeTCP(char *, int);
-static int SmartVerifyTCP(int);
-static int SmartVerifyUDP(int);
+static int IsPortInUse(uint16_t port, enum ProtocolType proto);
 
 #ifdef SUPPORT_STEALTH
 static int PortSentryStealthModeTCP(void);
@@ -230,7 +234,7 @@ static int PortSentryStealthModeTCP(void) {
       /* this iterates the list of ports looking for a match */
       for (count = 0; count < portCount2; count++) {
         if (incomingPort == ports2[count]) {
-          if (SmartVerifyTCP(incomingPort) == TRUE)
+          if (IsPortInUse(incomingPort, PROTOCOL_TCP) == TRUE)
             break;
 
           /* copy the clients address into our buffer for nuking */
@@ -360,7 +364,7 @@ static int PortSentryAdvancedStealthModeTCP(void) {
       }
 
       if (hotPort) {
-        smartVerify = SmartVerifyTCP(incomingPort);
+        smartVerify = IsPortInUse(incomingPort, PROTOCOL_TCP);
 
         if (smartVerify != TRUE) {
           addr.s_addr = (u_int)ip->saddr;
@@ -454,7 +458,7 @@ static int PortSentryStealthModeUDP(void) {
     /* this iterates the list of ports looking for a match */
     for (count = 0; count < portCount2; count++) {
       if (incomingPort == ports2[count]) {
-        if (SmartVerifyUDP(incomingPort) == TRUE)
+        if (IsPortInUse(incomingPort, PROTOCOL_UDP) == TRUE)
           break;
 
         addr.s_addr = (u_int)ip->saddr;
@@ -577,7 +581,7 @@ static int PortSentryAdvancedStealthModeUDP(void) {
     }
 
     if (hotPort) {
-      smartVerify = SmartVerifyUDP(incomingPort);
+      smartVerify = IsPortInUse(incomingPort, PROTOCOL_UDP);
 
       if (smartVerify != TRUE) {
         /* copy the clients address into our buffer for nuking */
@@ -996,51 +1000,32 @@ static char *ReportPacketType(struct tcphdr *tcpPkt) {
   return (packetDescPtr);
 }
 
-static int SmartVerifyTCP(int port) {
+static int IsPortInUse(uint16_t port, enum ProtocolType proto) {
   int testSockfd;
 
-  /* Ok here is where we "Smart-Verify" the socket. If the port was previously
-   * unbound, but now appears to have someone there, then we will skip responding
-   * to this inbound packet. This a basic "stateful" inspection of the
-   * the connection */
+  assert(proto == PROTOCOL_TCP || proto == PROTOCOL_UDP);
 
-  if ((testSockfd = OpenTCPSocket()) == ERROR) {
-    Log("adminalert: ERROR: could not open TCP socket to smart-verify.");
-    return (FALSE);
+  if (proto == PROTOCOL_TCP) {
+    testSockfd = OpenTCPSocket();
+  } else if (proto == PROTOCOL_UDP) {
+    testSockfd = OpenUDPSocket();
   } else {
-    if (BindSocket(testSockfd, port) == ERROR) {
-      Debug("SmartVerify: Smart-Verify Port In Use: %d", port);
-      close(testSockfd);
-      return (TRUE);
-    }
+    Log("adminalert: ERROR: invalid protocol type passed to IsPortInUse.");
+    return (FALSE);
+  }
+
+  if (testSockfd == ERROR) {
+    Log("adminalert: ERROR: could not open %s socket to smart-verify.", proto == PROTOCOL_TCP ? "TCP" : "UDP");
+    return (FALSE);
+  }
+
+  if (BindSocket(testSockfd, port) == ERROR) {
+    Debug("Port In Use: %d", port);
+    close(testSockfd);
+    return (TRUE);
   }
 
   close(testSockfd);
   return (FALSE);
 }
-
-static int SmartVerifyUDP(int port) {
-  int testSockfd;
-
-  /* Ok here is where we "Smart-Verify" the socket. If the port was previously
-   * unbound, but now appears to have someone there, then we will skip
-   * responding
-   * to this inbound packet. This essentially is a "stateful" inspection of the
-   * the connection */
-
-  if ((testSockfd = OpenUDPSocket()) == ERROR) {
-    Log("adminalert: ERROR: could not open UDP socket to smart-verify.");
-    return (FALSE);
-  } else {
-    if (BindSocket(testSockfd, port) == ERROR) {
-      Debug("SmartVerify: Smart-Verify Port In Use: %d", port);
-      close(testSockfd);
-      return (TRUE);
-    }
-  }
-
-  close(testSockfd);
-  return (FALSE);
-}
-
 #endif /* SUPPORT_STEALTH */
