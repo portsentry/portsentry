@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "config_data.h"
 #include "configfile.h"
 #include "portsentry.h"
 #include "portsentry_io.h"
 #include "portsentry_util.h"
-#include "config_data.h"
 
 static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
 static void validateConfig(struct ConfigData *fileConfig);
@@ -79,9 +79,9 @@ void readConfigFile(void) {
   fclose(config);
 
   // Set default values if not set in config file
-  if(fileConfig.tcpAdvancedPort == 0)
+  if (fileConfig.tcpAdvancedPort == 0)
     fileConfig.tcpAdvancedPort = ADVANCED_MODE_PORT_TCP;
-  if(fileConfig.udpAdvancedPort == 0)
+  if (fileConfig.udpAdvancedPort == 0)
     fileConfig.udpAdvancedPort = ADVANCED_MODE_PORT_UDP;
 
   /* Make sure config is valid */
@@ -138,7 +138,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "KILL_RUN_CMD", keySize) == 0) {
-    if(snprintf(fileConfig->killRunCmd, MAXBUF, "%s", ptr) >= MAXBUF) {
+    if (snprintf(fileConfig->killRunCmd, MAXBUF, "%s", ptr) >= MAXBUF) {
       fprintf(stderr, "KILL_RUN_CMD value too long\n");
       Exit(EXIT_FAILURE);
     }
@@ -254,16 +254,16 @@ static void validateConfig(struct ConfigData *fileConfig) {
     Exit(EXIT_FAILURE);
   }
 
-/*
- * TODO: Add validation for the following:
-    fileConfig->killRoute
-    fileConfig->killHostsDeny
-    fileConfig->killRunCmd
-    fileConfig->blockedFile
-    fileConfig->historyFile
-    fileConfig->ignoreFile
-    fileConfig->portBanner
-  */
+  /*
+   * TODO: Add validation for the following:
+      fileConfig->killRoute
+      fileConfig->killHostsDeny
+      fileConfig->killRunCmd
+      fileConfig->blockedFile
+      fileConfig->historyFile
+      fileConfig->ignoreFile
+      fileConfig->portBanner
+    */
 }
 
 static void mergeToConfigData(struct ConfigData *fileConfig) {

@@ -16,8 +16,8 @@
 /* $Id: portsentry_util.c,v 1.11 2003/05/23 17:41:59 crowland Exp crowland $ */
 /************************************************************************/
 
-#include "portsentry.h"
 #include "portsentry_util.h"
+#include "portsentry.h"
 #include "portsentry_io.h"
 
 /* A replacement for strncpy that covers mistakes a little better */

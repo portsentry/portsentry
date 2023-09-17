@@ -1,6 +1,6 @@
-#include "portsentry.h"
 #include "state_machine.h"
 #include "config_data.h"
+#include "portsentry.h"
 
 static char gblScanDetectHost[MAXSTATE][IPMAXBUF];
 static int gblScanDetectCount = 0;
@@ -69,4 +69,3 @@ int CheckStateEngine(char *target) {
   }
   return (scanDetectTrigger);
 }
-

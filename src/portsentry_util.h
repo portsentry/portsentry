@@ -17,6 +17,8 @@
 /* $Id: portsentry_util.h,v 1.10 2003/05/23 17:42:07 crowland Exp crowland $ */
 /************************************************************************/
 
+#include <sys/types.h>
+
 /* IP address length plus null */
 #define IPMAXBUF 16
 

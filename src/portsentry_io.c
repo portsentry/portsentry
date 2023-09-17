@@ -16,13 +16,15 @@
 /* $Id: portsentry_io.c,v 1.36 2003/05/23 17:41:40 crowland Exp crowland $ */
 /************************************************************************/
 
-#include "portsentry.h"
 #include "portsentry_io.h"
-#include "portsentry_util.h"
 #include "config_data.h"
+#include "portsentry.h"
+#include "portsentry_util.h"
 
 static uint8_t isSyslogOpen = FALSE;
-enum LogType { LogTypeNone, LogTypeDebug, LogTypeVerbose };
+enum LogType { LogTypeNone,
+               LogTypeDebug,
+               LogTypeVerbose };
 
 static void LogEntry(enum LogType logType, char *logentry, va_list ap);
 
@@ -36,7 +38,7 @@ static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr) {
   }
 
   if (configData.logFlags & LOGFLAG_OUTPUT_SYSLOG) {
-    if(isSyslogOpen == FALSE) {
+    if (isSyslogOpen == FALSE) {
       openlog("portsentry", LOG_PID, SYSLOG_FACILITY);
       isSyslogOpen = TRUE;
     }
