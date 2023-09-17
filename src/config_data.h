@@ -1,5 +1,7 @@
 #pragma once
 
+#include "portsentry.h"
+
 #define LOGFLAG_NONE 0x00
 #define LOGFLAG_DEBUG 0x1
 #define LOGFLAG_VERBOSE 0x2
