@@ -144,20 +144,20 @@ static int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, s
 }
 
 static int EvalPortsInUse(int *portCount, int *ports) {
-  int portsLength, i, openSockfd, gotBound = FALSE;
+  int portsLength, i, gotBound = FALSE, status;
   uint16_t *portList;
-  int (*openSocket)(void);
+  enum ProtocolType proto;
 
   *portCount = 0;
 
   if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP) {
     portsLength = configData.tcpPortsLength;
     portList = configData.tcpPorts;
-    openSocket = OpenTCPSocket;
+    proto = PROTOCOL_TCP;
   } else if (configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP) {
     portsLength = configData.udpPortsLength;
     portList = configData.udpPorts;
-    openSocket = OpenUDPSocket;
+    proto = PROTOCOL_UDP;
   } else {
     Log("Invalid sentry mode in EvalPortsInUse");
     return (FALSE);
@@ -165,20 +165,14 @@ static int EvalPortsInUse(int *portCount, int *ports) {
 
   for (i = 0; i < portsLength; i++) {
     Log("Going into stealth listen mode on port: %d", portList[i]);
-    if ((openSockfd = openSocket()) == ERROR) {
-      Log("Could not open socket. Aborting");
-      return FALSE;
-    }
+    status = IsPortInUse(portList[i], proto);
 
-    if (BindSocket(openSockfd, portList[i]) == ERROR) {
-      Log("Socket %d is in use and will not be monitored. Attempting to continue", portList[i]);
-    } else {
+    if (status == FALSE) {
       gotBound = TRUE;
       ports[(*portCount)++] = portList[i];
-    }
-
-    if (close(openSockfd) == -1) {
-      Log("Could not close socket %d: (errno: %d). Aborting", openSockfd, errno);
+    } else if (status == TRUE) {
+      Log("Socket %d is in use and will not be monitored. Attempting to continue", portList[i]);
+    } else if (status == ERROR) {
       return FALSE;
     }
   }
@@ -366,6 +360,7 @@ static int PortSentryAdvancedStealthModeTCP(void) {
       if (hotPort) {
         smartVerify = IsPortInUse(incomingPort, PROTOCOL_TCP);
 
+        // FIXME: IsPortInUse returns true, false, error
         if (smartVerify != TRUE) {
           addr.s_addr = (u_int)ip->saddr;
           SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
@@ -583,6 +578,7 @@ static int PortSentryAdvancedStealthModeUDP(void) {
     if (hotPort) {
       smartVerify = IsPortInUse(incomingPort, PROTOCOL_UDP);
 
+      // FIXME: IsPortInUse returns true, false, error
       if (smartVerify != TRUE) {
         /* copy the clients address into our buffer for nuking */
         addr.s_addr = (u_int)ip->saddr;
@@ -1011,16 +1007,16 @@ static int IsPortInUse(uint16_t port, enum ProtocolType proto) {
     testSockfd = OpenUDPSocket();
   } else {
     Log("adminalert: ERROR: invalid protocol type passed to IsPortInUse.");
-    return (FALSE);
+    return (ERROR);
   }
 
   if (testSockfd == ERROR) {
     Log("adminalert: ERROR: could not open %s socket to smart-verify.", proto == PROTOCOL_TCP ? "TCP" : "UDP");
-    return (FALSE);
+    return (ERROR);
   }
 
   if (BindSocket(testSockfd, port) == ERROR) {
-    Debug("Port In Use: %d", port);
+    Debug("IsPortInUse: %d = Yes", port);
     close(testSockfd);
     return (TRUE);
   }
