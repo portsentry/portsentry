@@ -18,10 +18,10 @@
 
 #include "portsentry.h"
 #include "cmdline.h"
+#include "config_data.h"
+#include "configfile.h"
 #include "portsentry_io.h"
 #include "portsentry_util.h"
-#include "configfile.h"
-#include "config_data.h"
 #include "state_machine.h"
 
 static int PortSentryModeTCP(void);
@@ -37,7 +37,7 @@ static int PortSentryAdvancedStealthModeTCP(void);
 static int PortSentryStealthModeUDP(void);
 static int PortSentryAdvancedStealthModeUDP(void);
 static int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct iphdr **ipPtr, void **transportPtr);
-static char * ReportPacketType(struct tcphdr *);
+static char *ReportPacketType(struct tcphdr *);
 #endif
 
 static int EvalPortsInUse(int *portCount, int *ports);
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (configData.sentryMode ==  SENTRY_MODE_TCP) {
+  if (configData.sentryMode == SENTRY_MODE_TCP) {
     if (PortSentryModeTCP() == ERROR) {
       Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
@@ -106,7 +106,6 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-
 #ifdef SUPPORT_STEALTH
 
 /* Read packet IP and transport headers and set ipPtr/transportPtr to their correct location
@@ -116,7 +115,7 @@ static int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, s
   size_t ipHeaderLength;
   struct in_addr addr;
 
-  if(read(socket, packetBuffer, packetBufferSize) == -1) {
+  if (read(socket, packetBuffer, packetBufferSize) == -1) {
     Log("adminalert: ERROR: Could not read from socket %d: (errno: %d). Aborting", socket, errno);
     return ERROR;
   }
@@ -160,7 +159,7 @@ static int EvalPortsInUse(int *portCount, int *ports) {
     return (FALSE);
   }
 
-  for (i=0; i < portsLength; i++) {
+  for (i = 0; i < portsLength; i++) {
     Log("Going into stealth listen mode on port: %d", portList[i]);
     if ((openSockfd = openSocket()) == ERROR) {
       Log("Could not open socket. Aborting");
@@ -208,7 +207,7 @@ static int PortSentryStealthModeTCP(void) {
   /* ok, now check if they have a network daemon on the socket already, if they
    * do then skip that port because it will cause false alarms */
   if (EvalPortsInUse(&portCount2, ports2) == FALSE) {
-    return ERROR;  // Error msg in function
+    return ERROR; // Error msg in function
   }
 
   /* Open our raw socket for network IO */
@@ -249,7 +248,7 @@ static int PortSentryStealthModeTCP(void) {
             /* check if they've visited before */
             scanDetectTrigger = CheckStateEngine(target);
             if (scanDetectTrigger == TRUE) {
-              if (configData.resolveHost) {/* Do they want DNS resolution? */
+              if (configData.resolveHost) { /* Do they want DNS resolution? */
                 if (CleanAndResolve(resolvedHost, target) != TRUE) {
                   Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
                   snprintf(resolvedHost, DNSMAXBUF, "%s", target);
@@ -435,7 +434,7 @@ static int PortSentryStealthModeUDP(void) {
   /* ok, now check if they have a network daemon on the socket already, if they
    * do then skip that port because it will cause false alarms */
   if (EvalPortsInUse(&portCount2, ports2) == FALSE) {
-    return ERROR;  // Error msg in function
+    return ERROR; // Error msg in function
   }
 
   if ((openSockfd = OpenRAWUDPSocket()) == ERROR) {
@@ -783,7 +782,7 @@ static int PortSentryModeUDP(void) {
   /* read in the banner if one is given */
   if (strlen(configData.portBanner) > 0) {
     showBanner = TRUE;
-    SafeStrncpy(bannerBuffer, configData.portBanner, MAXBUF);  // FIXME: Use configData.portBanner directly
+    SafeStrncpy(bannerBuffer, configData.portBanner, MAXBUF); // FIXME: Use configData.portBanner directly
   }
 
   /* setup select call */
