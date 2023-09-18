@@ -134,7 +134,7 @@ static int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, s
   ipHeaderLength = (*ipPtr)->ihl * 4;
 
   if (ipHeaderLength > packetBufferSize) {
-    Log("adminalert: ERROR: IP header length (%d) is larger than packet buffer size (%d). Aborting", ipHeaderLength, packetBufferSize);
+    Log("adminalert: ERROR: IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);
     return FALSE;
   }
 
@@ -897,7 +897,7 @@ static int DisposeTarget(char *target, int port, int protocol) {
   Debug("DisposeTarget: killRunCmd: %s", configData.killRunCmd);
   Debug("DisposeTarget: runCmdFirst: %d", configData.runCmdFirst);
   Debug("DisposeTarget: killHostsDeny: %s", configData.killHostsDeny);
-  Debug("DisposeTarget: killRoute: %s (%d)", configData.killRoute, strlen(configData.killRoute));
+  Debug("DisposeTarget: killRoute: %s (%lu)", configData.killRoute, strlen(configData.killRoute));
 
   if (blockProto == 0) {
     Log("attackalert: Ignoring %s response per configuration file setting.", (protocol == PROTOCOL_TCP) ? "TCP" : "UDP");

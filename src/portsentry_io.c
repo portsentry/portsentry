@@ -123,7 +123,8 @@ int DaemonSeed(void) {
 
 /* Compares an IP address against a listed address and its netmask*/
 int CompareIPs(char *target, char *ignoreAddr, int ignoreNetmaskBits) {
-  unsigned long int netmaskAddr, ipAddr, targetAddr;
+  unsigned long int ipAddr, targetAddr;
+  uint32_t netmaskAddr;
 
   ipAddr = inet_addr(ignoreAddr);
   targetAddr = inet_addr(target);
@@ -529,9 +530,9 @@ int SubstString(const char *replace, const char *find, const char *target, char 
   char tempString[MAXBUF], *tempStringPtr;
   size_t replaceCount = 0;
 
-  Debug("SubstString: Processing string: %s %d", target, strlen(target));
-  Debug("SubstString: Processing search text: %s %d", replace, strlen(replace));
-  Debug("SubstString: Processing replace text: %s %d", find, strlen(find));
+  Debug("SubstString: Processing string: %s %lu", target, strlen(target));
+  Debug("SubstString: Processing search text: %s %lu", replace, strlen(replace));
+  Debug("SubstString: Processing replace text: %s %lu", find, strlen(find));
 
   /* string not found in target */
   if (strstr(target, find) == NULL) {
