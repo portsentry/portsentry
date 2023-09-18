@@ -31,8 +31,7 @@ enum ProtocolType {
 
 static int PortSentryModeTCP(void);
 static int PortSentryModeUDP(void);
-static int DisposeUDP(char *, int);
-static int DisposeTCP(char *, int);
+static int DisposeTarget(char *, int, int);
 static int IsPortInUse(uint16_t port, enum ProtocolType proto);
 
 #ifdef SUPPORT_STEALTH
@@ -265,7 +264,7 @@ static int PortSentryStealthModeTCP(void) {
               /* check if this target is already blocked */
               if (IsBlocked(target, configData.blockedFile) == FALSE) {
                 /* toast the prick */
-                if (DisposeTCP(target, ports2[count]) != TRUE)
+                if (DisposeTarget(target, ports2[count], PROTOCOL_TCP) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s/%s !!", resolvedHost, target);
                 else
                   WriteBlocked(target, resolvedHost, ports2[count], configData.blockedFile, configData.historyFile, "TCP");
@@ -396,7 +395,7 @@ static int PortSentryAdvancedStealthModeTCP(void) {
               /* check if this target is already blocked */
               if (IsBlocked(target, configData.blockedFile) == FALSE) {
                 /* toast the prick */
-                if (DisposeTCP(target, incomingPort) != TRUE)
+                if (DisposeTarget(target, incomingPort, PROTOCOL_TCP) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
                 else
                   WriteBlocked(target, resolvedHost, incomingPort, configData.blockedFile, configData.historyFile, "TCP");
@@ -487,7 +486,7 @@ static int PortSentryStealthModeUDP(void) {
 
             /* check if this target is already blocked */
             if (IsBlocked(target, configData.blockedFile) == FALSE) {
-              if (DisposeUDP(target, ports2[count]) != TRUE)
+              if (DisposeTarget(target, ports2[count], PROTOCOL_UDP) != TRUE)
                 Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
               else
                 WriteBlocked(target, resolvedHost, ports2[count], configData.blockedFile, configData.historyFile, "UDP");
@@ -612,7 +611,7 @@ static int PortSentryAdvancedStealthModeUDP(void) {
 
             /* check if this target is already blocked */
             if (IsBlocked(target, configData.blockedFile) == FALSE) {
-              if (DisposeUDP(target, incomingPort) != TRUE)
+              if (DisposeTarget(target, incomingPort, PROTOCOL_UDP) != TRUE)
                 Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
               else
                 WriteBlocked(target, resolvedHost, incomingPort, configData.blockedFile, configData.historyFile, "UDP");
@@ -740,7 +739,7 @@ int PortSentryModeTCP(void) {
 
               /* check if this target is already blocked */
               if (IsBlocked(target, configData.blockedFile) == FALSE) {
-                if (DisposeTCP(target, configData.tcpPorts[count]) != TRUE)
+                if (DisposeTarget(target, configData.tcpPorts[count], PROTOCOL_TCP) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s !!", target);
                 else
                   WriteBlocked(target, resolvedHost, configData.tcpPorts[count], configData.blockedFile, configData.historyFile, "TCP");
@@ -865,7 +864,7 @@ static int PortSentryModeUDP(void) {
               Log("attackalert: Connect from host: %s/%s to UDP port: %d", resolvedHost, target, configData.udpPorts[count]);
               /* check if this target is already blocked */
               if (IsBlocked(target, configData.blockedFile) == FALSE) {
-                if (DisposeUDP(target, configData.udpPorts[count]) != TRUE)
+                if (DisposeTarget(target, configData.udpPorts[count], PROTOCOL_UDP) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s !!", target);
                 else
                   WriteBlocked(target, resolvedHost, configData.udpPorts[count], configData.blockedFile, configData.historyFile, "UDP");
@@ -881,92 +880,45 @@ static int PortSentryModeUDP(void) {
   }       /* end main for(; ; ) loop */
 } /* end UDP PortSentry */
 
-/* kill the TCP connection depending on config option */
-static int DisposeTCP(char *target, int port) {
+static int DisposeTarget(char *target, int port, int protocol) {
   int status = TRUE;
+  int blockProto;
 
-  Debug("DisposeTCP: disposing of host %s on port %d with option: %d", target, port, configData.blockTCP);
-  Debug("DisposeTCP: killRunCmd: %s", configData.killRunCmd);
-  Debug("DisposeTCP: configData.runCmdFirst: %d", configData.runCmdFirst);
-  Debug("DisposeTCP: killHostsDeny: %s", configData.killHostsDeny);
-  Debug("DisposeTCP: killRoute: %s  %d", configData.killRoute, strlen(configData.killRoute));
-  /* Should we ignore TCP from active response? */
-  if (configData.blockTCP == 1) {
-    /* run external command first, hosts.deny second, dead route last */
-    if (configData.runCmdFirst) {
-      if (strlen(configData.killRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-      if (strlen(configData.killHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-      if (strlen(configData.killRoute) > 0)
-        if (KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-    } else { /* run hosts.deny first, dead route second, external command last */
-      if (strlen(configData.killHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-      if (strlen(configData.killRoute) > 0)
-        if (KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-      if (strlen(configData.killRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-    }
-  } else if (configData.blockTCP == 2) {
-    /* run external command only */
-    if (strlen(configData.killRunCmd) > 0)
-      if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
-        status = FALSE;
+  if (protocol == PROTOCOL_TCP) {
+    blockProto = configData.blockTCP;
+  } else if (protocol == PROTOCOL_UDP) {
+    blockProto = configData.blockUDP;
   } else {
-    Log("attackalert: Ignoring TCP response per configuration file setting.");
+    Log("DisposeTarget: ERROR: Unknown protocol: %d", protocol);
+    return (FALSE);
   }
 
-  return (status);
-}
+  Debug("DisposeTarget: disposing of host %s on port %d with option: %d (%s)", target, port, configData.blockTCP, (protocol == PROTOCOL_TCP) ? "tcp" : "udp");
+  Debug("DisposeTarget: killRunCmd: %s", configData.killRunCmd);
+  Debug("DisposeTarget: runCmdFirst: %d", configData.runCmdFirst);
+  Debug("DisposeTarget: killHostsDeny: %s", configData.killHostsDeny);
+  Debug("DisposeTarget: killRoute: %s (%d)", configData.killRoute, strlen(configData.killRoute));
 
-/* kill the UDP connection depending on config option */
-static int DisposeUDP(char *target, int port) {
-  int status = TRUE;
-
-  Debug("DisposeUDP: disposing of host %s on port %d with option: %d", target, port, configData.blockUDP);
-  Debug("DisposeUDP: killRunCmd: %d", configData.killRunCmd);
-  Debug("DisposeUDP: configData.runCmdFirst: %s", configData.runCmdFirst);
-  Debug("DisposeUDP: killHostsDeny: %s", configData.killHostsDeny);
-  Debug("DisposeUDP: killRoute: %s  %d", configData.killRoute, strlen(configData.killRoute));
-  /* Should we ignore TCP from active response? */
-  if (configData.blockUDP == 1) {
-    /* run external command first, hosts.deny second, dead route last */
-    if (configData.runCmdFirst) {
-      if (strlen(configData.killRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-      if (strlen(configData.killHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-      if (strlen(configData.killRoute) > 0)
-        if (KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-    } else { /* run hosts.deny first, dead route second, external command last */
-      if (strlen(configData.killHostsDeny) > 0)
-        if (KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-      if (strlen(configData.killRoute) > 0)
-        if (KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
-      if (strlen(configData.killRunCmd) > 0)
-        if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
-          status = FALSE;
+  if (blockProto == 0) {
+    Log("attackalert: Ignoring %s response per configuration file setting.", (protocol == PROTOCOL_TCP) ? "TCP" : "UDP");
+    status = TRUE;
+  } else if (blockProto == 1) {
+    if (configData.runCmdFirst == TRUE) {
+      status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
     }
-  } else if (configData.blockUDP == 2) {
-    /* run external command only */
-    if (strlen(configData.killRunCmd) > 0)
-      if (KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode)) != TRUE)
-        status = FALSE;
-  } else {
-    Log("attackalert: Ignoring UDP response per configuration file setting.");
+
+    status = KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode));
+    status = KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode));
+
+    if (configData.runCmdFirst == FALSE) {
+      status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
+    }
+  } else if (blockProto == 2) {
+    status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
   }
+
+  if (status != TRUE)
+    status = FALSE;
 
   return (status);
 }
