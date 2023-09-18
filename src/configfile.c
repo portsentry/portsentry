@@ -258,6 +258,16 @@ static void validateConfig(struct ConfigData *fileConfig) {
     Exit(EXIT_FAILURE);
   }
 
+  if (fileConfig->blockTCP < 0 || fileConfig->blockTCP > 2) {
+    fprintf(stderr, "Invalid BLOCK_TCP value in config file\n");
+    Exit(EXIT_FAILURE);
+  }
+
+  if (fileConfig->blockUDP < 0 || fileConfig->blockUDP > 2) {
+    fprintf(stderr, "Invalid BLOCK_UDP value in config file\n");
+    Exit(EXIT_FAILURE);
+  }
+
   /*
    * TODO: Add validation for the following:
       fileConfig->killRoute
