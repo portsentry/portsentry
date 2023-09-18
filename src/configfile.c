@@ -94,19 +94,23 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
   Debug("setConfiguration: %s keySize: %lu valueSize: %ld sentryMode: %s", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
 
   if (strncmp(buffer, "BLOCK_TCP", keySize) == 0) {
-    if (strncmp(ptr, "1", valueSize) == 0) {
-      fileConfig->blockTCP = TRUE;
-    } else if (strncmp(ptr, "0", valueSize) == 0) {
-      fileConfig->blockTCP = FALSE;
+    if (strncmp(ptr, "0", valueSize) == 0) {
+      fileConfig->blockTCP = 0;
+    } else if (strncmp(ptr, "1", valueSize) == 0) {
+      fileConfig->blockTCP = 1;
+    } else if (strncmp(ptr, "2", valueSize) == 0) {
+      fileConfig->blockTCP = 2;
     } else {
       fprintf(stderr, "Invalid config file entry for BLOCK_TCP\n");
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "BLOCK_UDP", keySize) == 0) {
-    if (strncmp(ptr, "1", valueSize) == 0) {
-      fileConfig->blockUDP = TRUE;
-    } else if (strncmp(ptr, "0", valueSize) == 0) {
-      fileConfig->blockUDP = FALSE;
+    if (strncmp(ptr, "0", valueSize) == 0) {
+      fileConfig->blockUDP = 0;
+    } else if (strncmp(ptr, "1", valueSize) == 0) {
+      fileConfig->blockUDP = 1;
+    } else if (strncmp(ptr, "2", valueSize) == 0) {
+      fileConfig->blockUDP = 2;
     } else {
       fprintf(stderr, "Invalid config file entry for BLOCK_UDP\n");
       Exit(EXIT_FAILURE);
