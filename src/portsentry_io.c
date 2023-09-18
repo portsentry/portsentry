@@ -332,6 +332,9 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   char portString[MAXBUF];
   int killStatus = ERROR, substStatus = ERROR;
 
+  if (strlen(killString) == 0)
+    return (TRUE);
+
   CleanIpAddr(cleanAddr, target);
   snprintf(portString, MAXBUF, "%d", port);
 
@@ -382,6 +385,9 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   char portString[MAXBUF];
   int killStatus = ERROR;
 
+  if (strlen(killString) == 0)
+    return (TRUE);
+
   CleanIpAddr(cleanAddr, target);
   snprintf(portString, MAXBUF, "%d", port);
 
@@ -426,6 +432,9 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
   int substStatus = ERROR;
+
+  if (strlen(killString) == 0)
+    return (TRUE);
 
   CleanIpAddr(cleanAddr, target);
 
