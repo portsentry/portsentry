@@ -675,7 +675,6 @@ int PortSentryModeTCP(void) {
   }
 
   length = sizeof(client);
-
   Log("adminalert: PortSentry is now active and listening.");
 
   /* main loop for multiplexing/resetting */
