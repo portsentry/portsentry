@@ -214,6 +214,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       fprintf(stderr, "PORT_BANNER value too long\n");
       Exit(EXIT_FAILURE);
     }
+    fileConfig->portBannerPresent = TRUE;
   } else {
     fprintf(stderr, "Invalid config file entry at line %lu\n", line);
     Exit(EXIT_FAILURE);
@@ -276,7 +277,6 @@ static void validateConfig(struct ConfigData *fileConfig) {
       fileConfig->blockedFile
       fileConfig->historyFile
       fileConfig->ignoreFile
-      fileConfig->portBanner
     */
 }
 
