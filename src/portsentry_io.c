@@ -16,7 +16,6 @@
 /* $Id: portsentry_io.c,v 1.36 2003/05/23 17:41:40 crowland Exp crowland $ */
 /************************************************************************/
 
-#include "portsentry_io.h"
 #include "config_data.h"
 #include "portsentry.h"
 #include "portsentry_util.h"
@@ -575,5 +574,28 @@ int testFileAccess(char *filename, char *mode) {
   } else {
     fclose(testFile);
     return (TRUE);
+  }
+}
+
+void XmitBannerIfConfigured(const enum ProtocolType proto, const int socket, const struct sockaddr_in *client) {
+  ssize_t result;
+
+  if (configData.portBannerPresent == FALSE)
+    return;
+
+  errno = 0;
+
+  if (proto == PROTOCOL_TCP) {
+    result = write(socket, configData.portBanner, strlen(configData.portBanner));
+  } else if (proto == PROTOCOL_UDP) {
+    if (client == NULL) {
+      Log("adminalert: ERROR: No client address specified for UDP banner transmission (ignoring)");
+      return;
+    }
+    result = sendto(socket, configData.portBanner, strlen(configData.portBanner), 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
+  }
+
+  if (result == -1) {
+    Log("adminalert: ERROR: Could not write banner to socket (ignoring)");
   }
 }

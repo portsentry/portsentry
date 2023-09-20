@@ -17,7 +17,8 @@
 /* $Id: portsentry_io.h,v 1.17 2003/05/23 17:41:46 crowland Exp crowland $ */
 /************************************************************************/
 
-/* prototypes */
+#include "portsentry.h"
+
 int WriteBlocked(char *, char *, int, char *, char *, char *);
 void Log(char *, ...);
 void Debug(char *logentry, ...);
@@ -40,3 +41,4 @@ int IsBlocked(char *, char *);
 int SubstString(const char *, const char *, const char *, char *);
 int CompareIPs(char *, char *, int);
 int testFileAccess(char *, char *);
+void XmitBannerIfConfigured(const enum ProtocolType proto, const int socket, const struct sockaddr_in *client);
