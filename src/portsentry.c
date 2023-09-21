@@ -24,15 +24,10 @@
 #include "portsentry_util.h"
 #include "state_machine.h"
 
-enum ProtocolType {
-  PROTOCOL_TCP,
-  PROTOCOL_UDP
-};
-
 static int PortSentryModeTCP(void);
 static int PortSentryModeUDP(void);
 static int DisposeTarget(char *, int, int);
-static int IsPortInUse(uint16_t port, enum ProtocolType proto);
+static int IsPortInUse(uint16_t port, int proto);
 
 #ifdef SUPPORT_STEALTH
 static int PortSentryStealthModeTCP(void);
@@ -145,18 +140,18 @@ static int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, s
 static int EvalPortsInUse(int *portCount, int *ports) {
   int portsLength, i, gotBound = FALSE, status;
   uint16_t *portList;
-  enum ProtocolType proto;
+  int proto;
 
   *portCount = 0;
 
   if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP) {
     portsLength = configData.tcpPortsLength;
     portList = configData.tcpPorts;
-    proto = PROTOCOL_TCP;
+    proto = IPPROTO_TCP;
   } else if (configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP) {
     portsLength = configData.udpPortsLength;
     portList = configData.udpPorts;
-    proto = PROTOCOL_UDP;
+    proto = IPPROTO_UDP;
   } else {
     Log("Invalid sentry mode in EvalPortsInUse");
     return (FALSE);
@@ -227,7 +222,7 @@ static int PortSentryStealthModeTCP(void) {
       /* this iterates the list of ports looking for a match */
       for (count = 0; count < portCount2; count++) {
         if (incomingPort == ports2[count]) {
-          if (IsPortInUse(incomingPort, PROTOCOL_TCP) == TRUE)
+          if (IsPortInUse(incomingPort, IPPROTO_TCP) == TRUE)
             break;
 
           /* copy the clients address into our buffer for nuking */
@@ -264,7 +259,7 @@ static int PortSentryStealthModeTCP(void) {
               /* check if this target is already blocked */
               if (IsBlocked(target, configData.blockedFile) == FALSE) {
                 /* toast the prick */
-                if (DisposeTarget(target, ports2[count], PROTOCOL_TCP) != TRUE)
+                if (DisposeTarget(target, ports2[count], IPPROTO_TCP) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s/%s !!", resolvedHost, target);
                 else
                   WriteBlocked(target, resolvedHost, ports2[count], configData.blockedFile, configData.historyFile, "TCP");
@@ -357,7 +352,7 @@ static int PortSentryAdvancedStealthModeTCP(void) {
       }
 
       if (hotPort) {
-        smartVerify = IsPortInUse(incomingPort, PROTOCOL_TCP);
+        smartVerify = IsPortInUse(incomingPort, IPPROTO_TCP);
 
         // FIXME: IsPortInUse returns true, false, error
         if (smartVerify != TRUE) {
@@ -395,7 +390,7 @@ static int PortSentryAdvancedStealthModeTCP(void) {
               /* check if this target is already blocked */
               if (IsBlocked(target, configData.blockedFile) == FALSE) {
                 /* toast the prick */
-                if (DisposeTarget(target, incomingPort, PROTOCOL_TCP) != TRUE)
+                if (DisposeTarget(target, incomingPort, IPPROTO_TCP) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
                 else
                   WriteBlocked(target, resolvedHost, incomingPort, configData.blockedFile, configData.historyFile, "TCP");
@@ -452,7 +447,7 @@ static int PortSentryStealthModeUDP(void) {
     /* this iterates the list of ports looking for a match */
     for (count = 0; count < portCount2; count++) {
       if (incomingPort == ports2[count]) {
-        if (IsPortInUse(incomingPort, PROTOCOL_UDP) == TRUE)
+        if (IsPortInUse(incomingPort, IPPROTO_UDP) == TRUE)
           break;
 
         addr.s_addr = (u_int)ip->saddr;
@@ -486,7 +481,7 @@ static int PortSentryStealthModeUDP(void) {
 
             /* check if this target is already blocked */
             if (IsBlocked(target, configData.blockedFile) == FALSE) {
-              if (DisposeTarget(target, ports2[count], PROTOCOL_UDP) != TRUE)
+              if (DisposeTarget(target, ports2[count], IPPROTO_UDP) != TRUE)
                 Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
               else
                 WriteBlocked(target, resolvedHost, ports2[count], configData.blockedFile, configData.historyFile, "UDP");
@@ -575,7 +570,7 @@ static int PortSentryAdvancedStealthModeUDP(void) {
     }
 
     if (hotPort) {
-      smartVerify = IsPortInUse(incomingPort, PROTOCOL_UDP);
+      smartVerify = IsPortInUse(incomingPort, IPPROTO_UDP);
 
       // FIXME: IsPortInUse returns true, false, error
       if (smartVerify != TRUE) {
@@ -611,7 +606,7 @@ static int PortSentryAdvancedStealthModeUDP(void) {
 
             /* check if this target is already blocked */
             if (IsBlocked(target, configData.blockedFile) == FALSE) {
-              if (DisposeTarget(target, incomingPort, PROTOCOL_UDP) != TRUE)
+              if (DisposeTarget(target, incomingPort, IPPROTO_UDP) != TRUE)
                 Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
               else
                 WriteBlocked(target, resolvedHost, incomingPort, configData.blockedFile, configData.historyFile, "UDP");
@@ -738,7 +733,7 @@ int PortSentryModeTCP(void) {
 
               /* check if this target is already blocked */
               if (IsBlocked(target, configData.blockedFile) == FALSE) {
-                if (DisposeTarget(target, configData.tcpPorts[count], PROTOCOL_TCP) != TRUE)
+                if (DisposeTarget(target, configData.tcpPorts[count], IPPROTO_TCP) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s !!", target);
                 else
                   WriteBlocked(target, resolvedHost, configData.tcpPorts[count], configData.blockedFile, configData.historyFile, "TCP");
@@ -863,7 +858,7 @@ static int PortSentryModeUDP(void) {
               Log("attackalert: Connect from host: %s/%s to UDP port: %d", resolvedHost, target, configData.udpPorts[count]);
               /* check if this target is already blocked */
               if (IsBlocked(target, configData.blockedFile) == FALSE) {
-                if (DisposeTarget(target, configData.udpPorts[count], PROTOCOL_UDP) != TRUE)
+                if (DisposeTarget(target, configData.udpPorts[count], IPPROTO_UDP) != TRUE)
                   Log("attackalert: ERROR: Could not block host %s !!", target);
                 else
                   WriteBlocked(target, resolvedHost, configData.udpPorts[count], configData.blockedFile, configData.historyFile, "UDP");
@@ -883,23 +878,23 @@ static int DisposeTarget(char *target, int port, int protocol) {
   int status = TRUE;
   int blockProto;
 
-  if (protocol == PROTOCOL_TCP) {
+  if (protocol == IPPROTO_TCP) {
     blockProto = configData.blockTCP;
-  } else if (protocol == PROTOCOL_UDP) {
+  } else if (protocol == IPPROTO_UDP) {
     blockProto = configData.blockUDP;
   } else {
     Log("DisposeTarget: ERROR: Unknown protocol: %d", protocol);
     return (FALSE);
   }
 
-  Debug("DisposeTarget: disposing of host %s on port %d with option: %d (%s)", target, port, configData.blockTCP, (protocol == PROTOCOL_TCP) ? "tcp" : "udp");
+  Debug("DisposeTarget: disposing of host %s on port %d with option: %d (%s)", target, port, configData.blockTCP, (protocol == IPPROTO_TCP) ? "tcp" : "udp");
   Debug("DisposeTarget: killRunCmd: %s", configData.killRunCmd);
   Debug("DisposeTarget: runCmdFirst: %d", configData.runCmdFirst);
   Debug("DisposeTarget: killHostsDeny: %s", configData.killHostsDeny);
   Debug("DisposeTarget: killRoute: %s (%lu)", configData.killRoute, strlen(configData.killRoute));
 
   if (blockProto == 0) {
-    Log("attackalert: Ignoring %s response per configuration file setting.", (protocol == PROTOCOL_TCP) ? "TCP" : "UDP");
+    Log("attackalert: Ignoring %s response per configuration file setting.", (protocol == IPPROTO_TCP) ? "TCP" : "UDP");
     status = TRUE;
   } else if (blockProto == 1) {
     if (configData.runCmdFirst == TRUE) {
@@ -947,14 +942,14 @@ static char *ReportPacketType(struct tcphdr *tcpPkt) {
   return (packetDescPtr);
 }
 
-static int IsPortInUse(uint16_t port, enum ProtocolType proto) {
+static int IsPortInUse(uint16_t port, int proto) {
   int testSockfd;
 
-  assert(proto == PROTOCOL_TCP || proto == PROTOCOL_UDP);
+  assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
-  if (proto == PROTOCOL_TCP) {
+  if (proto == IPPROTO_TCP) {
     testSockfd = OpenTCPSocket();
-  } else if (proto == PROTOCOL_UDP) {
+  } else if (proto == IPPROTO_UDP) {
     testSockfd = OpenUDPSocket();
   } else {
     Log("adminalert: ERROR: invalid protocol type passed to IsPortInUse.");
@@ -962,7 +957,7 @@ static int IsPortInUse(uint16_t port, enum ProtocolType proto) {
   }
 
   if (testSockfd == ERROR) {
-    Log("adminalert: ERROR: could not open %s socket to smart-verify.", proto == PROTOCOL_TCP ? "TCP" : "UDP");
+    Log("adminalert: ERROR: could not open %s socket to smart-verify.", proto == IPPROTO_TCP ? "TCP" : "UDP");
     return (ERROR);
   }
 
