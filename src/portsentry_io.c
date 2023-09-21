@@ -577,7 +577,7 @@ int testFileAccess(char *filename, char *mode) {
   }
 }
 
-void XmitBannerIfConfigured(const enum ProtocolType proto, const int socket, const struct sockaddr_in *client) {
+void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr_in *client) {
   ssize_t result;
 
   if (configData.portBannerPresent == FALSE)
@@ -585,9 +585,9 @@ void XmitBannerIfConfigured(const enum ProtocolType proto, const int socket, con
 
   errno = 0;
 
-  if (proto == PROTOCOL_TCP) {
+  if (proto == IPPROTO_TCP) {
     result = write(socket, configData.portBanner, strlen(configData.portBanner));
-  } else if (proto == PROTOCOL_UDP) {
+  } else if (proto == IPPROTO_UDP) {
     if (client == NULL) {
       Log("adminalert: ERROR: No client address specified for UDP banner transmission (ignoring)");
       return;

@@ -41,4 +41,4 @@ int IsBlocked(char *, char *);
 int SubstString(const char *, const char *, const char *, char *);
 int CompareIPs(char *, char *, int);
 int testFileAccess(char *, char *);
-void XmitBannerIfConfigured(const enum ProtocolType proto, const int socket, const struct sockaddr_in *client);
+void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr_in *client);

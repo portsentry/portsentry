@@ -40,11 +40,6 @@
 #endif
 #include <arpa/inet.h>
 
-enum ProtocolType {
-  PROTOCOL_TCP,
-  PROTOCOL_UDP
-};
-
 #include "config.h"
 #include "portsentry_io.h"
 #include "portsentry_util.h"
