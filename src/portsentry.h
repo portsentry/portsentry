@@ -40,10 +40,6 @@
 #endif
 #include <arpa/inet.h>
 
-#include "config.h"
-#include "portsentry_io.h"
-#include "portsentry_util.h"
-
 #ifdef SUPPORT_STEALTH
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
@@ -52,6 +48,10 @@
 #define TCPPACKETLEN 80
 #define UDPPACKETLEN 68
 #endif /* SUPPORT_STEALTH */
+
+#include "config.h"
+#include "portsentry_io.h"
+#include "portsentry_util.h"
 
 #define ERROR -1
 #define TRUE 1
@@ -62,5 +62,7 @@
 /* max sockets we can open */
 #define MAXSOCKS 64
 
-/* Really is about 1025, but we don't need the length for our purposes */
-#define DNSMAXBUF 255
+#define DNSMAXBUF 1025
+
+#undef max
+#define max(x, y) ((x) > (y) ? (x) : (y))
