@@ -16,7 +16,7 @@
 /* $Id: portsentry_util.c,v 1.11 2003/05/23 17:41:59 crowland Exp crowland $ */
 /************************************************************************/
 
-#include "portsentry_util.h"
+#include "config_data.h"
 #include "portsentry.h"
 #include "portsentry_io.h"
 
@@ -116,6 +116,16 @@ int CleanAndResolve(char *resolvedHost, const char *unresolvedHost) {
   return (TRUE);
 }
 
+void ResolveAddr(const struct sockaddr *saddr, const socklen_t saddrLen, char *resolvedHost, const int resolvedHostSize) {
+  assert(saddr != NULL && saddrLen > 0);
+
+  if (getnameinfo(saddr, saddrLen, resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
+    snprintf(resolvedHost, resolvedHostSize, "<unknown>");
+  }
+
+  Debug("ResolveAddr: Resolved: %s", resolvedHost);
+}
+
 long getLong(char *buffer) {
   long value = 0;
   char *endptr = NULL;
@@ -132,4 +142,47 @@ long getLong(char *buffer) {
     return ERROR;
 
   return value;
+}
+
+int DisposeTarget(char *target, int port, int protocol) {
+  int status = TRUE;
+  int blockProto;
+
+  if (protocol == IPPROTO_TCP) {
+    blockProto = configData.blockTCP;
+  } else if (protocol == IPPROTO_UDP) {
+    blockProto = configData.blockUDP;
+  } else {
+    Log("DisposeTarget: ERROR: Unknown protocol: %d", protocol);
+    return (FALSE);
+  }
+
+  Debug("DisposeTarget: disposing of host %s on port %d with option: %d (%s)", target, port, configData.blockTCP, (protocol == IPPROTO_TCP) ? "tcp" : "udp");
+  Debug("DisposeTarget: killRunCmd: %s", configData.killRunCmd);
+  Debug("DisposeTarget: runCmdFirst: %d", configData.runCmdFirst);
+  Debug("DisposeTarget: killHostsDeny: %s", configData.killHostsDeny);
+  Debug("DisposeTarget: killRoute: %s (%lu)", configData.killRoute, strlen(configData.killRoute));
+
+  if (blockProto == 0) {
+    Log("attackalert: Ignoring %s response per configuration file setting.", (protocol == IPPROTO_TCP) ? "TCP" : "UDP");
+    status = TRUE;
+  } else if (blockProto == 1) {
+    if (configData.runCmdFirst == TRUE) {
+      status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
+    }
+
+    status = KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode));
+    status = KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode));
+
+    if (configData.runCmdFirst == FALSE) {
+      status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
+    }
+  } else if (blockProto == 2) {
+    status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
+  }
+
+  if (status != TRUE)
+    status = FALSE;
+
+  return (status);
 }
