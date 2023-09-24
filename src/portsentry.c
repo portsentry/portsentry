@@ -20,13 +20,11 @@
 #include "cmdline.h"
 #include "config_data.h"
 #include "configfile.h"
+#include "connect_sentry.h"
 #include "portsentry_io.h"
 #include "portsentry_util.h"
 #include "state_machine.h"
 
-static int PortSentryModeTCP(void);
-static int PortSentryModeUDP(void);
-static int DisposeTarget(char *, int, int);
 static int IsPortInUse(uint16_t port, int proto);
 
 #ifdef SUPPORT_STEALTH
@@ -63,8 +61,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (configData.sentryMode == SENTRY_MODE_TCP) {
-    if (PortSentryModeTCP() == ERROR) {
+  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
+    if (PortSentryConnectMode() == ERROR) {
       Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
@@ -92,16 +90,8 @@ int main(int argc, char *argv[]) {
     }
   }
 #endif
-  else if (configData.sentryMode == SENTRY_MODE_UDP) {
-    if (PortSentryModeUDP() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
-      Exit(ERROR);
-    }
-  }
 
-  Exit(EXIT_SUCCESS);
-
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 #ifdef SUPPORT_STEALTH
@@ -622,300 +612,6 @@ static int PortSentryAdvancedStealthModeUDP(void) {
 /* end PortSentryAdvancedStealthModeUDP */
 
 #endif
-
-/****************************************************************/
-/* Classic detection Mode                                       */
-/*                                                              */
-/* This mode will bind to a list of TCP sockets and wait for    */
-/* connections to happen. Although the least prone to false     */
-/* alarms, it also won't detect stealth scans                   */
-/*                                                              */
-/****************************************************************/
-int PortSentryModeTCP(void) {
-  struct sockaddr_in client;
-  socklen_t length;
-  int openSockfd[MAXSOCKS], incomingSockfd, result = TRUE;
-  int count = 0, scanDetectTrigger = TRUE, showBanner = FALSE, boundPortCount = 0;
-  int selectResult = 0;
-  char target[IPMAXBUF], bannerBuffer[MAXBUF];
-  char resolvedHost[DNSMAXBUF];
-  fd_set selectFds;
-
-  if (strlen(configData.portBanner) > 0) {
-    showBanner = TRUE;
-    SafeStrncpy(bannerBuffer, configData.portBanner, MAXBUF); // FIXME: Use configData.portBanner directly
-  }
-
-  /* setup select call */
-  FD_ZERO(&selectFds);
-
-  for (count = 0; count < configData.tcpPortsLength; count++) {
-    Log("adminalert: Going into listen mode on TCP port: %d", configData.tcpPorts[count]);
-    if ((openSockfd[boundPortCount] = OpenTCPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open TCP socket. Aborting.");
-      return (ERROR);
-    }
-
-    if (BindSocket(openSockfd[boundPortCount], configData.tcpPorts[count]) == ERROR) {
-      Log("adminalert: ERROR: could not bind TCP socket: %d. Attempting to continue", configData.tcpPorts[count]);
-    } else { /* well we at least bound to one socket so we'll continue */
-      boundPortCount++;
-    }
-  }
-
-  /* if we didn't bind to anything then abort */
-  if (boundPortCount == 0) {
-    Log("adminalert: ERROR: could not bind ANY TCP sockets. Shutting down.");
-    return (ERROR);
-  }
-
-  length = sizeof(client);
-  Log("adminalert: PortSentry is now active and listening.");
-
-  /* main loop for multiplexing/resetting */
-  for (;;) {
-    /* set up select call */
-    for (count = 0; count < boundPortCount; count++) {
-      FD_SET(openSockfd[count], &selectFds);
-    }
-
-    selectResult = select(MAXSOCKS, &selectFds, NULL, NULL, (struct timeval *)NULL);
-
-    /* something blew up */
-    if (selectResult < 0) {
-      Log("adminalert: ERROR: select call failed. Shutting down.");
-      return (ERROR);
-    } else if (selectResult == 0) {
-      Debug("Select timeout");
-    } else if (selectResult > 0) { /* select is reporting a waiting socket. Poll them all to find out which */
-      for (count = 0; count < boundPortCount; count++) {
-        if (FD_ISSET(openSockfd[count], &selectFds)) {
-          incomingSockfd = accept(openSockfd[count], (struct sockaddr *)&client, &length);
-          if (incomingSockfd < 0) {
-            Log("attackalert: Possible stealth scan from unknown host to TCP port: %d (accept failed)", configData.tcpPorts[count]);
-            break;
-          }
-
-          /* copy the clients address into our buffer for nuking */
-          SafeStrncpy(target, (char *)inet_ntoa(client.sin_addr), IPMAXBUF);
-          /* check if we should ignore this IP */
-          result = NeverBlock(target, configData.ignoreFile);
-
-          if (result == ERROR) {
-            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.");
-            result = FALSE;
-          }
-
-          if (result == FALSE) {
-            /* check if they've visited before */
-            scanDetectTrigger = CheckStateEngine(target);
-
-            if (scanDetectTrigger == TRUE) {
-              /* show the banner if one was selected */
-              if (showBanner == TRUE) {
-                /* FIXME: Should be handled better */
-                if (write(incomingSockfd, bannerBuffer, strlen(bannerBuffer)) == -1) {
-                  Log("adminalert: ERROR: Could not write banner to socket (ignoring)");
-                }
-              }
-              /* we don't need the bonehead anymore */
-              close(incomingSockfd);
-              if (configData.resolveHost) { /* Do they want DNS resolution? */
-                if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
-                  snprintf(resolvedHost, DNSMAXBUF, "%s", target);
-                }
-              } else {
-                snprintf(resolvedHost, DNSMAXBUF, "%s", target);
-              }
-
-              Log("attackalert: Connect from host: %s/%s to TCP port: %d", resolvedHost, target, configData.tcpPorts[count]);
-
-              /* check if this target is already blocked */
-              if (IsBlocked(target, configData.blockedFile) == FALSE) {
-                if (DisposeTarget(target, configData.tcpPorts[count], IPPROTO_TCP) != TRUE)
-                  Log("attackalert: ERROR: Could not block host %s !!", target);
-                else
-                  WriteBlocked(target, resolvedHost, configData.tcpPorts[count], configData.blockedFile, configData.historyFile, "TCP");
-              } else {
-                Log("attackalert: Host: %s is already blocked. Ignoring", target);
-              }
-            }
-          }
-          close(incomingSockfd);
-          break;
-        } /* end if(FD_ISSET) */
-      }   /* end for() */
-    }     /* end else (selectResult > 0) */
-  }       /* end main for(; ; ) loop */
-
-  /* not reached */
-  close(incomingSockfd);
-}
-
-/****************************************************************/
-/* Classic detection Mode                                       */
-/*                                                              */
-/* This mode will bind to a list of UDP sockets and wait for    */
-/* connections to happen. Stealth scanning really doesn't apply */
-/* here.                                                        */
-/*                                                              */
-/****************************************************************/
-static int PortSentryModeUDP(void) {
-  struct sockaddr_in client;
-  socklen_t length;
-  int openSockfd[MAXSOCKS], result = TRUE;
-  int count = 0, portCount = 0, selectResult = 0, scanDetectTrigger = 0;
-  int boundPortCount = 0, showBanner = FALSE;
-  char target[IPMAXBUF], bannerBuffer[MAXBUF];
-  char buffer[MAXBUF];
-  char resolvedHost[DNSMAXBUF];
-  fd_set selectFds;
-
-  /* read in the banner if one is given */
-  if (strlen(configData.portBanner) > 0) {
-    showBanner = TRUE;
-    SafeStrncpy(bannerBuffer, configData.portBanner, MAXBUF); // FIXME: Use configData.portBanner directly
-  }
-
-  /* setup select call */
-  FD_ZERO(&selectFds);
-
-  for (count = 0; count < configData.udpPortsLength; count++) {
-    Log("adminalert: Going into listen mode on UDP port: %d", configData.udpPorts[count]);
-    if ((openSockfd[boundPortCount] = OpenUDPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open UDP socket. Aborting");
-      return (ERROR);
-    }
-    if (BindSocket(openSockfd[boundPortCount], configData.udpPorts[count]) == ERROR) {
-      Log("adminalert: ERROR: could not bind UDP socket: %d. Attempting to continue", configData.udpPorts[count]);
-    } else { /* well we at least bound to one socket so we'll continue */
-      boundPortCount++;
-    }
-  }
-
-  /* if we didn't bind to anything then abort */
-  if (boundPortCount == 0) {
-    Log("adminalert: ERROR: could not bind ANY UDP sockets. Shutting down.");
-    return (ERROR);
-  }
-
-  length = sizeof(client);
-  Log("adminalert: PortSentry is now active and listening.");
-
-  /* main loop for multiplexing/resetting */
-  for (;;) {
-    /* set up select call */
-    for (count = 0; count < boundPortCount; count++) {
-      FD_SET(openSockfd[count], &selectFds);
-    }
-    /* setup the select multiplexing (blocking mode) */
-    selectResult = select(MAXSOCKS, &selectFds, NULL, NULL, (struct timeval *)NULL);
-
-    if (selectResult < 0) {
-      Log("adminalert: ERROR: select call failed. Shutting down.");
-      return (ERROR);
-    } else if (selectResult == 0) {
-      Debug("Select timeout");
-    } else if (selectResult > 0) { /* select is reporting a waiting socket. Poll them all to find out which */
-      for (count = 0; count < portCount; count++) {
-        if (FD_ISSET(openSockfd[count], &selectFds)) {
-          /* here just read in one byte from the UDP socket, that's all we need
-           * to */
-          /* know that this person is a jerk */
-          if (recvfrom(openSockfd[count], buffer, 1, 0,
-                       (struct sockaddr *)&client, &length) < 0) {
-            Log("adminalert: ERROR: could not accept incoming socket for UDP port: %d", configData.udpPorts[count]);
-            break;
-          }
-
-          /* copy the clients address into our buffer for nuking */
-          SafeStrncpy(target, (char *)inet_ntoa(client.sin_addr), IPMAXBUF);
-          Debug("PortSentryModeUDP: accepted UDP connection from: %s", target);
-          /* check if we should ignore this IP */
-          result = NeverBlock(target, configData.ignoreFile);
-          if (result == ERROR) {
-            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.");
-            result = FALSE;
-          }
-          if (result == FALSE) {
-            /* check if they've visited before */
-            scanDetectTrigger = CheckStateEngine(target);
-            if (scanDetectTrigger == TRUE) {
-              /* show the banner if one was selected */
-              if (showBanner == TRUE)
-                sendto(openSockfd[count], bannerBuffer, strlen(bannerBuffer), 0, (struct sockaddr *)&client, length);
-
-              if (configData.resolveHost) { /* Do they want DNS resolution? */
-                if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
-                  snprintf(resolvedHost, DNSMAXBUF, "%s", target);
-                }
-              } else {
-                snprintf(resolvedHost, DNSMAXBUF, "%s", target);
-              }
-
-              Log("attackalert: Connect from host: %s/%s to UDP port: %d", resolvedHost, target, configData.udpPorts[count]);
-              /* check if this target is already blocked */
-              if (IsBlocked(target, configData.blockedFile) == FALSE) {
-                if (DisposeTarget(target, configData.udpPorts[count], IPPROTO_UDP) != TRUE)
-                  Log("attackalert: ERROR: Could not block host %s !!", target);
-                else
-                  WriteBlocked(target, resolvedHost, configData.udpPorts[count], configData.blockedFile, configData.historyFile, "UDP");
-              } else {
-                Log("attackalert: Host: %s is already blocked. Ignoring", target);
-              }
-            }
-          }
-          break;
-        } /* end if(FD_ISSET) */
-      }   /* end for() */
-    }     /* end else (selectResult > 0) */
-  }       /* end main for(; ; ) loop */
-} /* end UDP PortSentry */
-
-static int DisposeTarget(char *target, int port, int protocol) {
-  int status = TRUE;
-  int blockProto;
-
-  if (protocol == IPPROTO_TCP) {
-    blockProto = configData.blockTCP;
-  } else if (protocol == IPPROTO_UDP) {
-    blockProto = configData.blockUDP;
-  } else {
-    Log("DisposeTarget: ERROR: Unknown protocol: %d", protocol);
-    return (FALSE);
-  }
-
-  Debug("DisposeTarget: disposing of host %s on port %d with option: %d (%s)", target, port, configData.blockTCP, (protocol == IPPROTO_TCP) ? "tcp" : "udp");
-  Debug("DisposeTarget: killRunCmd: %s", configData.killRunCmd);
-  Debug("DisposeTarget: runCmdFirst: %d", configData.runCmdFirst);
-  Debug("DisposeTarget: killHostsDeny: %s", configData.killHostsDeny);
-  Debug("DisposeTarget: killRoute: %s (%lu)", configData.killRoute, strlen(configData.killRoute));
-
-  if (blockProto == 0) {
-    Log("attackalert: Ignoring %s response per configuration file setting.", (protocol == IPPROTO_TCP) ? "TCP" : "UDP");
-    status = TRUE;
-  } else if (blockProto == 1) {
-    if (configData.runCmdFirst == TRUE) {
-      status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
-    }
-
-    status = KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode));
-    status = KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode));
-
-    if (configData.runCmdFirst == FALSE) {
-      status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
-    }
-  } else if (blockProto == 2) {
-    status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
-  }
-
-  if (status != TRUE)
-    status = FALSE;
-
-  return (status);
-}
 
 #ifdef SUPPORT_STEALTH
 /* This takes a tcp packet and reports what type of scan it is */
