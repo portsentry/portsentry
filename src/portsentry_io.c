@@ -581,7 +581,9 @@ int testFileAccess(char *filename, char *mode) {
 }
 
 void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr_in *client) {
-  ssize_t result;
+  ssize_t result = 0;
+
+  assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
   if (configData.portBannerPresent == FALSE)
     return;
