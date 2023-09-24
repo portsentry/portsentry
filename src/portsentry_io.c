@@ -264,14 +264,17 @@ int BindSocket(int sockfd, int port) {
   server.sin_addr.s_addr = htonl(INADDR_ANY);
   server.sin_port = htons(port);
 
-  if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
+  if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) == -1) {
     Debug("BindSocket: Binding failed");
     return (ERROR);
-  } else {
-    Debug("BindSocket: Binding successful. Doing listen");
-    listen(sockfd, 5);
-    return (TRUE);
   }
+
+  if (listen(sockfd, 5) == -1) {
+    Debug("BindSocket: Listen failed");
+    return (ERROR);
+  }
+
+  return (TRUE);
 }
 
 /* Open a TCP Socket */
