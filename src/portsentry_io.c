@@ -25,7 +25,7 @@ enum LogType { LogTypeNone,
                LogTypeDebug,
                LogTypeVerbose };
 
-static void LogEntry(enum LogType logType, char *logentry, va_list ap);
+static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr);
 
 static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr) {
   char logbuffer[MAXBUF];
