@@ -17,6 +17,7 @@
 /* $Id: portsentry_util.h,v 1.10 2003/05/23 17:42:07 crowland Exp crowland $ */
 /************************************************************************/
 
+#include <stdint.h>
 #include <sys/types.h>
 
 /* IP address length plus null */
@@ -28,3 +29,5 @@ int CleanAndResolve(char *, const char *);
 void ResolveAddr(const struct sockaddr *saddr, const socklen_t saddrLen, char *resolvedHost, const int resolvedHostSize);
 long getLong(char *buffer);
 int DisposeTarget(char *, int, int);
+int IsPortInUse(uint16_t port, int proto);
+int EvalPortsInUse(int *portCount, int *ports);

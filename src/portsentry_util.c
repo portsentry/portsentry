@@ -186,3 +186,73 @@ int DisposeTarget(char *target, int port, int protocol) {
 
   return (status);
 }
+
+int IsPortInUse(uint16_t port, int proto) {
+  int testSockfd;
+
+  assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
+
+  if (proto == IPPROTO_TCP) {
+    testSockfd = OpenTCPSocket();
+  } else if (proto == IPPROTO_UDP) {
+    testSockfd = OpenUDPSocket();
+  } else {
+    Log("adminalert: ERROR: invalid protocol type passed to IsPortInUse.");
+    return (ERROR);
+  }
+
+  if (testSockfd == ERROR) {
+    Log("adminalert: ERROR: could not open %s socket to smart-verify.", proto == IPPROTO_TCP ? "TCP" : "UDP");
+    return (ERROR);
+  }
+
+  if (BindSocket(testSockfd, port) == ERROR) {
+    Debug("IsPortInUse: %d = Yes", port);
+    close(testSockfd);
+    return (TRUE);
+  }
+
+  close(testSockfd);
+  return (FALSE);
+}
+
+int EvalPortsInUse(int *portCount, int *ports) {
+  int portsLength, i, gotBound = FALSE, status;
+  uint16_t *portList;
+  int proto;
+
+  *portCount = 0;
+
+  if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP) {
+    portsLength = configData.tcpPortsLength;
+    portList = configData.tcpPorts;
+    proto = IPPROTO_TCP;
+  } else if (configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP) {
+    portsLength = configData.udpPortsLength;
+    portList = configData.udpPorts;
+    proto = IPPROTO_UDP;
+  } else {
+    Log("Invalid sentry mode in EvalPortsInUse");
+    return (FALSE);
+  }
+
+  for (i = 0; i < portsLength; i++) {
+    Log("Going into stealth listen mode on port: %d", portList[i]);
+    status = IsPortInUse(portList[i], proto);
+
+    if (status == FALSE) {
+      gotBound = TRUE;
+      ports[(*portCount)++] = portList[i];
+    } else if (status == TRUE) {
+      Log("Socket %d is in use and will not be monitored. Attempting to continue", portList[i]);
+    } else if (status == ERROR) {
+      return FALSE;
+    }
+  }
+
+  if (gotBound == FALSE) {
+    Log("No ports were bound. Aborting");
+  }
+
+  return gotBound;
+}
