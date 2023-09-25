@@ -289,7 +289,7 @@ static int PortSentryAdvancedStealthModeTCP(void) {
   Log("adminalert: Advanced mode will monitor first %d ports", configData.tcpAdvancedPort);
 
   /* try to bind to all ports below 1024, any that are taken we exclude later */
-  for (count = 0; count < configData.tcpAdvancedPort; count++) {
+  for (count = 1; count < configData.tcpAdvancedPort; count++) {
     if ((openSockfd = OpenTCPSocket()) == ERROR) {
       Log("adminalert: ERROR: could not open TCP socket. Aborting.");
       return (ERROR);
@@ -510,7 +510,7 @@ static int PortSentryAdvancedStealthModeUDP(void) {
   Log("adminalert: Advanced mode will monitor first %d ports", configData.udpAdvancedPort);
 
   /* try to bind to all ports below 1024, any that are taken we exclude later */
-  for (count = 0; count < configData.udpAdvancedPort; count++) {
+  for (count = 1; count < configData.udpAdvancedPort; count++) {
     if ((openSockfd = OpenUDPSocket()) == ERROR) {
       Log("adminalert: ERROR: could not open UDP socket. Aborting.");
       return (ERROR);
