@@ -50,8 +50,8 @@
 #endif /* SUPPORT_STEALTH */
 
 #include "config.h"
-#include "portsentry_io.h"
-#include "portsentry_util.h"
+#include "io.h"
+#include "util.h"
 
 #define ERROR -1
 #define TRUE 1

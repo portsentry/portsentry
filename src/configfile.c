@@ -3,9 +3,9 @@
 
 #include "config_data.h"
 #include "configfile.h"
+#include "io.h"
 #include "portsentry.h"
-#include "portsentry_io.h"
-#include "portsentry_util.h"
+#include "util.h"
 
 static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
 static void validateConfig(struct ConfigData *fileConfig);

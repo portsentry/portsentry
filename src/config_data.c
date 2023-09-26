@@ -3,7 +3,7 @@
 #include "config.h"
 #include "config_data.h"
 #include "portsentry.h"
-#include "portsentry_util.h"
+#include "util.h"
 
 struct ConfigData configData;
 

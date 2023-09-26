@@ -6,7 +6,7 @@
 #include "cmdline.h"
 #include "config_data.h"
 #include "portsentry.h"
-#include "portsentry_util.h"
+#include "util.h"
 
 #define CMDLINE_TCP 0
 #define CMDLINE_STCP 1

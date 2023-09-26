@@ -17,8 +17,8 @@
 /************************************************************************/
 
 #include "config_data.h"
+#include "io.h"
 #include "portsentry.h"
-#include "portsentry_io.h"
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {

@@ -18,7 +18,7 @@
 
 #include "config_data.h"
 #include "portsentry.h"
-#include "portsentry_util.h"
+#include "util.h"
 
 static uint8_t isSyslogOpen = FALSE;
 enum LogType { LogTypeNone,

@@ -21,9 +21,9 @@
 #include "config_data.h"
 #include "configfile.h"
 #include "connect_sentry.h"
-#include "portsentry_io.h"
-#include "portsentry_util.h"
+#include "io.h"
 #include "state_machine.h"
+#include "util.h"
 
 #ifdef SUPPORT_STEALTH
 static int PortSentryStealthModeTCP(void);
