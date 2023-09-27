@@ -3,17 +3,10 @@
 
 #include "config_data.h"
 #include "connect_sentry.h"
+#include "connection_data.h"
 #include "portsentry.h"
 #include "state_machine.h"
-
-struct ConnectionData {
-  uint16_t port;
-  int protocol;
-  int sockfd;
-};
-
-static int ConstructConnectionData(struct ConnectionData *cd, int cdSize);
-static void PruneConnectionData(struct ConnectionData *connectionData, int *connectionDataSize);
+#include "util.h"
 
 int PortSentryConnectMode(void) {
   struct sockaddr_in client;
@@ -36,31 +29,17 @@ int PortSentryConnectMode(void) {
   for (count = 0; count < connectionDataSize; count++) {
     Log("adminalert: Going into listen mode on %s port: %d", (connectionData[count].protocol == IPPROTO_TCP ? "TCP" : "UDP"), connectionData[count].port);
 
-    if (connectionData[count].protocol == IPPROTO_TCP) {
-      if ((connectionData[count].sockfd = OpenTCPSocket()) == ERROR) {
-        Log("adminalert: ERROR: could not open TCP socket on port %d. Aborting.", connectionData[count].port);
-        return (ERROR);
-      }
-    } else if (connectionData[count].protocol == IPPROTO_UDP) {
-      if ((connectionData[count].sockfd = OpenUDPSocket()) == ERROR) {
-        Log("adminalert: ERROR: could not open UDP socket on port %d. Aborting.", connectionData[count].port);
-        return (ERROR);
-      }
-    } else {
-      Log("adminalert: ERROR: Unknown protocol type used in Connection Data. Aborting.");
-      return (ERROR);
-    }
+    connectionData[count].sockfd = SetupPort(connectionData[count].port, connectionData[count].protocol);
 
-    if (BindSocket(connectionData[count].sockfd, connectionData[count].port) == ERROR) {
-      Log("adminalert: ERROR: could not bind %s socket: %d. Attempting to continue", (connectionData[count].protocol == IPPROTO_TCP ? "TCP" : "UDP"), connectionData[count].port);
-      close(connectionData[count].sockfd);
+    if (connectionData[count].sockfd == ERROR || connectionData[count].sockfd == -2) {
       connectionData[count].sockfd = ERROR;
+      Log("adminalert: ERROR: could not bind %s socket: %d. Attempting to continue", GetProtocolString(connectionData[count].protocol), connectionData[count].port);
     } else {
       nfds = max(nfds, connectionData[count].sockfd);
     }
   }
 
-  PruneConnectionData(connectionData, &connectionDataSize);
+  PruneConnectionDataByInvalidSockfd(connectionData, &connectionDataSize);
 
   if (connectionDataSize == 0) {
     Log("adminalert: ERROR: could not bind ANY sockets. Shutting down.");
@@ -159,62 +138,6 @@ int PortSentryConnectMode(void) {
   if (incomingSockfd > -1) {
     close(incomingSockfd);
   }
-}
 
-static int ConstructConnectionData(struct ConnectionData *cd, int cdSize) {
-  int i, cdIdx;
-
-  memset(cd, 0, sizeof(struct ConnectionData) * cdSize);
-
-  if (cdSize <= 0) {
-    Log("adminalert: ERROR: ConstructConnectionData() called with invalid size. Aborting.");
-    return 0;
-  }
-
-  cdIdx = 0;
-  if (configData.sentryMode == SENTRY_MODE_TCP) {
-    for (i = 0; i < configData.tcpPortsLength; i++) {
-      cd[cdIdx].sockfd = ERROR;
-      cd[cdIdx].port = configData.tcpPorts[i];
-      cd[cdIdx].protocol = IPPROTO_TCP;
-
-      cdIdx++;
-
-      if (cdIdx >= cdSize) {
-        Log("adminalert: ERROR: TCP port count exceeds size of ConnectionData array. Aborting.");
-        return cdIdx;
-      }
-    }
-  }
-
-  if (configData.sentryMode == SENTRY_MODE_UDP) {
-    for (i = 0; i < configData.udpPortsLength; i++) {
-      cd[cdIdx].sockfd = ERROR;
-      cd[cdIdx].port = configData.udpPorts[i];
-      cd[cdIdx].protocol = IPPROTO_UDP;
-
-      cdIdx++;
-
-      if (cdIdx >= cdSize) {
-        Log("adminalert: ERROR: UDP port count exceeds size of ConnectionData array. Aborting.");
-        return cdIdx;
-      }
-    }
-  }
-
-  return cdIdx;
-}
-
-static void PruneConnectionData(struct ConnectionData *connectionData, int *connectionDataSize) {
-  int i;
-
-  for (i = 0; i < *connectionDataSize; i++) {
-    if (connectionData[i].sockfd == -1) {
-      if (i < *connectionDataSize - 1) {
-        memmove(&connectionData[i], &connectionData[i + 1], sizeof(struct ConnectionData) * (*connectionDataSize - i - 1));
-      }
-      (*connectionDataSize)--;
-      i--;
-    }
-  }
+  CloseConnectionData(connectionData, connectionDataSize);
 }
