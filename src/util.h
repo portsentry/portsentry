@@ -29,5 +29,7 @@ int CleanAndResolve(char *, const char *);
 void ResolveAddr(const struct sockaddr *saddr, const socklen_t saddrLen, char *resolvedHost, const int resolvedHostSize);
 long getLong(char *buffer);
 int DisposeTarget(char *, int, int);
+const char *GetProtocolString(int proto);
+int SetupPort(uint16_t port, int proto);
 int IsPortInUse(uint16_t port, int proto);
 int EvalPortsInUse(int *portCount, int *ports);

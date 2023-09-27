@@ -19,6 +19,7 @@
 #include "config_data.h"
 #include "io.h"
 #include "portsentry.h"
+#include <netinet/in.h>
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
@@ -187,33 +188,61 @@ int DisposeTarget(char *target, int port, int protocol) {
   return (status);
 }
 
-int IsPortInUse(uint16_t port, int proto) {
-  int testSockfd;
+const char *GetProtocolString(int proto) {
+  switch (proto) {
+  case IPPROTO_TCP:
+    return ("TCP");
+    break;
+  case IPPROTO_UDP:
+    return ("UDP");
+    break;
+  default:
+    return ("UNKNOWN");
+    break;
+  }
+}
+
+int SetupPort(uint16_t port, int proto) {
+  int sock;
 
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
   if (proto == IPPROTO_TCP) {
-    testSockfd = OpenTCPSocket();
+    sock = OpenTCPSocket();
   } else if (proto == IPPROTO_UDP) {
-    testSockfd = OpenUDPSocket();
+    sock = OpenUDPSocket();
   } else {
     Log("adminalert: ERROR: invalid protocol type passed to IsPortInUse.");
-    return (ERROR);
+    return -1;
   }
 
-  if (testSockfd == ERROR) {
-    Log("adminalert: ERROR: could not open %s socket to smart-verify.", proto == IPPROTO_TCP ? "TCP" : "UDP");
-    return (ERROR);
+  if (sock == ERROR) {
+    Log("adminalert: ERROR: could not open %s socket", GetProtocolString(proto));
+    return -1;
   }
 
-  if (BindSocket(testSockfd, port) == ERROR) {
-    Debug("IsPortInUse: %d = Yes", port);
-    close(testSockfd);
-    return (TRUE);
+  if (BindSocket(sock, port) == ERROR) {
+    Debug("SetupPort: %s port %d failed, in use", GetProtocolString(proto), port);
+    close(sock);
+    return -2;
   }
 
-  close(testSockfd);
-  return (FALSE);
+  return sock;
+}
+
+int IsPortInUse(uint16_t port, int proto) {
+  int sock;
+
+  sock = SetupPort(port, proto);
+
+  if (sock == -1) {
+    return ERROR;
+  } else if (sock == -2) {
+    return TRUE;
+  } else {
+    close(sock);
+    return FALSE;
+  }
 }
 
 int EvalPortsInUse(int *portCount, int *ports) {
