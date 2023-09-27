@@ -266,6 +266,7 @@ int BindSocket(int sockfd, int port) {
 
   if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) == -1) {
     Debug("BindSocket: Binding failed");
+    // FIXME: check errno to determine we have EADDRINUSE
     return (ERROR);
   }
 
@@ -603,4 +604,35 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
   if (result == -1) {
     Log("adminalert: ERROR: Could not write banner to socket (ignoring)");
   }
+}
+
+/* Read packet IP and transport headers and set ipPtr/transportPtr to their correct location
+ * transportPtr is either a struct tcphdr * or struct udphdr *
+ */
+int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct iphdr **ipPtr, void **transportPtr) {
+  size_t ipHeaderLength;
+  struct in_addr addr;
+
+  if (read(socket, packetBuffer, packetBufferSize) == -1) {
+    Log("adminalert: ERROR: Could not read from socket %d: (errno: %d). Aborting", socket, errno);
+    return ERROR;
+  }
+
+  *ipPtr = (struct iphdr *)packetBuffer;
+
+  if (((*ipPtr)->ihl < 5) || ((*ipPtr)->ihl > 15)) {
+    addr.s_addr = (u_int)(*ipPtr)->saddr;
+    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", (*ipPtr)->ihl, inet_ntoa(addr));
+    return (FALSE);
+  }
+
+  ipHeaderLength = (*ipPtr)->ihl * 4;
+
+  if (ipHeaderLength > packetBufferSize) {
+    Log("adminalert: ERROR: IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);
+    return FALSE;
+  }
+
+  *transportPtr = (void *)(packetBuffer + ipHeaderLength);
+  return TRUE;
 }
