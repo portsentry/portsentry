@@ -33,3 +33,4 @@ const char *GetProtocolString(int proto);
 int SetupPort(uint16_t port, int proto);
 int IsPortInUse(uint16_t port, int proto);
 int EvalPortsInUse(int *portCount, int *ports);
+char *ReportPacketType(struct tcphdr *);

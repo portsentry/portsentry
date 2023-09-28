@@ -285,3 +285,27 @@ int EvalPortsInUse(int *portCount, int *ports) {
 
   return gotBound;
 }
+
+/* This takes a tcp packet and reports what type of scan it is */
+char *ReportPacketType(struct tcphdr *tcpPkt) {
+  static char packetDesc[MAXBUF];
+  static char *packetDescPtr = packetDesc;
+
+  if ((tcpPkt->syn == 0) && (tcpPkt->fin == 0) && (tcpPkt->ack == 0) &&
+      (tcpPkt->psh == 0) && (tcpPkt->rst == 0) && (tcpPkt->urg == 0))
+    snprintf(packetDesc, MAXBUF, " TCP NULL scan");
+  else if ((tcpPkt->fin == 1) && (tcpPkt->urg == 1) && (tcpPkt->psh == 1))
+    snprintf(packetDesc, MAXBUF, "TCP XMAS scan");
+  else if ((tcpPkt->fin == 1) && (tcpPkt->syn != 1) && (tcpPkt->ack != 1) &&
+           (tcpPkt->psh != 1) && (tcpPkt->rst != 1) && (tcpPkt->urg != 1))
+    snprintf(packetDesc, MAXBUF, "TCP FIN scan");
+  else if ((tcpPkt->syn == 1) && (tcpPkt->fin != 1) && (tcpPkt->ack != 1) &&
+           (tcpPkt->psh != 1) && (tcpPkt->rst != 1) && (tcpPkt->urg != 1))
+    snprintf(packetDesc, MAXBUF, "TCP SYN/Normal scan");
+  else
+    snprintf(packetDesc, MAXBUF,
+             "Unknown Type: TCP Packet Flags: SYN: %d FIN: %d ACK: %d PSH: %d URG: %d RST: %d",
+             tcpPkt->syn, tcpPkt->fin, tcpPkt->ack, tcpPkt->psh, tcpPkt->urg, tcpPkt->rst);
+
+  return (packetDescPtr);
+}
