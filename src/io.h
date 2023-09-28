@@ -19,7 +19,7 @@
 
 #include "portsentry.h"
 
-int WriteBlocked(char *, char *, int, char *, char *, char *);
+int WriteBlocked(char *, char *, int, char *, char *, const char *);
 void Log(char *, ...);
 void Debug(char *logentry, ...);
 void Verbose(char *logentry, ...);

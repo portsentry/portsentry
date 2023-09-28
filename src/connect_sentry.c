@@ -124,9 +124,9 @@ int PortSentryConnectMode(void) {
         if (DisposeTarget(target, connectionData[count].port, connectionData[count].protocol) != TRUE)
           Log("attackalert: ERROR: Could not block host %s !!", target);
         else
-          WriteBlocked(target, resolvedHost, connectionData[count].port, configData.blockedFile, configData.historyFile, (connectionData[count].protocol == IPPROTO_TCP) ? "TCP" : "UDP");
+          WriteBlocked(target, resolvedHost, connectionData[count].port, configData.blockedFile, configData.historyFile, GetProtocolString(connectionData[count].protocol));
       } else {
-        Log("attackalert: Host: %s is already blocked. Ignoring", target);
+        Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
       }
 
     continue_loop:

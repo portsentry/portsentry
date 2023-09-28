@@ -211,7 +211,7 @@ int NeverBlock(char *target, char *filename) {
 
 /* This writes out blocked hosts to the blocked file. It adds the hostname */
 /* time stamp, and port connection that was acted on */
-int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, char *portType) {
+int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, const char *portType) {
   FILE *output;
   int blockedStatus = TRUE, historyStatus = TRUE;
 
