@@ -12,3 +12,4 @@ struct ConnectionData {
 int ConstructConnectionData(struct ConnectionData *cd, int cdSize);
 void PruneConnectionDataByInUsePorts(struct ConnectionData *connectionData, int *connectionDataSize);
 void CloseConnectionData(struct ConnectionData *connectionData, int connectionDataSize);
+struct ConnectionData *FindConnectionData(struct ConnectionData *connectionData, int connectionDataSize, uint16_t port, int proto);

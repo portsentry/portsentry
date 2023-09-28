@@ -93,3 +93,15 @@ void CloseConnectionData(struct ConnectionData *connectionData, int connectionDa
     }
   }
 }
+
+struct ConnectionData *FindConnectionData(struct ConnectionData *connectionData, int connectionDataSize, uint16_t port, int proto) {
+  int i;
+
+  for (i = 0; i < connectionDataSize; i++) {
+    if (connectionData[i].port == port && connectionData[i].protocol == proto) {
+      return &connectionData[i];
+    }
+  }
+
+  return NULL;
+}
