@@ -245,47 +245,6 @@ int IsPortInUse(uint16_t port, int proto) {
   }
 }
 
-int EvalPortsInUse(int *portCount, int *ports) {
-  int portsLength, i, gotBound = FALSE, status;
-  uint16_t *portList;
-  int proto;
-
-  *portCount = 0;
-
-  if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP) {
-    portsLength = configData.tcpPortsLength;
-    portList = configData.tcpPorts;
-    proto = IPPROTO_TCP;
-  } else if (configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP) {
-    portsLength = configData.udpPortsLength;
-    portList = configData.udpPorts;
-    proto = IPPROTO_UDP;
-  } else {
-    Log("Invalid sentry mode in EvalPortsInUse");
-    return (FALSE);
-  }
-
-  for (i = 0; i < portsLength; i++) {
-    Log("Going into stealth listen mode on port: %d", portList[i]);
-    status = IsPortInUse(portList[i], proto);
-
-    if (status == FALSE) {
-      gotBound = TRUE;
-      ports[(*portCount)++] = portList[i];
-    } else if (status == TRUE) {
-      Log("Socket %d is in use and will not be monitored. Attempting to continue", portList[i]);
-    } else if (status == ERROR) {
-      return FALSE;
-    }
-  }
-
-  if (gotBound == FALSE) {
-    Log("No ports were bound. Aborting");
-  }
-
-  return gotBound;
-}
-
 /* This takes a tcp packet and reports what type of scan it is */
 char *ReportPacketType(struct tcphdr *tcpPkt) {
   static char packetDesc[MAXBUF];
@@ -293,7 +252,7 @@ char *ReportPacketType(struct tcphdr *tcpPkt) {
 
   if ((tcpPkt->syn == 0) && (tcpPkt->fin == 0) && (tcpPkt->ack == 0) &&
       (tcpPkt->psh == 0) && (tcpPkt->rst == 0) && (tcpPkt->urg == 0))
-    snprintf(packetDesc, MAXBUF, " TCP NULL scan");
+    snprintf(packetDesc, MAXBUF, "TCP NULL scan");
   else if ((tcpPkt->fin == 1) && (tcpPkt->urg == 1) && (tcpPkt->psh == 1))
     snprintf(packetDesc, MAXBUF, "TCP XMAS scan");
   else if ((tcpPkt->fin == 1) && (tcpPkt->syn != 1) && (tcpPkt->ack != 1) &&

@@ -23,12 +23,11 @@
 #include "connect_sentry.h"
 #include "io.h"
 #include "state_machine.h"
+#include "stealth_sentry.h"
 #include "util.h"
 
 #ifdef SUPPORT_STEALTH
-static int PortSentryStealthModeTCP(void);
 static int PortSentryAdvancedStealthModeTCP(void);
-static int PortSentryStealthModeUDP(void);
 static int PortSentryAdvancedStealthModeUDP(void);
 #endif
 
@@ -62,18 +61,13 @@ int main(int argc, char *argv[]) {
     }
   }
 #ifdef SUPPORT_STEALTH
-  else if (configData.sentryMode == SENTRY_MODE_STCP) {
-    if (PortSentryStealthModeTCP() == ERROR) {
+  else if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP) {
+    if (PortSentryStealthMode() == ERROR) {
       Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
     if (PortSentryAdvancedStealthModeTCP() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
-      Exit(ERROR);
-    }
-  } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
-    if (PortSentryStealthModeUDP() == ERROR) {
       Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
@@ -89,104 +83,6 @@ int main(int argc, char *argv[]) {
 }
 
 #ifdef SUPPORT_STEALTH
-
-/****************************************************************/
-/* Stealth scan detection Mode One                              */
-/*                                                              */
-/* This mode will read in a list of ports to monitor and will   */
-/* then open a raw socket to look for packets matching the port. */
-/*                                                              */
-/****************************************************************/
-static int PortSentryStealthModeTCP(void) {
-  int portCount2, ports2[MAXSOCKS];
-  int count = 0, scanDetectTrigger = TRUE, result = TRUE;
-  int openSockfd = 0, incomingPort = 0;
-  char target[IPMAXBUF];
-  char resolvedHost[DNSMAXBUF], *packetType;
-  char packetBuffer[TCPPACKETLEN];
-  struct in_addr addr;
-  struct iphdr *ip;
-  struct tcphdr *tcp;
-
-  /* ok, now check if they have a network daemon on the socket already, if they
-   * do then skip that port because it will cause false alarms */
-  if (EvalPortsInUse(&portCount2, ports2) == FALSE) {
-    return ERROR; // Error msg in function
-  }
-
-  /* Open our raw socket for network IO */
-  if ((openSockfd = OpenRAWTCPSocket()) == ERROR) {
-    Log("adminalert: ERROR: could not open RAW TCP socket. Aborting.");
-    return (ERROR);
-  }
-
-  Log("adminalert: PortSentry is now active and listening.");
-
-  /* main detection loop */
-  for (;;) {
-    if (PacketRead(openSockfd, packetBuffer, TCPPACKETLEN, &ip, (void **)&tcp) != TRUE)
-      continue;
-
-    incomingPort = ntohs(tcp->dest);
-
-    /* check for an ACK/RST to weed out established connections in case the user is monitoring high ephemeral port numbers */
-    if ((tcp->ack != 1) && (tcp->rst != 1)) {
-      /* this iterates the list of ports looking for a match */
-      for (count = 0; count < portCount2; count++) {
-        if (incomingPort == ports2[count]) {
-          if (IsPortInUse(incomingPort, IPPROTO_TCP) == TRUE)
-            break;
-
-          /* copy the clients address into our buffer for nuking */
-          addr.s_addr = (u_int)ip->saddr;
-          SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
-          /* check if we should ignore this IP */
-          result = NeverBlock(target, configData.ignoreFile);
-
-          if (result == ERROR) {
-            Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.");
-            result = FALSE;
-          }
-
-          if (result == FALSE) {
-            /* check if they've visited before */
-            scanDetectTrigger = CheckStateEngine(target);
-            if (scanDetectTrigger == TRUE) {
-              if (configData.resolveHost) { /* Do they want DNS resolution? */
-                if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                  Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
-                  snprintf(resolvedHost, DNSMAXBUF, "%s", target);
-                }
-              } else {
-                snprintf(resolvedHost, DNSMAXBUF, "%s", target);
-              }
-
-              packetType = ReportPacketType(tcp);
-              Log("attackalert: %s from host: %s/%s to TCP port: %d", packetType, resolvedHost, target, ports2[count]);
-              /* Report on options present */
-              if (ip->ihl > 5)
-                Log("attackalert: Packet from host: %s/%s to TCP port: %d has IP options set (detection avoidance technique).",
-                    resolvedHost, target, ports2[count]);
-
-              /* check if this target is already blocked */
-              if (IsBlocked(target, configData.blockedFile) == FALSE) {
-                /* toast the prick */
-                if (DisposeTarget(target, ports2[count], IPPROTO_TCP) != TRUE)
-                  Log("attackalert: ERROR: Could not block host %s/%s !!", resolvedHost, target);
-                else
-                  WriteBlocked(target, resolvedHost, ports2[count], configData.blockedFile, configData.historyFile, "TCP");
-              } else { /* end IsBlocked check */
-                Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
-              }
-            }    /* end if(scanDetectTrigger) */
-          }      /* end if(never block) check */
-          break; /* get out of for(count) loop above */
-        }        /* end if(incoming port) ==  protected port */
-      }          /* end for( check for protected port loop ) loop */
-    }            /* end if(TH_ACK) check */
-  }              /* end for( ; ; ) loop */
-} /* end PortSentryStealthModeTCP */
-
 /****************************************************************/
 /* Advanced Stealth scan detection Mode One                     */
 /*                                                              */
@@ -317,94 +213,6 @@ static int PortSentryAdvancedStealthModeTCP(void) {
   }           /* end for( ; ; ) loop */
 }
 /* end PortSentryAdvancedStealthModeTCP */
-
-/****************************************************************/
-/* UDP "stealth" scan detection                                 */
-/*                                                              */
-/* This mode will read in a list of ports to monitor and will   */
-/* then open a raw socket to look for packets matching the port. */
-/*                                                              */
-/****************************************************************/
-static int PortSentryStealthModeUDP(void) {
-  int portCount2 = 0, ports2[MAXSOCKS], result = TRUE;
-  int count = 0, scanDetectTrigger = TRUE;
-  int openSockfd = 0, incomingPort = 0;
-  char target[IPMAXBUF];
-  char resolvedHost[DNSMAXBUF];
-  char packetBuffer[UDPPACKETLEN];
-  struct in_addr addr;
-  struct iphdr *ip;
-  struct udphdr *udp;
-
-  if (EvalPortsInUse(&portCount2, ports2) == FALSE) {
-    return ERROR; // Error msg in function
-  }
-
-  if ((openSockfd = OpenRAWUDPSocket()) == ERROR) {
-    Log("adminalert: ERROR: could not open RAW UDP socket. Aborting.");
-    return (ERROR);
-  }
-
-  Log("adminalert: PortSentry is now active and listening.");
-
-  /* main detection loop */
-  for (;;) {
-    if (PacketRead(openSockfd, packetBuffer, UDPPACKETLEN, &ip, (void **)&udp) != TRUE)
-      continue;
-
-    incomingPort = ntohs(udp->dest);
-
-    /* this iterates the list of ports looking for a match */
-    for (count = 0; count < portCount2; count++) {
-      if (incomingPort == ports2[count]) {
-        if (IsPortInUse(incomingPort, IPPROTO_UDP) == TRUE)
-          break;
-
-        addr.s_addr = (u_int)ip->saddr;
-        SafeStrncpy(target, (char *)inet_ntoa(addr), IPMAXBUF);
-        /* check if we should ignore this IP */
-        result = NeverBlock(target, configData.ignoreFile);
-
-        if (result == ERROR) {
-          Log("attackalert: ERROR: cannot open ignore file. Blocking host anyway.");
-          result = FALSE;
-        }
-
-        if (result == FALSE) {
-          /* check if they've visited before */
-          scanDetectTrigger = CheckStateEngine(target);
-          if (scanDetectTrigger == TRUE) {
-            if (configData.resolveHost) { /* Do they want DNS resolution? */
-              if (CleanAndResolve(resolvedHost, target) != TRUE) {
-                Log("attackalert: ERROR: Error resolving host. resolving disabled for this host.");
-                snprintf(resolvedHost, DNSMAXBUF, "%s", target);
-              }
-            } else {
-              snprintf(resolvedHost, DNSMAXBUF, "%s", target);
-            }
-
-            Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, ports2[count]);
-            /* Report on options present */
-            if (ip->ihl > 5)
-              Log("attackalert: Packet from host: %s/%s to UDP port: %d has IP options set (detection avoidance technique).",
-                  resolvedHost, target, incomingPort);
-
-            /* check if this target is already blocked */
-            if (IsBlocked(target, configData.blockedFile) == FALSE) {
-              if (DisposeTarget(target, ports2[count], IPPROTO_UDP) != TRUE)
-                Log("attackalert: ERROR: Could not block host %s/%s!!", resolvedHost, target);
-              else
-                WriteBlocked(target, resolvedHost, ports2[count], configData.blockedFile, configData.historyFile, "UDP");
-            } else { /* end IsBlocked check */
-              Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
-            }
-          }    /* end if(scanDetectTrigger) */
-        }      /* end if(never block) check */
-        break; /* get out of for(count) loop above */
-      }        /* end if(incoming port) ==  protected port */
-    }          /* end for( check for protected port loop ) loop */
-  }            /* end for( ; ; ) loop */
-} /* end PortSentryStealthModeUDP */
 
 /****************************************************************/
 /* Advanced Stealth scan detection mode for UDP                 */
