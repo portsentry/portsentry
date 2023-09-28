@@ -32,14 +32,14 @@ int PortSentryConnectMode(void) {
     connectionData[count].sockfd = SetupPort(connectionData[count].port, connectionData[count].protocol);
 
     if (connectionData[count].sockfd == ERROR || connectionData[count].sockfd == -2) {
-      connectionData[count].sockfd = ERROR;
+      connectionData[count].portInUse = TRUE;
       Log("adminalert: ERROR: could not bind %s socket: %d. Attempting to continue", GetProtocolString(connectionData[count].protocol), connectionData[count].port);
     } else {
       nfds = max(nfds, connectionData[count].sockfd);
     }
   }
 
-  PruneConnectionDataByInvalidSockfd(connectionData, &connectionDataSize);
+  PruneConnectionDataByInUsePorts(connectionData, &connectionDataSize);
 
   if (connectionDataSize == 0) {
     Log("adminalert: ERROR: could not bind ANY sockets. Shutting down.");

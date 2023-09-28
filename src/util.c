@@ -212,7 +212,7 @@ int SetupPort(uint16_t port, int proto) {
   } else if (proto == IPPROTO_UDP) {
     sock = OpenUDPSocket();
   } else {
-    Log("adminalert: ERROR: invalid protocol type passed to IsPortInUse.");
+    Log("adminalert: ERROR: invalid protocol %d passed to IsPortInUse on port %d", proto, port);
     return -1;
   }
 
