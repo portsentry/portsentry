@@ -9,7 +9,7 @@ set(MAXSTATE 50 CACHE STRING "Maximum number of hosts to keep in a \"previous co
 
 configure_file(config.h.in config.h)
 
-add_executable(portsentry src/config_data.c src/configfile.c  src/portsentry.c  src/io.c  src/util.c src/state_machine.c src/cmdline.c src/connect_sentry.c)
+add_executable(portsentry src/config_data.c src/configfile.c  src/portsentry.c  src/io.c  src/util.c src/state_machine.c src/cmdline.c src/connect_sentry.c src/connection_data.c src/stealth_sentry.c)
 
 target_include_directories(portsentry PUBLIC "${PROJECT_BINARY_DIR}")
 
