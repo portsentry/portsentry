@@ -21,6 +21,8 @@ int PortSentryConnectMode(void) {
   int connectionDataSize = 0;
   char tmp;
 
+  assert(configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP);
+
   if ((connectionDataSize = ConstructConnectionData(connectionData, MAXSOCKS)) == 0) {
     Log("adminalert: ERROR: Unable to add any ports to the connect sentry. Aborting.");
     return (ERROR);
