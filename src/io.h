@@ -17,7 +17,9 @@
 /* $Id: portsentry_io.h,v 1.17 2003/05/23 17:41:46 crowland Exp crowland $ */
 /************************************************************************/
 
-#include "portsentry.h"
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
 
 int WriteBlocked(char *, char *, int, char *, char *, const char *);
 void Log(char *, ...);

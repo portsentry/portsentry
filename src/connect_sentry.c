@@ -1,9 +1,14 @@
+#include <arpa/inet.h>
+#include <assert.h>
 #include <netinet/in.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "config_data.h"
 #include "connect_sentry.h"
 #include "connection_data.h"
+#include "io.h"
 #include "portsentry.h"
 #include "state_machine.h"
 #include "util.h"

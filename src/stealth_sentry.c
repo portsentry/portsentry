@@ -1,6 +1,12 @@
+#include <arpa/inet.h>
+#include <assert.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <netinet/udp.h>
 #include <poll.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "config_data.h"
 #include "connection_data.h"

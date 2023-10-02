@@ -1,7 +1,11 @@
+#include <assert.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "config_data.h"
 #include "connection_data.h"
+#include "io.h"
+#include "util.h"
 
 static void ResetConnectionData(struct ConnectionData *cd);
 static void SetConnectionData(struct ConnectionData *cd, int port, int proto);

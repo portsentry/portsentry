@@ -1,5 +1,8 @@
 #pragma once
 
+#include <limits.h>
+#include <stdint.h>
+
 #include "portsentry.h"
 
 #define LOGFLAG_NONE 0x00

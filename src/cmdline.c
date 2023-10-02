@@ -1,10 +1,13 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "cmdline.h"
+#include "config.h"
 #include "config_data.h"
+#include "io.h"
 #include "portsentry.h"
 #include "util.h"
 

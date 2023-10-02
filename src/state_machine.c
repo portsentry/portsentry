@@ -1,6 +1,11 @@
-#include "state_machine.h"
+#include <string.h>
+
+#include "config.h"
 #include "config_data.h"
+#include "io.h"
 #include "portsentry.h"
+#include "state_machine.h"
+#include "util.h"
 
 static char gblScanDetectHost[MAXSTATE][IPMAXBUF];
 static int gblScanDetectCount = 0;

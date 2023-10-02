@@ -16,42 +16,8 @@
 /*                                                                      */
 /* $Id: portsentry.h,v 1.32 2003/05/23 17:50:20 crowland Exp crowland $ */
 /************************************************************************/
-
-#include <assert.h>
-#include <ctype.h>
-#include <errno.h>
-#include <limits.h>
-#include <netdb.h>
-#include <signal.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/param.h>
-#include <sys/types.h>
-#include <syslog.h>
-#include <time.h>
-#include <unistd.h>
-#ifndef _LINUX_C_LIB_VERSION
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#endif
-#include <arpa/inet.h>
-
-#ifdef SUPPORT_STEALTH
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
-
 #define TCPPACKETLEN 80
 #define UDPPACKETLEN 68
-#endif /* SUPPORT_STEALTH */
-
-#include "config.h"
-#include "io.h"
-#include "util.h"
 
 #define ERROR -1
 #define TRUE 1

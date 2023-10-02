@@ -15,11 +15,21 @@
 /*                                                                      */
 /* $Id: portsentry_util.c,v 1.11 2003/05/23 17:41:59 crowland Exp crowland $ */
 /************************************************************************/
+#include <arpa/inet.h>
+#include <assert.h>
+#include <ctype.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "config_data.h"
 #include "io.h"
 #include "portsentry.h"
-#include <netinet/in.h>
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {

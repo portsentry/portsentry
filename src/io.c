@@ -15,8 +15,26 @@
 /*                                                                      */
 /* $Id: portsentry_io.c,v 1.36 2003/05/23 17:41:40 crowland Exp crowland $ */
 /************************************************************************/
+#include <arpa/inet.h>
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <syslog.h>
+#include <time.h>
+#include <unistd.h>
 
+#include "config.h"
 #include "config_data.h"
+#include "io.h"
 #include "portsentry.h"
 #include "util.h"
 
