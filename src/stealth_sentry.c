@@ -101,12 +101,9 @@ int PortSentryStealthMode(void) {
         client.sin_port = udp->uh_dport;
       }
 
-      /* check for an ACK/RST to weed out established connections in case the user is monitoring high ephemeral port numbers */
       // FIXME: Do we need this?
-      if (cd->protocol == IPPROTO_TCP) {
-        if ((tcp->ack == 1) || (tcp->rst == 1)) {
-          continue;
-        }
+      if (cd->protocol == IPPROTO_TCP && (tcp->ack == 1 || tcp->rst == 1)) {
+        continue;
       }
 
       if (IsPortInUse(cd->port, cd->protocol) != FALSE)
