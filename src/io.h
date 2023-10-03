@@ -31,10 +31,8 @@ int NeverBlock(char *, char *);
 int CheckConfig(void);
 int OpenTCPSocket(void);
 int OpenUDPSocket(void);
-#ifdef SUPPORT_STEALTH
 int OpenRAWTCPSocket(void);
 int OpenRAWUDPSocket(void);
-#endif
 int BindSocket(int, int);
 int KillRoute(char *, int, char *, char *);
 int KillHostsDeny(char *, int, char *, char *);

@@ -320,8 +320,6 @@ int OpenUDPSocket(void) {
     return (sockfd);
 }
 
-#ifdef SUPPORT_STEALTH
-/* Open a RAW TCPSocket */
 int OpenRAWTCPSocket(void) {
   int sockfd;
 
@@ -333,7 +331,6 @@ int OpenRAWTCPSocket(void) {
     return (sockfd);
 }
 
-/* Open a RAW UDP Socket */
 int OpenRAWUDPSocket(void) {
   int sockfd;
 
@@ -344,7 +341,6 @@ int OpenRAWUDPSocket(void) {
   else
     return (sockfd);
 }
-#endif
 
 /* This will use a system() call to change the route of the target host to */
 /* a dead IP address on your LOCAL SUBNET. */
