@@ -39,6 +39,7 @@ int PortSentryAdvancedStealthMode(void) {
   if (configData.sentryMode == SENTRY_MODE_ATCP && configData.tcpAdvancedExcludePortsLength > 0) {
     for (count = 0; count < configData.tcpAdvancedExcludePortsLength; count++) {
       if (FindConnectionData(connectionData, MAXSOCKS, configData.tcpAdvancedExcludePorts[count], IPPROTO_TCP) != NULL) {
+        Log("adminalert: TCP port %d is already added to exclude list.", configData.tcpAdvancedExcludePorts[count]);
         continue;
       }
 
@@ -53,13 +54,12 @@ int PortSentryAdvancedStealthMode(void) {
 
       connectionDataSize++;
     }
-  } else {
-    Log("Advanced mode will manually exclude no TCP ports");
   }
 
   if (configData.sentryMode == SENTRY_MODE_AUDP && configData.udpAdvancedExcludePortsLength > 0) {
     for (count = 0; count < configData.udpAdvancedExcludePortsLength; count++) {
       if (FindConnectionData(connectionData, MAXSOCKS, configData.udpAdvancedExcludePorts[count], IPPROTO_UDP) != NULL) {
+        Log("adminalert: UDP port %d is already added to exclude list.", configData.udpAdvancedExcludePorts[count]);
         continue;
       }
 
@@ -74,8 +74,6 @@ int PortSentryAdvancedStealthMode(void) {
 
       connectionDataSize++;
     }
-  } else {
-    Log("Advanced mode will manually exclude no UDP ports");
   }
 
   for (count = 0; count < connectionDataSize; count++) {
