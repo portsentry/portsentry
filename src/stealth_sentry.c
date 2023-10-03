@@ -93,12 +93,12 @@ int PortSentryStealthMode(void) {
         tcp = (struct tcphdr *)p;
         if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(tcp->dest), IPPROTO_TCP)) == NULL)
           continue;
-        client.sin_port = tcp->th_dport;
+        client.sin_port = tcp->dest;
       } else if (ip->protocol == IPPROTO_UDP) {
         udp = (struct udphdr *)p;
         if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(udp->dest), IPPROTO_UDP)) == NULL)
           continue;
-        client.sin_port = udp->uh_dport;
+        client.sin_port = udp->dest;
       } else {
         Log("adminalert: ERROR: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
         continue;
