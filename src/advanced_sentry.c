@@ -54,7 +54,7 @@ int PortSentryAdvancedStealthMode(void) {
       connectionDataSize++;
     }
   } else {
-    Log("Advanced mode will manually exclude no ports");
+    Log("Advanced mode will manually exclude no TCP ports");
   }
 
   if (configData.sentryMode == SENTRY_MODE_AUDP && configData.udpAdvancedExcludePortsLength > 0) {
@@ -75,11 +75,11 @@ int PortSentryAdvancedStealthMode(void) {
       connectionDataSize++;
     }
   } else {
-    Log("Advanced mode will manually exclude no ports");
+    Log("Advanced mode will manually exclude no UDP ports");
   }
 
   for (count = 0; count < connectionDataSize; count++) {
-    Log("adminalert: Advanced Stealth scan detection mode activated. Ignored %s port: %d", connectionData[count].port, GetProtocolString(connectionData[count].protocol));
+    Log("adminalert: Advanced Stealth scan detection mode activated. Ignored %s port: %d", GetProtocolString(connectionData[count].protocol), connectionData[count].port);
   }
 
   nfds = 0;
