@@ -91,42 +91,6 @@ char *CleanIpAddr(char *cleanAddr, const char *dirtyAddr) {
   return (cleanAddr);
 }
 
-/************************************************************************/
-/* Generic safety function to process an unresolved address and remove  */
-/* anything that is:                                                    */
-/* 1) Not a number.                                                     */
-/* 2) Not a period.                                                     */
-/* 3) Greater than DNSMAXBUF (255)                                      */
-/* 4) Not a legal DNS character (a-z, A-Z, 0-9, - )			*/
-/* 									*/
-/* XXX THIS FUNCTION IS NOT COMPLETE 					*/
-/************************************************************************/
-int CleanAndResolve(char *resolvedHost, const char *unresolvedHost) {
-  struct hostent *hostPtr = NULL;
-  struct in_addr addr;
-
-  Debug("CleanAndResolv: Resolving address: %s", unresolvedHost);
-
-  memset(resolvedHost, '\0', DNSMAXBUF);
-  /* unresolvedHost must be valid */
-  if (unresolvedHost == NULL)
-    return (ERROR);
-
-  /* Not a valid address */
-  if ((inet_aton(unresolvedHost, &addr)) == 0)
-    return (ERROR);
-
-  hostPtr = gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr), AF_INET);
-  if (hostPtr != NULL)
-    snprintf(resolvedHost, DNSMAXBUF, "%s", hostPtr->h_name);
-  else
-    snprintf(resolvedHost, DNSMAXBUF, "%s", unresolvedHost);
-
-  Debug("CleanAndResolve: Cleaned Resolved: %s Dirty Unresolved: %s", resolvedHost, unresolvedHost);
-
-  return (TRUE);
-}
-
 void ResolveAddr(const struct sockaddr *saddr, const socklen_t saddrLen, char *resolvedHost, const int resolvedHostSize) {
   assert(saddr != NULL && saddrLen > 0);
 
