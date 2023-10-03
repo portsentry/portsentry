@@ -106,8 +106,9 @@ int PortSentryStealthMode(void) {
         continue;
       }
 
-      if (IsPortInUse(cd->port, cd->protocol) != FALSE)
+      if (IsPortInUse(cd->port, cd->protocol) != FALSE) {
         continue;
+      }
 
       SafeStrncpy(target, inet_ntoa(client.sin_addr), IPMAXBUF);
 
@@ -137,11 +138,11 @@ int PortSentryStealthMode(void) {
       }
 
       if (ip->ihl > 5)
-        Log("attackalert: Packet from host: %s/%s to TCP port: %d has IP options set (detection avoidance technique).", resolvedHost, target, cd->port);
+        Log("attackalert: Packet from host: %s/%s to %s port: %d has IP options set (detection avoidance technique).", resolvedHost, target, GetProtocolString(cd->protocol), cd->port);
 
       if (IsBlocked(target, configData.blockedFile) == FALSE) {
         if (DisposeTarget(target, cd->port, cd->protocol) != TRUE)
-          Log("attackalert: ERROR: Could not block host %s/%s !!", resolvedHost, target);
+          Log("attackalert: ERROR: Could not block host %s/%s!", resolvedHost, target);
         else
           WriteBlocked(target, resolvedHost, cd->port, configData.blockedFile, configData.historyFile, GetProtocolString(cd->protocol));
       } else {
