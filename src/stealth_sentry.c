@@ -23,9 +23,9 @@ int PortSentryStealthMode(void) {
   char resolvedHost[DNSMAXBUF], *packetType;
   char packetBuffer[IP_MAXPACKET];
   struct sockaddr_in client;
-  struct iphdr *ip;
-  struct tcphdr *tcp;
-  struct udphdr *udp;
+  struct iphdr *ip = NULL;
+  struct tcphdr *tcp = NULL;
+  struct udphdr *udp = NULL;
   struct pollfd fds[2];
   struct ConnectionData connectionData[MAXSOCKS];
   struct ConnectionData *cd;
@@ -99,6 +99,9 @@ int PortSentryStealthMode(void) {
         if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(udp->dest), IPPROTO_UDP)) == NULL)
           continue;
         client.sin_port = udp->uh_dport;
+      } else {
+        Log("adminalert: ERROR: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
+        continue;
       }
 
       // FIXME: Do we need this?
