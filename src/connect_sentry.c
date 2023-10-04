@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <assert.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -19,7 +20,7 @@ int PortSentryConnectMode(void) {
   int incomingSockfd, result;
   int count = 0;
   char target[IPMAXBUF];
-  char resolvedHost[DNSMAXBUF];
+  char resolvedHost[NI_MAXHOST];
   fd_set selectFds;
   int nfds;
   struct ConnectionData connectionData[MAXSOCKS];
@@ -118,9 +119,9 @@ int PortSentryConnectMode(void) {
       incomingSockfd = -1;
 
       if (configData.resolveHost == TRUE) {
-        ResolveAddr((struct sockaddr *)&client, clientLength, resolvedHost, DNSMAXBUF);
+        ResolveAddr((struct sockaddr *)&client, clientLength, resolvedHost, NI_MAXHOST);
       } else {
-        snprintf(resolvedHost, DNSMAXBUF, "%s", target);
+        snprintf(resolvedHost, NI_MAXHOST, "%s", target);
       }
 
       Log("attackalert: Connect from host: %s/%s to %s port: %d", resolvedHost, target, (connectionData[count].protocol == IPPROTO_TCP) ? "TCP" : "UDP", connectionData[count].port);

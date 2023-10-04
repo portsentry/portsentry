@@ -28,7 +28,5 @@
 /* max sockets we can open */
 #define MAXSOCKS 64
 
-#define DNSMAXBUF 1025
-
 #undef max
 #define max(x, y) ((x) > (y) ? (x) : (y))

@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <assert.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
@@ -20,7 +21,7 @@ int PortSentryStealthMode(void) {
   int count, nfds, result;
   int tcpSockfd, udpSockfd, connectionDataSize;
   char target[IPMAXBUF];
-  char resolvedHost[DNSMAXBUF], *packetType;
+  char resolvedHost[NI_MAXHOST], *packetType;
   char packetBuffer[IP_MAXPACKET];
   struct sockaddr_in client;
   struct iphdr *ip = NULL;
@@ -128,9 +129,9 @@ int PortSentryStealthMode(void) {
       }
 
       if (configData.resolveHost == TRUE) {
-        ResolveAddr((struct sockaddr *)&client, sizeof(client), resolvedHost, DNSMAXBUF);
+        ResolveAddr((struct sockaddr *)&client, sizeof(client), resolvedHost, NI_MAXHOST);
       } else {
-        snprintf(resolvedHost, DNSMAXBUF, "%s", target);
+        snprintf(resolvedHost, NI_MAXHOST, "%s", target);
       }
 
       if (cd->protocol == IPPROTO_TCP) {
