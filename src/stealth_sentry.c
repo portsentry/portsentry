@@ -22,7 +22,7 @@ int PortSentryStealthMode(void) {
   int tcpSockfd, udpSockfd, connectionDataSize;
   char target[IPMAXBUF];
   char resolvedHost[NI_MAXHOST], *packetType;
-  char packetBuffer[IP_MAXPACKET];
+  char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct sockaddr_in client;
   struct iphdr *ip = NULL;
   struct tcphdr *tcp = NULL;
@@ -47,7 +47,7 @@ int PortSentryStealthMode(void) {
   nfds = 0;
   if (configData.sentryMode == SENTRY_MODE_STCP) {
     if ((tcpSockfd = OpenRAWTCPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open RAW TCP socket. Aborting.");
+      Log("adminalert: ERROR: could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     }
 
@@ -58,7 +58,7 @@ int PortSentryStealthMode(void) {
 
   if (configData.sentryMode == SENTRY_MODE_SUDP) {
     if ((udpSockfd = OpenRAWUDPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open RAW UDP socket. Aborting.");
+      Log("adminalert: ERROR: could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     }
 
@@ -72,7 +72,7 @@ int PortSentryStealthMode(void) {
   for (;;) {
     result = poll(fds, nfds, -1);
     if (result == -1) {
-      Log("adminalert: ERROR: poll() failed. Aborting.");
+      Log("adminalert: ERROR: poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     } else if (result == 0) {
       Log("adminalert: ERROR: poll() timed out. Aborting.");

@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -30,6 +31,7 @@
 #include "config_data.h"
 #include "io.h"
 #include "portsentry.h"
+#include "util.h"
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
@@ -177,6 +179,7 @@ const char *GetProtocolString(int proto) {
 }
 
 int SetupPort(uint16_t port, int proto) {
+  char err[ERRNOMAXBUF];
   int sock;
 
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
@@ -191,7 +194,7 @@ int SetupPort(uint16_t port, int proto) {
   }
 
   if (sock == ERROR) {
-    Log("adminalert: ERROR: could not open %s socket", GetProtocolString(proto));
+    Log("adminalert: ERROR: could not open %s socket: %s", GetProtocolString(proto), ErrnoString(err, sizeof(err)));
     return -1;
   }
 
@@ -241,4 +244,15 @@ char *ReportPacketType(struct tcphdr *tcpPkt) {
              tcpPkt->syn, tcpPkt->fin, tcpPkt->ack, tcpPkt->psh, tcpPkt->urg, tcpPkt->rst);
 
   return (packetDescPtr);
+}
+
+char *ErrnoString(char *buf, const size_t buflen) {
+  char *p;
+#if (_POSIX_C_SOURCE >= 200112L) && !_GNU_SOURCE
+  strerror_r(errno, buf, buflen);
+  p = buf;
+#else
+  p = strerror_r(errno, buf, buflen);
+#endif
+  return p;
 }

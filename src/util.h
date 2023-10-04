@@ -32,3 +32,4 @@ const char *GetProtocolString(int proto);
 int SetupPort(uint16_t port, int proto);
 int IsPortInUse(uint16_t port, int proto);
 char *ReportPacketType(struct tcphdr *);
+char *ErrnoString(char *buf, const size_t buflen);

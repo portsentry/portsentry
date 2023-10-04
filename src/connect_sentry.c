@@ -20,7 +20,7 @@ int PortSentryConnectMode(void) {
   int incomingSockfd, result;
   int count = 0;
   char target[IPMAXBUF];
-  char resolvedHost[NI_MAXHOST];
+  char resolvedHost[NI_MAXHOST], err[ERRNOMAXBUF];
   fd_set selectFds;
   int nfds;
   struct ConnectionData connectionData[MAXSOCKS];
@@ -66,7 +66,7 @@ int PortSentryConnectMode(void) {
     result = select(MAXSOCKS, &selectFds, NULL, NULL, (struct timeval *)NULL);
 
     if (result < 0) {
-      Log("adminalert: ERROR: select call failed. Shutting down.");
+      Log("adminalert: ERROR: select call failed: %s. Shutting down.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     } else if (result == 0) {
       Debug("Select timeout");
@@ -83,12 +83,12 @@ int PortSentryConnectMode(void) {
 
       if (connectionData[count].protocol == IPPROTO_TCP) {
         if ((incomingSockfd = accept(connectionData[count].sockfd, (struct sockaddr *)&client, &clientLength)) == -1) {
-          Log("attackalert: Possible stealth scan from unknown host to TCP port: %d (accept failed)", connectionData[count].port);
+          Log("attackalert: Possible stealth scan from unknown host to TCP port: %d (accept failed: %s)", connectionData[count].port, ErrnoString(err, sizeof(err)));
           continue;
         }
       } else if (connectionData[count].protocol == IPPROTO_UDP) {
         if (recvfrom(connectionData[count].sockfd, &tmp, 1, 0, (struct sockaddr *)&client, &clientLength) == -1) {
-          Log("adminalert: ERROR: could not accept incoming data on UDP port: %d", connectionData[count].port);
+          Log("adminalert: ERROR: could not accept incoming data on UDP port: %d: %s", connectionData[count].port, ErrnoString(err, sizeof(err)));
           continue;
         }
       }

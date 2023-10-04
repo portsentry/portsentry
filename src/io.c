@@ -231,6 +231,7 @@ int NeverBlock(char *target, char *filename) {
 /* time stamp, and port connection that was acted on */
 int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, const char *portType) {
   FILE *output;
+  char err[ERRNOMAXBUF];
   int blockedStatus = TRUE, historyStatus = TRUE;
 
   struct tm tm, *tmptr;
@@ -242,7 +243,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   Debug("WriteBlocked: Opening block file: %s ", blockedFilename);
 
   if ((output = fopen(blockedFilename, "a")) == NULL) {
-    Log("adminalert: ERROR: Cannot open blocked file: %s.", blockedFilename);
+    Log("adminalert: ERROR: Cannot open blocked file: %s (%s)", blockedFilename, ErrnoString(err, sizeof(err)));
     blockedStatus = FALSE;
   } else {
     fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
@@ -255,7 +256,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   Debug("WriteBlocked: Opening history file: %s ", historyFilename);
 
   if ((output = fopen(historyFilename, "a")) == NULL) {
-    Log("adminalert: ERROR: Cannot open history file: %s.", historyFilename);
+    Log("adminalert: ERROR: Cannot open history file: %s (%s)", historyFilename, ErrnoString(err, sizeof(err)));
     historyStatus = FALSE;
   } else {
     fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
@@ -273,6 +274,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
 
 /* This will bind a socket to a port. It works for UDP/TCP */
 int BindSocket(int sockfd, int port) {
+  char err[ERRNOMAXBUF];
   struct sockaddr_in server;
 
   Debug("BindSocket: Binding to port: %d", port);
@@ -283,13 +285,13 @@ int BindSocket(int sockfd, int port) {
   server.sin_port = htons(port);
 
   if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) == -1) {
-    Debug("BindSocket: Binding failed");
+    Debug("BindSocket: Binding failed: %s", ErrnoString(err, sizeof(err)));
     // FIXME: check errno to determine we have EADDRINUSE
     return (ERROR);
   }
 
   if (listen(sockfd, 5) == -1) {
-    Debug("BindSocket: Listen failed");
+    Debug("BindSocket: Listen failed: %s", ErrnoString(err, sizeof(err)));
     return (ERROR);
   }
 
@@ -497,14 +499,14 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
 /* check if the host is already blocked */
 int IsBlocked(char *target, char *filename) {
   FILE *input;
-  char buffer[MAXBUF], tempBuffer[MAXBUF];
+  char buffer[MAXBUF], tempBuffer[MAXBUF], err[ERRNOMAXBUF];
   char *ipOffset;
   size_t count;
 
   Debug("IsBlocked: Opening block file: %s ", filename);
 
   if ((input = fopen(filename, "r")) == NULL) {
-    Log("adminalert: ERROR: Cannot open blocked file: %s for reading. Will create.", filename);
+    Log("adminalert: ERROR: Cannot open blocked file: %s for reading: %s. Will create.", filename, ErrnoString(err, sizeof(err)));
     return (FALSE);
   }
 
@@ -624,11 +626,12 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
  * transportPtr is either a struct tcphdr * or struct udphdr *
  */
 int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct iphdr **ipPtr, void **transportPtr) {
+  char err[ERRNOMAXBUF];
   size_t ipHeaderLength;
   struct in_addr addr;
 
   if (read(socket, packetBuffer, packetBufferSize) == -1) {
-    Log("adminalert: ERROR: Could not read from socket %d: (errno: %d). Aborting", socket, errno);
+    Log("adminalert: ERROR: Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
     return ERROR;
   }
 

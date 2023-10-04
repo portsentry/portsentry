@@ -28,5 +28,7 @@
 /* max sockets we can open */
 #define MAXSOCKS 64
 
+#define ERRNOMAXBUF 1024
+
 #undef max
 #define max(x, y) ((x) > (y) ? (x) : (y))
