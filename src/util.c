@@ -198,7 +198,7 @@ int SetupPort(uint16_t port, int proto) {
     return -1;
   }
 
-  if (BindSocket(sock, port) == ERROR) {
+  if (BindSocket(sock, port, proto) == ERROR) {
     Debug("SetupPort: %s port %d failed, in use", GetProtocolString(proto), port);
     close(sock);
     return -2;

@@ -33,7 +33,7 @@ int OpenTCPSocket(void);
 int OpenUDPSocket(void);
 int OpenRAWTCPSocket(void);
 int OpenRAWUDPSocket(void);
-int BindSocket(int, int);
+int BindSocket(int, int, int);
 int KillRoute(char *, int, char *, char *);
 int KillHostsDeny(char *, int, char *, char *);
 int KillRunCmd(char *, int, char *, char *);

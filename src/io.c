@@ -272,8 +272,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
     return (TRUE);
 }
 
-/* This will bind a socket to a port. It works for UDP/TCP */
-int BindSocket(int sockfd, int port) {
+int BindSocket(int sockfd, int port, int proto) {
   char err[ERRNOMAXBUF];
   struct sockaddr_in server;
 
@@ -290,9 +289,11 @@ int BindSocket(int sockfd, int port) {
     return (ERROR);
   }
 
-  if (listen(sockfd, 5) == -1) {
-    Debug("BindSocket: Listen failed: %s", ErrnoString(err, sizeof(err)));
-    return (ERROR);
+  if (proto == IPPROTO_TCP) {
+    if (listen(sockfd, 5) == -1) {
+      Debug("BindSocket: Listen failed: %s", ErrnoString(err, sizeof(err)));
+      return (ERROR);
+    }
   }
 
   return (TRUE);
