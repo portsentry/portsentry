@@ -29,11 +29,11 @@
 #include <unistd.h>
 
 #include "config_data.h"
+#include "connection_data.h"
 #include "io.h"
 #include "portsentry.h"
 #include "state_machine.h"
 #include "util.h"
-#include "connection_data.h"
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
@@ -261,7 +261,7 @@ char *ErrnoString(char *buf, const size_t buflen) {
 
 int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct iphdr *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
   int result;
-  char target[IPMAXBUF], resolvedHost[NI_MAXHOST], *packetType;
+  char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
 
   if (configData.sentryMode == SENTRY_MODE_TCP && tcpAcceptSocket == NULL) {
     Log("RunSentry: ERROR: tcpAcceptSocket is NULL in connect mode");
@@ -271,7 +271,7 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
   SafeStrncpy(target, inet_ntoa(client->sin_addr), IPMAXBUF);
 
   if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
-      Debug("PortSentryConnectMode: accepted %s connection from: %s", (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
+    Debug("PortSentryConnectMode: accepted %s connection from: %s", (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
   }
 
   if ((result = NeverBlock(target, configData.ignoreFile)) == ERROR) {
@@ -304,8 +304,7 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
     Log("attackalert: Connect from host: %s/%s to %s port: %d", resolvedHost, target, (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", cd->port);
   } else {
     if (cd->protocol == IPPROTO_TCP) {
-      packetType = ReportPacketType(tcp);
-      Log("attackalert: %s from host: %s/%s to TCP port: %d", packetType, resolvedHost, target, cd->port);
+      Log("attackalert: %s from host: %s/%s to TCP port: %d", ReportPacketType(tcp), resolvedHost, target, cd->port);
     } else {
       Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, cd->port);
     }
