@@ -259,11 +259,20 @@ char *ErrnoString(char *buf, const size_t buflen) {
   return p;
 }
 
-int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct iphdr *ip, struct tcphdr *tcp) {
+int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct iphdr *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
   int result;
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST], *packetType;
 
+  if (configData.sentryMode == SENTRY_MODE_TCP && tcpAcceptSocket == NULL) {
+    Log("RunSentry: ERROR: tcpAcceptSocket is NULL in connect mode");
+    return FALSE;
+  }
+
   SafeStrncpy(target, inet_ntoa(client->sin_addr), IPMAXBUF);
+
+  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
+      Debug("PortSentryConnectMode: accepted %s connection from: %s", (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
+  }
 
   if ((result = NeverBlock(target, configData.ignoreFile)) == ERROR) {
     Log("attackalert: ERROR: cannot open ignore file %s. Blocking host anyway.", configData.ignoreFile);
@@ -277,21 +286,33 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
     return FALSE;
   }
 
+  if (configData.sentryMode == SENTRY_MODE_TCP) {
+    XmitBannerIfConfigured(IPPROTO_TCP, *tcpAcceptSocket, NULL);
+    close(*tcpAcceptSocket);
+    *tcpAcceptSocket = -1;
+  } else if (configData.sentryMode == SENTRY_MODE_UDP) {
+    XmitBannerIfConfigured(IPPROTO_UDP, cd->sockfd, client);
+  }
+
   if (configData.resolveHost == TRUE) {
     ResolveAddr((struct sockaddr *)client, sizeof(struct sockaddr_in), resolvedHost, NI_MAXHOST);
   } else {
     snprintf(resolvedHost, NI_MAXHOST, "%s", target);
   }
 
-  if (cd->protocol == IPPROTO_TCP) {
-    packetType = ReportPacketType(tcp);
-    Log("attackalert: %s from host: %s/%s to TCP port: %d", packetType, resolvedHost, target, cd->port);
+  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
+    Log("attackalert: Connect from host: %s/%s to %s port: %d", resolvedHost, target, (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", cd->port);
   } else {
-    Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, cd->port);
-  }
+    if (cd->protocol == IPPROTO_TCP) {
+      packetType = ReportPacketType(tcp);
+      Log("attackalert: %s from host: %s/%s to TCP port: %d", packetType, resolvedHost, target, cd->port);
+    } else {
+      Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, cd->port);
+    }
 
-  if (ip->ihl > 5)
-    Log("attackalert: Packet from host: %s/%s to %s port: %d has IP options set (detection avoidance technique).", resolvedHost, target, GetProtocolString(cd->protocol), cd->port);
+    if (ip->ihl > 5)
+      Log("attackalert: Packet from host: %s/%s to %s port: %d has IP options set (detection avoidance technique).", resolvedHost, target, GetProtocolString(cd->protocol), cd->port);
+  }
 
   if (IsBlocked(target, configData.blockedFile) == FALSE) {
     if (DisposeTarget(target, cd->port, cd->protocol) != TRUE)

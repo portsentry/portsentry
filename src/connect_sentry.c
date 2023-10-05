@@ -19,8 +19,7 @@ int PortSentryConnectMode(void) {
   socklen_t clientLength;
   int incomingSockfd, result;
   int count = 0;
-  char target[IPMAXBUF];
-  char resolvedHost[NI_MAXHOST], err[ERRNOMAXBUF];
+  char err[ERRNOMAXBUF];
   fd_set selectFds;
   int nfds;
   struct ConnectionData connectionData[MAXSOCKS];
@@ -93,49 +92,8 @@ int PortSentryConnectMode(void) {
         }
       }
 
-      SafeStrncpy(target, inet_ntoa(client.sin_addr), IPMAXBUF);
+      RunSentry(&connectionData[count], &client, NULL, NULL, &incomingSockfd);
 
-      Debug("PortSentryConnectMode: accepted %s connection from: %s", (connectionData[count].protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
-
-      if ((result = NeverBlock(target, configData.ignoreFile)) == ERROR) {
-        Log("attackalert: ERROR: cannot open ignore file %s. Blocking host anyway.", configData.ignoreFile);
-        result = FALSE;
-      } else if (result == TRUE) {
-        Log("attackalert: Host: %s found in ignore file %s, aborting actions", target, configData.ignoreFile);
-        goto continue_loop;
-      }
-
-      if (CheckStateEngine(target) != TRUE) {
-        goto continue_loop;
-      }
-
-      if (configData.sentryMode == SENTRY_MODE_TCP) {
-        XmitBannerIfConfigured(IPPROTO_TCP, incomingSockfd, NULL);
-      } else if (configData.sentryMode == SENTRY_MODE_UDP) {
-        XmitBannerIfConfigured(IPPROTO_UDP, connectionData[count].sockfd, &client);
-      }
-
-      close(incomingSockfd);
-      incomingSockfd = -1;
-
-      if (configData.resolveHost == TRUE) {
-        ResolveAddr((struct sockaddr *)&client, clientLength, resolvedHost, NI_MAXHOST);
-      } else {
-        snprintf(resolvedHost, NI_MAXHOST, "%s", target);
-      }
-
-      Log("attackalert: Connect from host: %s/%s to %s port: %d", resolvedHost, target, (connectionData[count].protocol == IPPROTO_TCP) ? "TCP" : "UDP", connectionData[count].port);
-
-      if (IsBlocked(target, configData.blockedFile) == FALSE) {
-        if (DisposeTarget(target, connectionData[count].port, connectionData[count].protocol) != TRUE)
-          Log("attackalert: ERROR: Could not block host %s !!", target);
-        else
-          WriteBlocked(target, resolvedHost, connectionData[count].port, configData.blockedFile, configData.historyFile, GetProtocolString(connectionData[count].protocol));
-      } else {
-        Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
-      }
-
-    continue_loop:
       if (connectionData[count].protocol == IPPROTO_TCP && incomingSockfd > -1) {
         close(incomingSockfd);
         incomingSockfd = -1;

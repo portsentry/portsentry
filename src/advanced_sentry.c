@@ -158,7 +158,7 @@ int PortSentryAdvancedStealthMode(void) {
         continue;
       }
 
-      RunSentry(cd, &client, ip, tcp);
+      RunSentry(cd, &client, ip, tcp, NULL);
     }
   }
 
