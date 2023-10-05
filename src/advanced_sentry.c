@@ -18,8 +18,6 @@
 
 int PortSentryAdvancedStealthMode(void) {
   int result, nfds, tcpSockfd, udpSockfd, count;
-  char target[IPMAXBUF];
-  char resolvedHost[NI_MAXHOST], *packetType;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct sockaddr_in client;
   struct iphdr *ip = NULL;
@@ -160,44 +158,7 @@ int PortSentryAdvancedStealthMode(void) {
         continue;
       }
 
-      SafeStrncpy(target, inet_ntoa(client.sin_addr), IPMAXBUF);
-
-      if ((result = NeverBlock(target, configData.ignoreFile)) == ERROR) {
-        Log("attackalert: ERROR: cannot open ignore file %s. Blocking host anyway.", configData.ignoreFile);
-        result = FALSE;
-      } else if (result == TRUE) {
-        Log("attackalert: Host: %s found in ignore file %s, aborting actions", target, configData.ignoreFile);
-        continue;
-      }
-
-      if (CheckStateEngine(target) != TRUE) {
-        continue;
-      }
-
-      if (configData.resolveHost == TRUE) {
-        ResolveAddr((struct sockaddr *)&client, sizeof(client), resolvedHost, NI_MAXHOST);
-      } else {
-        snprintf(resolvedHost, NI_MAXHOST, "%s", target);
-      }
-
-      if (cd->protocol == IPPROTO_TCP) {
-        packetType = ReportPacketType(tcp);
-        Log("attackalert: %s from host: %s/%s to TCP port: %d", packetType, resolvedHost, target, cd->port);
-      } else {
-        Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, cd->port);
-      }
-
-      if (ip->ihl > 5)
-        Log("attackalert: Packet from host: %s/%s to %s port: %d has IP options set (detection avoidance technique).", resolvedHost, target, GetProtocolString(cd->protocol), cd->port);
-
-      if (IsBlocked(target, configData.blockedFile) == FALSE) {
-        if (DisposeTarget(target, cd->port, cd->protocol) != TRUE)
-          Log("attackalert: ERROR: Could not block host %s/%s!", resolvedHost, target);
-        else
-          WriteBlocked(target, resolvedHost, cd->port, configData.blockedFile, configData.historyFile, GetProtocolString(cd->protocol));
-      } else {
-        Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
-      }
+      RunSentry(cd, &client, ip, tcp);
     }
   }
 
