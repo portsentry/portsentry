@@ -629,10 +629,14 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
 int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct iphdr **ipPtr, void **transportPtr) {
   char err[ERRNOMAXBUF];
   size_t ipHeaderLength;
+  ssize_t result;
   struct in_addr addr;
 
-  if (read(socket, packetBuffer, packetBufferSize) == -1) {
+  if ((result = read(socket, packetBuffer, packetBufferSize)) == -1) {
     Log("adminalert: ERROR: Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
+    return ERROR;
+  } else if (result < (ssize_t)sizeof(struct iphdr)) {
+    Log("adminalert: ERROR: Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
     return ERROR;
   }
 
