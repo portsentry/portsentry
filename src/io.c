@@ -15,16 +15,35 @@
 /*                                                                      */
 /* $Id: portsentry_io.c,v 1.36 2003/05/23 17:41:40 crowland Exp crowland $ */
 /************************************************************************/
+#include <arpa/inet.h>
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <syslog.h>
+#include <time.h>
+#include <unistd.h>
 
-#include "portsentry.h"
-#include "portsentry_io.h"
-#include "portsentry_util.h"
+#include "config.h"
 #include "config_data.h"
+#include "io.h"
+#include "portsentry.h"
+#include "util.h"
 
 static uint8_t isSyslogOpen = FALSE;
-enum LogType { LogTypeNone, LogTypeDebug, LogTypeVerbose };
+enum LogType { LogTypeNone,
+               LogTypeDebug,
+               LogTypeVerbose };
 
-static void LogEntry(enum LogType logType, char *logentry, va_list ap);
+static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr);
 
 static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr) {
   char logbuffer[MAXBUF];
@@ -36,7 +55,7 @@ static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr) {
   }
 
   if (configData.logFlags & LOGFLAG_OUTPUT_SYSLOG) {
-    if(isSyslogOpen == FALSE) {
+    if (isSyslogOpen == FALSE) {
       openlog("portsentry", LOG_PID, SYSLOG_FACILITY);
       isSyslogOpen = TRUE;
     }
@@ -121,7 +140,8 @@ int DaemonSeed(void) {
 
 /* Compares an IP address against a listed address and its netmask*/
 int CompareIPs(char *target, char *ignoreAddr, int ignoreNetmaskBits) {
-  unsigned long int netmaskAddr, ipAddr, targetAddr;
+  unsigned long int ipAddr, targetAddr;
+  uint32_t netmaskAddr;
 
   ipAddr = inet_addr(ignoreAddr);
   targetAddr = inet_addr(target);
@@ -209,8 +229,9 @@ int NeverBlock(char *target, char *filename) {
 
 /* This writes out blocked hosts to the blocked file. It adds the hostname */
 /* time stamp, and port connection that was acted on */
-int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, char *portType) {
+int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, const char *portType) {
   FILE *output;
+  char err[ERRNOMAXBUF];
   int blockedStatus = TRUE, historyStatus = TRUE;
 
   struct tm tm, *tmptr;
@@ -222,7 +243,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   Debug("WriteBlocked: Opening block file: %s ", blockedFilename);
 
   if ((output = fopen(blockedFilename, "a")) == NULL) {
-    Log("adminalert: ERROR: Cannot open blocked file: %s.", blockedFilename);
+    Log("adminalert: ERROR: Cannot open blocked file: %s (%s)", blockedFilename, ErrnoString(err, sizeof(err)));
     blockedStatus = FALSE;
   } else {
     fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
@@ -235,7 +256,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   Debug("WriteBlocked: Opening history file: %s ", historyFilename);
 
   if ((output = fopen(historyFilename, "a")) == NULL) {
-    Log("adminalert: ERROR: Cannot open history file: %s.", historyFilename);
+    Log("adminalert: ERROR: Cannot open history file: %s (%s)", historyFilename, ErrnoString(err, sizeof(err)));
     historyStatus = FALSE;
   } else {
     fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
@@ -251,8 +272,8 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
     return (TRUE);
 }
 
-/* This will bind a socket to a port. It works for UDP/TCP */
-int BindSocket(int sockfd, int port) {
+int BindSocket(int sockfd, int port, int proto) {
+  char err[ERRNOMAXBUF];
   struct sockaddr_in server;
 
   Debug("BindSocket: Binding to port: %d", port);
@@ -262,14 +283,20 @@ int BindSocket(int sockfd, int port) {
   server.sin_addr.s_addr = htonl(INADDR_ANY);
   server.sin_port = htons(port);
 
-  if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
-    Debug("BindSocket: Binding failed");
+  if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) == -1) {
+    Debug("BindSocket: Binding failed: %s", ErrnoString(err, sizeof(err)));
+    // FIXME: check errno to determine we have EADDRINUSE
     return (ERROR);
-  } else {
-    Debug("BindSocket: Binding successful. Doing listen");
-    listen(sockfd, 5);
-    return (TRUE);
   }
+
+  if (proto == IPPROTO_TCP) {
+    if (listen(sockfd, 5) == -1) {
+      Debug("BindSocket: Listen failed: %s", ErrnoString(err, sizeof(err)));
+      return (ERROR);
+    }
+  }
+
+  return (TRUE);
 }
 
 /* Open a TCP Socket */
@@ -296,8 +323,6 @@ int OpenUDPSocket(void) {
     return (sockfd);
 }
 
-#ifdef SUPPORT_STEALTH
-/* Open a RAW TCPSocket */
 int OpenRAWTCPSocket(void) {
   int sockfd;
 
@@ -309,7 +334,6 @@ int OpenRAWTCPSocket(void) {
     return (sockfd);
 }
 
-/* Open a RAW UDP Socket */
 int OpenRAWUDPSocket(void) {
   int sockfd;
 
@@ -320,7 +344,6 @@ int OpenRAWUDPSocket(void) {
   else
     return (sockfd);
 }
-#endif
 
 /* This will use a system() call to change the route of the target host to */
 /* a dead IP address on your LOCAL SUBNET. */
@@ -329,6 +352,9 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
   int killStatus = ERROR, substStatus = ERROR;
+
+  if (strlen(killString) == 0)
+    return (TRUE);
 
   CleanIpAddr(cleanAddr, target);
   snprintf(portString, MAXBUF, "%d", port);
@@ -380,6 +406,9 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   char portString[MAXBUF];
   int killStatus = ERROR;
 
+  if (strlen(killString) == 0)
+    return (TRUE);
+
   CleanIpAddr(cleanAddr, target);
   snprintf(portString, MAXBUF, "%d", port);
 
@@ -425,6 +454,9 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
   char portString[MAXBUF];
   int substStatus = ERROR;
 
+  if (strlen(killString) == 0)
+    return (TRUE);
+
   CleanIpAddr(cleanAddr, target);
 
   snprintf(portString, MAXBUF, "%d", port);
@@ -468,14 +500,14 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
 /* check if the host is already blocked */
 int IsBlocked(char *target, char *filename) {
   FILE *input;
-  char buffer[MAXBUF], tempBuffer[MAXBUF];
+  char buffer[MAXBUF], tempBuffer[MAXBUF], err[ERRNOMAXBUF];
   char *ipOffset;
   size_t count;
 
   Debug("IsBlocked: Opening block file: %s ", filename);
 
   if ((input = fopen(filename, "r")) == NULL) {
-    Log("adminalert: ERROR: Cannot open blocked file: %s for reading. Will create.", filename);
+    Log("adminalert: ERROR: Cannot open blocked file: %s for reading: %s. Will create.", filename, ErrnoString(err, sizeof(err)));
     return (FALSE);
   }
 
@@ -518,9 +550,9 @@ int SubstString(const char *replace, const char *find, const char *target, char 
   char tempString[MAXBUF], *tempStringPtr;
   size_t replaceCount = 0;
 
-  Debug("SubstString: Processing string: %s %d", target, strlen(target));
-  Debug("SubstString: Processing search text: %s %d", replace, strlen(replace));
-  Debug("SubstString: Processing replace text: %s %d", find, strlen(find));
+  Debug("SubstString: Processing string: %s %lu", target, strlen(target));
+  Debug("SubstString: Processing search text: %s %lu", replace, strlen(replace));
+  Debug("SubstString: Processing replace text: %s %lu", find, strlen(find));
 
   /* string not found in target */
   if (strstr(target, find) == NULL) {
@@ -564,4 +596,65 @@ int testFileAccess(char *filename, char *mode) {
     fclose(testFile);
     return (TRUE);
   }
+}
+
+void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr_in *client) {
+  ssize_t result = 0;
+
+  assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
+
+  if (configData.portBannerPresent == FALSE)
+    return;
+
+  errno = 0;
+
+  if (proto == IPPROTO_TCP) {
+    result = write(socket, configData.portBanner, strlen(configData.portBanner));
+  } else if (proto == IPPROTO_UDP) {
+    if (client == NULL) {
+      Log("adminalert: ERROR: No client address specified for UDP banner transmission (ignoring)");
+      return;
+    }
+    result = sendto(socket, configData.portBanner, strlen(configData.portBanner), 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
+  }
+
+  if (result == -1) {
+    Log("adminalert: ERROR: Could not write banner to socket (ignoring)");
+  }
+}
+
+/* Read packet IP and transport headers and set ipPtr/transportPtr to their correct location
+ * transportPtr is either a struct tcphdr * or struct udphdr *
+ */
+int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct iphdr **ipPtr, void **transportPtr) {
+  char err[ERRNOMAXBUF];
+  size_t ipHeaderLength;
+  ssize_t result;
+  struct in_addr addr;
+
+  if ((result = read(socket, packetBuffer, packetBufferSize)) == -1) {
+    Log("adminalert: ERROR: Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
+    return ERROR;
+  } else if (result < (ssize_t)sizeof(struct iphdr)) {
+    Log("adminalert: ERROR: Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
+    return ERROR;
+  }
+
+  *ipPtr = (struct iphdr *)packetBuffer;
+
+  if (((*ipPtr)->ihl < 5) || ((*ipPtr)->ihl > 15)) {
+    addr.s_addr = (u_int)(*ipPtr)->saddr;
+    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", (*ipPtr)->ihl, inet_ntoa(addr));
+    return (FALSE);
+  }
+
+  ipHeaderLength = (*ipPtr)->ihl * 4;
+
+  if (ipHeaderLength > packetBufferSize) {
+    Log("adminalert: ERROR: IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);
+    return FALSE;
+  }
+
+  *transportPtr = (void *)(packetBuffer + ipHeaderLength);
+  return TRUE;
 }

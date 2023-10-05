@@ -14,29 +14,24 @@
 /* Send all changes/modifications/bugfixes to:                          */
 /* craigrowland at users dot sourceforge dot net                        */
 /*                                                                      */
-/* $Id: portsentry_io.h,v 1.17 2003/05/23 17:41:46 crowland Exp crowland $ */
+/* $Id: portsentry_util.h,v 1.10 2003/05/23 17:42:07 crowland Exp crowland $ */
 /************************************************************************/
 
-/* prototypes */
-int WriteBlocked(char *, char *, int, char *, char *, char *);
-void Log(char *, ...);
-void Debug(char *logentry, ...);
-void Verbose(char *logentry, ...);
-void Exit(int);
-int DaemonSeed(void);
-int NeverBlock(char *, char *);
-int CheckConfig(void);
-int OpenTCPSocket(void);
-int OpenUDPSocket(void);
-#ifdef SUPPORT_STEALTH
-int OpenRAWTCPSocket(void);
-int OpenRAWUDPSocket(void);
-#endif
-int BindSocket(int, int);
-int KillRoute(char *, int, char *, char *);
-int KillHostsDeny(char *, int, char *, char *);
-int KillRunCmd(char *, int, char *, char *);
-int IsBlocked(char *, char *);
-int SubstString(const char *, const char *, const char *, char *);
-int CompareIPs(char *, char *, int);
-int testFileAccess(char *, char *);
+#include <stdint.h>
+#include <sys/types.h>
+#include "connection_data.h"
+
+/* IP address length plus null */
+#define IPMAXBUF 16
+
+char *SafeStrncpy(char *, const char *, size_t);
+char *CleanIpAddr(char *, const char *);
+void ResolveAddr(const struct sockaddr *saddr, const socklen_t saddrLen, char *resolvedHost, const int resolvedHostSize);
+long getLong(char *buffer);
+int DisposeTarget(char *, int, int);
+const char *GetProtocolString(int proto);
+int SetupPort(uint16_t port, int proto);
+int IsPortInUse(uint16_t port, int proto);
+char *ReportPacketType(struct tcphdr *);
+char *ErrnoString(char *buf, const size_t buflen);
+int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct iphdr *ip, struct tcphdr *tcp, int *tcpAcceptSocket);

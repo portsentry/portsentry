@@ -16,42 +16,8 @@
 /*                                                                      */
 /* $Id: portsentry.h,v 1.32 2003/05/23 17:50:20 crowland Exp crowland $ */
 /************************************************************************/
-
-#include <stdio.h>
-#include <syslog.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <time.h>
-#include <netdb.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-#include <stdarg.h>
-#include <assert.h>
-#include <limits.h>
-#include <stdint.h>
-#include <sys/param.h>
-#include <sys/types.h>
-#ifndef _LINUX_C_LIB_VERSION
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <netinet/in.h>
-#endif
-#include <arpa/inet.h>
-
-#include "config.h"
-#include "portsentry_io.h"
-#include "portsentry_util.h"
-
-#ifdef SUPPORT_STEALTH
-#include <netinet/tcp.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-
 #define TCPPACKETLEN 80
 #define UDPPACKETLEN 68
-#endif /* SUPPORT_STEALTH */
 
 #define ERROR -1
 #define TRUE 1
@@ -62,5 +28,7 @@
 /* max sockets we can open */
 #define MAXSOCKS 64
 
-/* Really is about 1025, but we don't need the length for our purposes */
-#define DNSMAXBUF 255
+#define ERRNOMAXBUF 1024
+
+#undef max
+#define max(x, y) ((x) > (y) ? (x) : (y))

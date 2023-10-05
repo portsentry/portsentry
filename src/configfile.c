@@ -1,11 +1,14 @@
+#include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "configfile.h"
-#include "portsentry.h"
-#include "portsentry_io.h"
-#include "portsentry_util.h"
 #include "config_data.h"
+#include "configfile.h"
+#include "io.h"
+#include "portsentry.h"
+#include "util.h"
 
 static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
 static void validateConfig(struct ConfigData *fileConfig);
@@ -79,9 +82,9 @@ void readConfigFile(void) {
   fclose(config);
 
   // Set default values if not set in config file
-  if(fileConfig.tcpAdvancedPort == 0)
+  if (fileConfig.tcpAdvancedPort == 0)
     fileConfig.tcpAdvancedPort = ADVANCED_MODE_PORT_TCP;
-  if(fileConfig.udpAdvancedPort == 0)
+  if (fileConfig.udpAdvancedPort == 0)
     fileConfig.udpAdvancedPort = ADVANCED_MODE_PORT_UDP;
 
   /* Make sure config is valid */
@@ -94,19 +97,23 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
   Debug("setConfiguration: %s keySize: %lu valueSize: %ld sentryMode: %s", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
 
   if (strncmp(buffer, "BLOCK_TCP", keySize) == 0) {
-    if (strncmp(ptr, "1", valueSize) == 0) {
-      fileConfig->blockTCP = TRUE;
-    } else if (strncmp(ptr, "0", valueSize) == 0) {
-      fileConfig->blockTCP = FALSE;
+    if (strncmp(ptr, "0", valueSize) == 0) {
+      fileConfig->blockTCP = 0;
+    } else if (strncmp(ptr, "1", valueSize) == 0) {
+      fileConfig->blockTCP = 1;
+    } else if (strncmp(ptr, "2", valueSize) == 0) {
+      fileConfig->blockTCP = 2;
     } else {
       fprintf(stderr, "Invalid config file entry for BLOCK_TCP\n");
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "BLOCK_UDP", keySize) == 0) {
-    if (strncmp(ptr, "1", valueSize) == 0) {
-      fileConfig->blockUDP = TRUE;
-    } else if (strncmp(ptr, "0", valueSize) == 0) {
-      fileConfig->blockUDP = FALSE;
+    if (strncmp(ptr, "0", valueSize) == 0) {
+      fileConfig->blockUDP = 0;
+    } else if (strncmp(ptr, "1", valueSize) == 0) {
+      fileConfig->blockUDP = 1;
+    } else if (strncmp(ptr, "2", valueSize) == 0) {
+      fileConfig->blockUDP = 2;
     } else {
       fprintf(stderr, "Invalid config file entry for BLOCK_UDP\n");
       Exit(EXIT_FAILURE);
@@ -138,7 +145,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "KILL_RUN_CMD", keySize) == 0) {
-    if(snprintf(fileConfig->killRunCmd, MAXBUF, "%s", ptr) >= MAXBUF) {
+    if (snprintf(fileConfig->killRunCmd, MAXBUF, "%s", ptr) >= MAXBUF) {
       fprintf(stderr, "KILL_RUN_CMD value too long\n");
       Exit(EXIT_FAILURE);
     }
@@ -210,6 +217,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       fprintf(stderr, "PORT_BANNER value too long\n");
       Exit(EXIT_FAILURE);
     }
+    fileConfig->portBannerPresent = TRUE;
   } else {
     fprintf(stderr, "Invalid config file entry at line %lu\n", line);
     Exit(EXIT_FAILURE);
@@ -254,16 +262,25 @@ static void validateConfig(struct ConfigData *fileConfig) {
     Exit(EXIT_FAILURE);
   }
 
-/*
- * TODO: Add validation for the following:
-    fileConfig->killRoute
-    fileConfig->killHostsDeny
-    fileConfig->killRunCmd
-    fileConfig->blockedFile
-    fileConfig->historyFile
-    fileConfig->ignoreFile
-    fileConfig->portBanner
-  */
+  if (fileConfig->blockTCP < 0 || fileConfig->blockTCP > 2) {
+    fprintf(stderr, "Invalid BLOCK_TCP value in config file\n");
+    Exit(EXIT_FAILURE);
+  }
+
+  if (fileConfig->blockUDP < 0 || fileConfig->blockUDP > 2) {
+    fprintf(stderr, "Invalid BLOCK_UDP value in config file\n");
+    Exit(EXIT_FAILURE);
+  }
+
+  /*
+   * TODO: Add validation for the following:
+      fileConfig->killRoute
+      fileConfig->killHostsDeny
+      fileConfig->killRunCmd
+      fileConfig->blockedFile
+      fileConfig->historyFile
+      fileConfig->ignoreFile
+    */
 }
 
 static void mergeToConfigData(struct ConfigData *fileConfig) {
