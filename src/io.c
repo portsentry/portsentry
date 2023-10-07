@@ -285,7 +285,6 @@ int BindSocket(int sockfd, int port, int proto) {
 
   if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) == -1) {
     Debug("BindSocket: Binding failed: %s", ErrnoString(err, sizeof(err)));
-    // FIXME: check errno to determine we have EADDRINUSE
     return (ERROR);
   }
 
