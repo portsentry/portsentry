@@ -54,8 +54,10 @@ static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr) {
   if (configData.logFlags & LOGFLAG_OUTPUT_STDOUT) {
     if (logType == LogTypeError) {
       fprintf(stderr, "%s\n", logbuffer);
+      fflush(stderr);
     } else {
       printf("%s%s\n", (logType == LogTypeDebug) ? "debug: " : "", logbuffer);
+      fflush(stdout);
     }
   }
 
