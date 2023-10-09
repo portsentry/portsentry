@@ -43,7 +43,7 @@ int PortSentryAdvancedStealthMode(void) {
       }
 
       if (connectionDataSize >= MAXSOCKS) {
-        Log("adminalert: ERROR: TCP port count exceeds size of ConnectionData array. Aborting.");
+        Error("adminalert: TCP port count exceeds size of ConnectionData array. Aborting.");
         return ERROR;
       }
 
@@ -63,7 +63,7 @@ int PortSentryAdvancedStealthMode(void) {
       }
 
       if (connectionDataSize >= MAXSOCKS) {
-        Log("adminalert: ERROR: UDP port count exceeds size of ConnectionData array. Aborting.");
+        Error("adminalert: UDP port count exceeds size of ConnectionData array. Aborting.");
         return ERROR;
       }
 
@@ -82,7 +82,7 @@ int PortSentryAdvancedStealthMode(void) {
   nfds = 0;
   if (configData.sentryMode == SENTRY_MODE_ATCP) {
     if ((tcpSockfd = OpenRAWTCPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("adminalert: could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     }
 
@@ -93,7 +93,7 @@ int PortSentryAdvancedStealthMode(void) {
 
   if (configData.sentryMode == SENTRY_MODE_AUDP) {
     if ((udpSockfd = OpenRAWUDPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("adminalert: could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     }
 
@@ -107,10 +107,10 @@ int PortSentryAdvancedStealthMode(void) {
   for (;;) {
     result = poll(fds, nfds, -1);
     if (result == -1) {
-      Log("adminalert: ERROR: poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("adminalert: poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     } else if (result == 0) {
-      Log("adminalert: ERROR: poll() timed out. Aborting.");
+      Error("adminalert: poll() timed out. Aborting.");
       return (ERROR);
     }
 
@@ -140,7 +140,7 @@ int PortSentryAdvancedStealthMode(void) {
           continue;
         client.sin_port = udp->dest;
       } else {
-        Log("adminalert: ERROR: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
+        Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
         continue;
       }
 

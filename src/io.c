@@ -258,7 +258,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   Debug("WriteBlocked: Opening block file: %s ", blockedFilename);
 
   if ((output = fopen(blockedFilename, "a")) == NULL) {
-    Log("adminalert: ERROR: Cannot open blocked file: %s (%s)", blockedFilename, ErrnoString(err, sizeof(err)));
+    Error("adminalert: Cannot open blocked file: %s (%s)", blockedFilename, ErrnoString(err, sizeof(err)));
     blockedStatus = FALSE;
   } else {
     fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
@@ -271,7 +271,7 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   Debug("WriteBlocked: Opening history file: %s ", historyFilename);
 
   if ((output = fopen(historyFilename, "a")) == NULL) {
-    Log("adminalert: ERROR: Cannot open history file: %s (%s)", historyFilename, ErrnoString(err, sizeof(err)));
+    Error("adminalert: Cannot open history file: %s (%s)", historyFilename, ErrnoString(err, sizeof(err)));
     historyStatus = FALSE;
   } else {
     fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
@@ -401,10 +401,10 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   killStatus = system(commandStringFinal);
 
   if (killStatus == 127) {
-    Log("adminalert: ERROR: There was an error trying to block host (exec fail) %s", target);
+    Error("adminalert: There was an error trying to block host (exec fail) %s", target);
     return (ERROR);
   } else if (killStatus < 0) {
-    Log("adminalert: ERROR: There was an error trying to block host (system fail) %s", target);
+    Error("adminalert: There was an error trying to block host (system fail) %s", target);
     return (ERROR);
   } else {
     Log("attackalert: Host %s has been blocked via dropped route using command: \"%s\"", target, commandStringFinal);
@@ -446,10 +446,10 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   killStatus = system(commandStringFinal);
 
   if (killStatus == 127) {
-    Log("adminalert: ERROR: There was an error trying to run command (exec fail) %s", target);
+    Error("adminalert: There was an error trying to run command (exec fail) %s", target);
     return (ERROR);
   } else if (killStatus < 0) {
-    Log("adminalert: ERROR: There was an error trying to run command (system fail) %s", target);
+    Error("adminalert: There was an error trying to run command (system fail) %s", target);
     return (ERROR);
   } else {
     /* report success */
@@ -501,7 +501,7 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
 
   if ((output = fopen(WRAPPER_HOSTS_DENY, "a")) == NULL) {
     Log("adminalert: cannot open hosts.deny file: %s for blocking.", WRAPPER_HOSTS_DENY);
-    Log("securityalert: ERROR: There was an error trying to block host %s", target);
+    Error("securityalert: There was an error trying to block host %s", target);
     return (FALSE);
   } else {
     fprintf(output, "%s\n", commandStringFinal);
@@ -521,7 +521,7 @@ int IsBlocked(char *target, char *filename) {
   Debug("IsBlocked: Opening block file: %s ", filename);
 
   if ((input = fopen(filename, "r")) == NULL) {
-    Log("adminalert: ERROR: Cannot open blocked file: %s for reading: %s. Will create.", filename, ErrnoString(err, sizeof(err)));
+    Error("adminalert: Cannot open blocked file: %s for reading: %s. Will create.", filename, ErrnoString(err, sizeof(err)));
     return (FALSE);
   }
 
@@ -626,14 +626,14 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
     result = write(socket, configData.portBanner, strlen(configData.portBanner));
   } else if (proto == IPPROTO_UDP) {
     if (client == NULL) {
-      Log("adminalert: ERROR: No client address specified for UDP banner transmission (ignoring)");
+      Error("adminalert: No client address specified for UDP banner transmission (ignoring)");
       return;
     }
     result = sendto(socket, configData.portBanner, strlen(configData.portBanner), 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
   }
 
   if (result == -1) {
-    Log("adminalert: ERROR: Could not write banner to socket (ignoring)");
+    Error("adminalert: Could not write banner to socket (ignoring)");
   }
 }
 
@@ -647,10 +647,10 @@ int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct i
   struct in_addr addr;
 
   if ((result = read(socket, packetBuffer, packetBufferSize)) == -1) {
-    Log("adminalert: ERROR: Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
+    Error("adminalert: Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
     return ERROR;
   } else if (result < (ssize_t)sizeof(struct iphdr)) {
-    Log("adminalert: ERROR: Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
+    Error("adminalert: Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
     return ERROR;
   }
 
@@ -665,7 +665,7 @@ int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct i
   ipHeaderLength = (*ipPtr)->ihl * 4;
 
   if (ipHeaderLength > packetBufferSize) {
-    Log("adminalert: ERROR: IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);
+    Error("adminalert: IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);
     return FALSE;
   }
 

@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 
   if (configData.daemon == TRUE) {
     if (DaemonSeed() == ERROR) {
-      Log("adminalert: ERROR: could not go into daemon mode. Shutting down.");
+      Error("adminalert: could not go into daemon mode. Shutting down.");
       printf("ERROR: could not go into daemon mode. Shutting down.\n");
       Exit(ERROR);
     }
@@ -60,17 +60,17 @@ int main(int argc, char *argv[]) {
 
   if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
     if (PortSentryConnectMode() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
+      Error("adminalert: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
   } else if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP) {
     if (PortSentryStealthMode() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
+      Error("adminalert: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
   } else if (configData.sentryMode == SENTRY_MODE_ATCP || configData.sentryMode == SENTRY_MODE_AUDP) {
     if (PortSentryAdvancedStealthMode() == ERROR) {
-      Log("adminalert: ERROR: could not go into PortSentry mode. Shutting down.");
+      Error("adminalert: could not go into PortSentry mode. Shutting down.");
       Exit(ERROR);
     }
   }

@@ -132,7 +132,7 @@ int DisposeTarget(char *target, int port, int protocol) {
   } else if (protocol == IPPROTO_UDP) {
     blockProto = configData.blockUDP;
   } else {
-    Log("DisposeTarget: ERROR: Unknown protocol: %d", protocol);
+    Error("DisposeTarget: Unknown protocol: %d", protocol);
     return (FALSE);
   }
 
@@ -191,12 +191,12 @@ int SetupPort(uint16_t port, int proto) {
   } else if (proto == IPPROTO_UDP) {
     sock = OpenUDPSocket();
   } else {
-    Log("adminalert: ERROR: invalid protocol %d passed to IsPortInUse on port %d", proto, port);
+    Error("adminalert: invalid protocol %d passed to IsPortInUse on port %d", proto, port);
     return -1;
   }
 
   if (sock == ERROR) {
-    Log("adminalert: ERROR: could not open %s socket: %s", GetProtocolString(proto), ErrnoString(err, sizeof(err)));
+    Error("adminalert: could not open %s socket: %s", GetProtocolString(proto), ErrnoString(err, sizeof(err)));
     return -1;
   }
 
@@ -264,7 +264,7 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
 
   if (configData.sentryMode == SENTRY_MODE_TCP && tcpAcceptSocket == NULL) {
-    Log("RunSentry: ERROR: tcpAcceptSocket is NULL in connect mode");
+    Error("RunSentry: tcpAcceptSocket is NULL in connect mode");
     return FALSE;
   }
 
@@ -275,7 +275,7 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
   }
 
   if ((result = NeverBlock(target, configData.ignoreFile)) == ERROR) {
-    Log("attackalert: ERROR: cannot open ignore file %s. Blocking host anyway.", configData.ignoreFile);
+    Error("attackalert: open ignore file %s. Blocking host anyway.", configData.ignoreFile);
     result = FALSE;
   } else if (result == TRUE) {
     Log("attackalert: Host: %s found in ignore file %s, aborting actions", target, configData.ignoreFile);
@@ -315,7 +315,7 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
 
   if (IsBlocked(target, configData.blockedFile) == FALSE) {
     if (DisposeTarget(target, cd->port, cd->protocol) != TRUE)
-      Log("attackalert: ERROR: Could not block host %s/%s!", resolvedHost, target);
+      Error("attackalert: not block host %s/%s!", resolvedHost, target);
     else
       WriteBlocked(target, resolvedHost, cd->port, configData.blockedFile, configData.historyFile, GetProtocolString(cd->protocol));
   } else {

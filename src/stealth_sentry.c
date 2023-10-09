@@ -33,19 +33,19 @@ int PortSentryStealthMode(void) {
   assert(configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP);
 
   if ((connectionDataSize = ConstructConnectionData(connectionData, MAXSOCKS)) == 0) {
-    Log("adminalert: ERROR: Unable to add any ports to the connect sentry. Aborting.");
+    Error("adminalert: Unable to add any ports to the connect sentry. Aborting.");
     return (ERROR);
   }
 
   if (connectionDataSize == 0) {
-    Log("adminalert: ERROR: could not bind ANY sockets. Shutting down.");
+    Error("adminalert: could not bind ANY sockets. Shutting down.");
     return (ERROR);
   }
 
   nfds = 0;
   if (configData.sentryMode == SENTRY_MODE_STCP) {
     if ((tcpSockfd = OpenRAWTCPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("adminalert: could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     }
 
@@ -56,7 +56,7 @@ int PortSentryStealthMode(void) {
 
   if (configData.sentryMode == SENTRY_MODE_SUDP) {
     if ((udpSockfd = OpenRAWUDPSocket()) == ERROR) {
-      Log("adminalert: ERROR: could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("adminalert: could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     }
 
@@ -70,10 +70,10 @@ int PortSentryStealthMode(void) {
   for (;;) {
     result = poll(fds, nfds, -1);
     if (result == -1) {
-      Log("adminalert: ERROR: poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("adminalert: poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     } else if (result == 0) {
-      Log("adminalert: ERROR: poll() timed out. Aborting.");
+      Error("adminalert: poll() timed out. Aborting.");
       return (ERROR);
     }
 
@@ -99,7 +99,7 @@ int PortSentryStealthMode(void) {
           continue;
         client.sin_port = udp->dest;
       } else {
-        Log("adminalert: ERROR: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
+        Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
         continue;
       }
 

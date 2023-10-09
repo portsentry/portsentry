@@ -29,7 +29,7 @@ int PortSentryConnectMode(void) {
   assert(configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP);
 
   if ((connectionDataSize = ConstructConnectionData(connectionData, MAXSOCKS)) == 0) {
-    Log("adminalert: ERROR: Unable to add any ports to the connect sentry. Aborting.");
+    Error("adminalert: Unable to add any ports to the connect sentry. Aborting.");
     return (ERROR);
   }
 
@@ -40,7 +40,7 @@ int PortSentryConnectMode(void) {
 
     if (connectionData[count].sockfd == ERROR || connectionData[count].sockfd == -2) {
       connectionData[count].portInUse = TRUE;
-      Log("adminalert: ERROR: could not bind %s socket: %d. Attempting to continue", GetProtocolString(connectionData[count].protocol), connectionData[count].port);
+      Error("adminalert: could not bind %s socket: %d. Attempting to continue", GetProtocolString(connectionData[count].protocol), connectionData[count].port);
     } else {
       nfds = max(nfds, connectionData[count].sockfd);
     }
@@ -49,7 +49,7 @@ int PortSentryConnectMode(void) {
   PruneConnectionDataByInUsePorts(connectionData, &connectionDataSize);
 
   if (connectionDataSize == 0) {
-    Log("adminalert: ERROR: could not bind ANY sockets. Shutting down.");
+    Error("adminalert: could not bind ANY sockets. Shutting down.");
     return (ERROR);
   }
 
@@ -65,7 +65,7 @@ int PortSentryConnectMode(void) {
     result = select(MAXSOCKS, &selectFds, NULL, NULL, (struct timeval *)NULL);
 
     if (result < 0) {
-      Log("adminalert: ERROR: select call failed: %s. Shutting down.", ErrnoString(err, sizeof(err)));
+      Error("adminalert: select call failed: %s. Shutting down.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     } else if (result == 0) {
       Debug("Select timeout");
@@ -87,7 +87,7 @@ int PortSentryConnectMode(void) {
         }
       } else if (connectionData[count].protocol == IPPROTO_UDP) {
         if (recvfrom(connectionData[count].sockfd, &tmp, 1, 0, (struct sockaddr *)&client, &clientLength) == -1) {
-          Log("adminalert: ERROR: could not accept incoming data on UDP port: %d: %s", connectionData[count].port, ErrnoString(err, sizeof(err)));
+          Error("adminalert: could not accept incoming data on UDP port: %d: %s", connectionData[count].port, ErrnoString(err, sizeof(err)));
           continue;
         }
       }

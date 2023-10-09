@@ -36,7 +36,7 @@ int ConstructConnectionData(struct ConnectionData *cd, int cdSize) {
   memset(cd, 0, sizeof(struct ConnectionData) * cdSize);
 
   if (cdSize <= 0) {
-    Log("adminalert: ERROR: ConstructConnectionData() called with invalid size. Aborting.");
+    Error("adminalert: ConstructConnectionData() called with invalid size. Aborting.");
     return 0;
   }
 
@@ -52,7 +52,7 @@ int ConstructConnectionData(struct ConnectionData *cd, int cdSize) {
       cdIdx++;
 
       if (cdIdx >= cdSize) {
-        Log("adminalert: ERROR: TCP port count exceeds size of ConnectionData array. Aborting.");
+        Error("adminalert: TCP port count exceeds size of ConnectionData array. Aborting.");
         return cdIdx;
       }
     }
@@ -67,7 +67,7 @@ int ConstructConnectionData(struct ConnectionData *cd, int cdSize) {
       cdIdx++;
 
       if (cdIdx >= cdSize) {
-        Log("adminalert: ERROR: TCP port count exceeds size of ConnectionData array. Aborting.");
+        Error("adminalert: TCP port count exceeds size of ConnectionData array. Aborting.");
         return cdIdx;
       }
     }
@@ -84,7 +84,7 @@ int ConstructConnectionData(struct ConnectionData *cd, int cdSize) {
       cdIdx++;
 
       if (cdIdx >= cdSize) {
-        Log("adminalert: ERROR: UDP port count exceeds size of ConnectionData array. Aborting.");
+        Error("adminalert: UDP port count exceeds size of ConnectionData array. Aborting.");
         return cdIdx;
       }
     }
@@ -99,7 +99,7 @@ int ConstructConnectionData(struct ConnectionData *cd, int cdSize) {
       cdIdx++;
 
       if (cdIdx >= cdSize) {
-        Log("adminalert: ERROR: UDP port count exceeds size of ConnectionData array. Aborting.");
+        Error("adminalert: UDP port count exceeds size of ConnectionData array. Aborting.");
         return cdIdx;
       }
     }
