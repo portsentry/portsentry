@@ -57,7 +57,7 @@ int ConstructConnectionData(struct ConnectionData *cd, int cdSize) {
       }
     }
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
-    for (i = 1; i < configData.tcpAdvancedPort; i++) {
+    for (i = 0; i < configData.tcpAdvancedPort; i++) {
       SetConnectionData(&cd[cdIdx], i, IPPROTO_TCP, TRUE);
 
       if (cd[cdIdx].portInUse != TRUE) {
@@ -89,7 +89,7 @@ int ConstructConnectionData(struct ConnectionData *cd, int cdSize) {
       }
     }
   } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
-    for (i = 1; i < configData.udpAdvancedPort; i++) {
+    for (i = 0; i < configData.udpAdvancedPort; i++) {
       SetConnectionData(&cd[cdIdx], i, IPPROTO_UDP, TRUE);
 
       if (cd[cdIdx].portInUse != TRUE) {
