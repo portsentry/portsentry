@@ -40,6 +40,7 @@
 
 static uint8_t isSyslogOpen = FALSE;
 enum LogType { LogTypeNone,
+               LogTypeError,
                LogTypeDebug,
                LogTypeVerbose };
 
@@ -51,15 +52,22 @@ static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr) {
   vsnprintf(logbuffer, MAXBUF, logentry, argsPtr);
 
   if (configData.logFlags & LOGFLAG_OUTPUT_STDOUT) {
-    printf("%s%s\n", (logType == LogTypeDebug) ? "debug: " : "", logbuffer);
+    if (logType == LogTypeError) {
+      fprintf(stderr, "%s\n", logbuffer);
+    } else {
+      printf("%s%s\n", (logType == LogTypeDebug) ? "debug: " : "", logbuffer);
+    }
   }
 
   if (configData.logFlags & LOGFLAG_OUTPUT_SYSLOG) {
     if (isSyslogOpen == FALSE) {
-      openlog("portsentry", LOG_PID, SYSLOG_FACILITY);
+      openlog("portsentry", LOG_PID, LOG_DAEMON);
       isSyslogOpen = TRUE;
     }
-    syslog(SYSLOG_LEVEL, "%s%s", (logType == LogTypeDebug) ? "debug: " : "", logbuffer);
+    syslog((logType == LogTypeNone) ? LOG_NOTICE : (logType == LogTypeError) ? LOG_ERR
+                                               : (logType == LogTypeDebug)   ? LOG_DEBUG
+                                                                             : LOG_INFO,
+           "%s%s", (logType == LogTypeDebug) ? "debug: " : "", logbuffer);
   }
 }
 
@@ -67,6 +75,13 @@ void Log(char *logentry, ...) {
   va_list argsPtr;
   va_start(argsPtr, logentry);
   LogEntry(LogTypeNone, logentry, argsPtr);
+  va_end(argsPtr);
+}
+
+void Error(char *logentry, ...) {
+  va_list argsPtr;
+  va_start(argsPtr, logentry);
+  LogEntry(LogTypeError, logentry, argsPtr);
   va_end(argsPtr);
 }
 

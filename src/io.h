@@ -23,6 +23,7 @@
 
 int WriteBlocked(char *, char *, int, char *, char *, const char *);
 void Log(char *, ...);
+void Error(char *, ...);
 void Debug(char *logentry, ...);
 void Verbose(char *logentry, ...);
 void Exit(int);
