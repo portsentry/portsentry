@@ -193,15 +193,11 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       fprintf(stderr, "Unable to parse ADVANCED_PORTS_TCP\n");
       Exit(EXIT_FAILURE);
     }
-
-    fprintf(stderr, "ADVANCED_PORTS_TCP = %d\n", fileConfig->tcpAdvancedPort);
   } else if (strncmp(buffer, "ADVANCED_PORTS_UDP", keySize) == 0) {
     if (StrToUint16_t(ptr, &fileConfig->udpAdvancedPort) == FALSE) {
       fprintf(stderr, "Unable to parse ADVANCED_PORTS_UDP\n");
       Exit(EXIT_FAILURE);
     }
-
-    fprintf(stderr, "ADVANCED_PORTS_UDP = %d\n", fileConfig->udpAdvancedPort);
   } else if (strncmp(buffer, "ADVANCED_EXCLUDE_TCP", keySize) == 0) {
     if (parsePortsList(ptr, fileConfig->tcpAdvancedExcludePorts, &fileConfig->tcpAdvancedExcludePortsLength, UINT16_MAX) == FALSE) {
       fprintf(stderr, "Unable to parse ADVANCED_EXCLUDE_TCP\n");
