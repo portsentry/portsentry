@@ -137,7 +137,6 @@ int DisposeTarget(char *target, int port, int protocol) {
   }
 
   if (blockProto == 0) {
-    Log("attackalert: Ignoring %s response per configuration file setting.", (protocol == IPPROTO_TCP) ? "TCP" : "UDP");
     status = TRUE;
   } else if (blockProto == 1) {
     Debug("DisposeTarget: disposing of host %s on port %d with option: %d (%s)", target, port, configData.blockTCP, (protocol == IPPROTO_TCP) ? "tcp" : "udp");
@@ -276,7 +275,7 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
   }
 
   if ((result = NeverBlock(target, configData.ignoreFile)) == ERROR) {
-    Error("attackalert: open ignore file %s. Blocking host anyway.", configData.ignoreFile);
+    Error("Unable to open ignore file %s. Continuing without it", configData.ignoreFile);
     result = FALSE;
   } else if (result == TRUE) {
     Log("attackalert: Host: %s found in ignore file %s, aborting actions", target, configData.ignoreFile);
@@ -314,14 +313,16 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
       Log("attackalert: Packet from host: %s/%s to %s port: %d has IP options set (detection avoidance technique).", resolvedHost, target, GetProtocolString(cd->protocol), cd->port);
   }
 
+  // If in log-only mode, don't run any of the blocking code
+  if ((configData.blockTCP == 0 && (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP)) ||
+      (configData.blockUDP == 0 && (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP))) {
+    return TRUE;
+  }
+
   if (IsBlocked(target, configData.blockedFile) == FALSE) {
     if ((result = DisposeTarget(target, cd->port, cd->protocol)) != TRUE) {
       Error("attackalert: Error during target dispose %s/%s!", resolvedHost, target);
-    }
-
-    if (result == TRUE &&
-        ((configData.blockTCP == 1 && (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP)) ||
-         (configData.blockUDP == 1 && (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP)))) {
+    } else {
       WriteBlocked(target, resolvedHost, cd->port, configData.blockedFile, configData.historyFile, GetProtocolString(cd->protocol));
     }
   } else {
