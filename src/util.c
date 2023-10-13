@@ -315,10 +315,15 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
   }
 
   if (IsBlocked(target, configData.blockedFile) == FALSE) {
-    if (DisposeTarget(target, cd->port, cd->protocol) != TRUE)
-      Error("attackalert: not block host %s/%s!", resolvedHost, target);
-    else
+    if ((result = DisposeTarget(target, cd->port, cd->protocol)) != TRUE) {
+      Error("attackalert: Error during target dispose %s/%s!", resolvedHost, target);
+    }
+
+    if (result == TRUE &&
+        ((configData.blockTCP == 1 && (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP)) ||
+         (configData.blockUDP == 1 && (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP)))) {
       WriteBlocked(target, resolvedHost, cd->port, configData.blockedFile, configData.historyFile, GetProtocolString(cd->protocol));
+    }
   } else {
     Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
   }
