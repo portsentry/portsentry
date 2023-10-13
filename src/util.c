@@ -271,7 +271,7 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
   SafeStrncpy(target, inet_ntoa(client->sin_addr), IPMAXBUF);
 
   if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
-    Debug("PortSentryConnectMode: accepted %s connection from: %s", (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
+    Debug("RunSentry connect mode: accepted %s connection from: %s", (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
   }
 
   if ((result = NeverBlock(target, configData.ignoreFile)) == ERROR) {
