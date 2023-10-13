@@ -4,6 +4,8 @@ ACTION=$1
 
 if [ "$ACTION" = "clean" ]; then
   rm -rf debug release
+  rm -f portsentry.blocked.*
+  rm -f portsentry.history
   exit 0
 elif [ "$ACTION" = "debug" ]; then
   if [ ! -d "debug" ]; then
