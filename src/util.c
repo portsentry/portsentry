@@ -136,20 +136,21 @@ int DisposeTarget(char *target, int port, int protocol) {
     return (FALSE);
   }
 
-  Debug("DisposeTarget: disposing of host %s on port %d with option: %d (%s)", target, port, configData.blockTCP, (protocol == IPPROTO_TCP) ? "tcp" : "udp");
-  Debug("DisposeTarget: killRunCmd: %s", configData.killRunCmd);
-  Debug("DisposeTarget: runCmdFirst: %d", configData.runCmdFirst);
-  Debug("DisposeTarget: killHostsDeny: %s", configData.killHostsDeny);
-  Debug("DisposeTarget: killRoute: %s (%lu)", configData.killRoute, strlen(configData.killRoute));
-
   if (blockProto == 0) {
     Log("attackalert: Ignoring %s response per configuration file setting.", (protocol == IPPROTO_TCP) ? "TCP" : "UDP");
     status = TRUE;
   } else if (blockProto == 1) {
+    Debug("DisposeTarget: disposing of host %s on port %d with option: %d (%s)", target, port, configData.blockTCP, (protocol == IPPROTO_TCP) ? "tcp" : "udp");
+    Debug("DisposeTarget: killRunCmd: %s", configData.killRunCmd);
+    Debug("DisposeTarget: runCmdFirst: %d", configData.runCmdFirst);
+    Debug("DisposeTarget: killHostsDeny: %s", configData.killHostsDeny);
+    Debug("DisposeTarget: killRoute: %s (%lu)", configData.killRoute, strlen(configData.killRoute));
+
     if (configData.runCmdFirst == TRUE) {
       status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
     }
 
+    // FIXME: status could very well be overwritten with a logically incorrect value
     status = KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode));
     status = KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode));
 
