@@ -98,8 +98,13 @@ stop_portsentry() {
 run_test() {
   cd $TEST_DIR
   if ! $PORTSENTRY_SCRIPT $TEST_DIR $PORTSENTRY_EXEC $PORTSENTRY_CONF $PORTSENTRY_TEST $PORTSENTRY_SCRIPT $PORTSENTRY_STDOUT $PORTSENTRY_STDERR; then
-    echo "Detected test failure, stopping portsentry and exit"
+    echo "Detected test failure, stopping portsentry, printing portsentry run log and exit"
     stop_portsentry
+    echo "#### PORTSENTRY STDOUT ####"
+    cat $PORTSENTRY_STDOUT
+    echo
+    echo "#### PORTSENTRY STDERR ####"
+    cat $PORTSENTRY_STDERR
     exit 1
   fi
 }
