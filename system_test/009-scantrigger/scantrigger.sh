@@ -26,9 +26,6 @@ if ! findInFile "^attackalert: Host 127.0.0.1 has been blocked" $PORTSENTRY_STDO
   err "Expected attackalert message not found"
 fi
 
-verbose "expect already blocked message"
-if ! findInFile "attackalert: Host: 127.0.0.1/127.0.0.1 is already blocked Ignoring" $PORTSENTRY_STDOUT; then
-  err "Expected already blocked message not found"
-fi
+confirmAlreadyBlocked
 
 ok

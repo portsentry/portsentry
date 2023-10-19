@@ -14,9 +14,6 @@ fi
 verbose "Re-connect to tcp localhost:11"
 nmap -sT -p11-11 localhost >/dev/null
 
-verbose "expect already blocked message"
-if ! findInFile "attackalert: Host: 127.0.0.1/127.0.0.1 is already blocked Ignoring" $PORTSENTRY_STDOUT; then
-  err "Expected already blocked message not found"
-fi
+confirmAlreadyBlocked
 
 ok

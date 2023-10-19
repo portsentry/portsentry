@@ -76,6 +76,13 @@ confirmBlockTriggered() {
 
 }
 
+confirmAlreadyBlocked() {
+  verbose "expect already blocked message"
+  if ! findInFile "attackalert: Host: 127.0.0.1/127.0.0.1 is already blocked Ignoring" $PORTSENTRY_STDOUT; then
+    err "Expected already blocked message not found"
+  fi
+}
+
 waitForFile() {
   if [ -z "$1" ]; then
     err "waitForFile: no file specified"
