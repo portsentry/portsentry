@@ -12,10 +12,7 @@ chmod +x $TEST_DIR/extcmd.sh
 verbose "expect connect to tcp localhost:11"
 nmap -sT -p11-11 localhost >/dev/null
 
-verbose "expect attackalert connect message"
-if ! findInFile "^attackalert: Connect from host: 127\.0\.0\.1/127\.0\.0\.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
-  err "Expected attackalert connect message not found"
-fi
+confirmBlockTriggered tcp
 
 verbose "expect route kill message"
 if ! findInFile "^attackalert: Host 127.0.0.1 has been blocked via dropped route using command" $PORTSENTRY_STDOUT; then

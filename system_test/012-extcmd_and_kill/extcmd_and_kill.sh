@@ -19,6 +19,9 @@ chmod +x $TEST_DIR/routesim.sh
 verbose "expect connect to tcp localhost:11"
 nmap -sT -p11-11 localhost >/dev/null
 
+waitForFile $TEST_DIR/extcmd.stdout
+sleep 1
+
 verbose "expect routesim.sh output"
 if ! findInFile "^127\.0\.0\.1" $TEST_DIR/routesim.stdout ; then
   err "Expected routesim.sh output not found"

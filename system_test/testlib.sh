@@ -50,3 +50,54 @@ err() {
 findInFile() {
   grep -q "$1" $2
 }
+
+confirmBlockTriggered() {
+  if [ "$1" != "tcp" ] && [ "$1" != "udp" ] ; then
+    err "confirmBlockTriggered: invalid protocol $1"
+  fi
+
+  proto_l=$1
+  proto_u=$(echo $proto_l | tr '[:lower:]' '[:upper:]')
+
+  verbose "expect attackalert block message"
+  if ! findInFile "^attackalert: Host 127.0.0.1 has been blocked" $PORTSENTRY_STDOUT; then
+    err "Expected attackalert message not found"
+  fi
+
+  verbose "expect blocked $proto_l port"
+  if ! findInFile "Host: 127.0.0.1/127.0.0.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked.$proto_l; then
+    err "Expected blocked $proto_u port not found"
+  fi
+
+  verbose "expect history entry"
+  if ! findInFile ".*127\.0\.0\.1/127\.0\.0\.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.history; then
+    err "Expected history entry not found"
+  fi
+
+}
+
+waitForFile() {
+  if [ -z "$1" ]; then
+    err "waitForFile: no file specified"
+  fi
+
+  local file=$1
+
+  if [ -z "$2" ]; then
+    local timeout=5
+  else
+    local timeout=$2
+  fi
+
+  while [ $timeout -gt 0 ]; do
+    debug "waiting for file $file"
+    if [ -f $file ]; then
+      debug "Found file $file"
+      return 0
+    fi
+    sleep 1
+    timeout=$((timeout - 1))
+  done
+
+  err "Unable to find file $file, giving up"
+}
