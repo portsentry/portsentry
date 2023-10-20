@@ -318,13 +318,17 @@ int BindSocket(int sockfd, int port, int proto) {
 /* Open a TCP Socket */
 int OpenTCPSocket(void) {
   int sockfd;
+  const int enable = 1;
 
   Debug("OpenTCPSocket: opening TCP socket");
 
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     return (ERROR);
-  else
-    return (sockfd);
+
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+    return ERROR;
+
+  return (sockfd);
 }
 
 /* Open a UDP Socket */
@@ -616,6 +620,7 @@ int testFileAccess(char *filename, char *mode) {
 
 void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr_in *client) {
   ssize_t result = 0;
+  char err[ERRNOMAXBUF];
 
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
@@ -635,7 +640,7 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
   }
 
   if (result == -1) {
-    Error("adminalert: Could not write banner to socket (ignoring)");
+    Error("adminalert: Could not write banner to socket (ignoring): %s", ErrnoString(err, sizeof(err)));
   }
 }
 

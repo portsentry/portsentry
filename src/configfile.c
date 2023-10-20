@@ -94,6 +94,7 @@ void readConfigFile(void) {
 }
 
 static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig) {
+  char err[ERRNOMAXBUF];
   Debug("setConfiguration: %s keySize: %lu valueSize: %ld sentryMode: %s", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
 
   if (strncmp(buffer, "BLOCK_TCP", keySize) == 0) {
@@ -165,7 +166,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
     }
 
     if (testFileAccess(fileConfig->blockedFile, "w") == FALSE) {
-      fprintf(stderr, "Unable to open block file for writing: %s\n", fileConfig->blockedFile);
+      fprintf(stderr, "Unable to open block file for writing %s: %s\n", fileConfig->blockedFile, ErrnoString(err, sizeof(err)));
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "HISTORY_FILE", keySize) == 0) {
