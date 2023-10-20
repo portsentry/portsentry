@@ -116,3 +116,22 @@ waitForFile() {
 
   err "Unable to find file $file, giving up"
 }
+
+runNmap() {
+  if [ -z "$1" ]; then
+    err "runNmap: no port specified"
+  fi
+
+  local port=$1
+
+  if [ "$2" = "T" ]; then
+    local proto="T"
+  elif [ "$2" = "U" ]; then
+    local proto="U"
+  else
+    err "runNmap: invalid protocol $2"
+  fi
+
+  verbose "expect connect to $proto localhost:$port"
+  nmap -s$proto -p$port-$port localhost >/dev/null
+}
