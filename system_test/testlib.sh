@@ -52,12 +52,20 @@ findInFile() {
 }
 
 confirmBlockTriggered() {
-  if [ "$1" != "tcp" ] && [ "$1" != "udp" ] ; then
+  proto=$1
+
+  if [ "$1" = "tcp" ] || [ "$1" = "udp" ] ; then
+    proto_l=$1
+    proto_u=$(echo $proto_l | tr '[:lower:]' '[:upper:]')
+  elif [ "$1" = "stcp" ] || [ "$1" = "sudp" ] ; then
+    proto_l=$(echo $1 | sed 's/s//')
+    proto_u=$(echo $proto_l | tr '[:lower:]' '[:upper:]')
+  elif [ "$1" = "atcp" ] || [ "$1" = "audp" ] ; then
+    proto_l=$(echo $1 | sed 's/a//')
+    proto_u=$(echo $proto_l | tr '[:lower:]' '[:upper:]')
+  else
     err "confirmBlockTriggered: invalid protocol $1"
   fi
-
-  proto_l=$1
-  proto_u=$(echo $proto_l | tr '[:lower:]' '[:upper:]')
 
   verbose "expect attackalert block message"
   if ! findInFile "^attackalert: Host 127.0.0.1 has been blocked" $PORTSENTRY_STDOUT; then
@@ -65,7 +73,7 @@ confirmBlockTriggered() {
   fi
 
   verbose "expect blocked $proto_l port"
-  if ! findInFile "Host: 127.0.0.1/127.0.0.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked.$proto_l; then
+  if ! findInFile "Host: 127.0.0.1/127.0.0.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked.$proto; then
     err "Expected blocked $proto_u port not found"
   fi
 
