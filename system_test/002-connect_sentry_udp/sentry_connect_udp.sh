@@ -1,8 +1,7 @@
 #!/bin/sh
 . ./testlib.sh
 
-verbose "expect connect to udp localhost:11"
-nmap -sU -p11-11 localhost >/dev/null
+runNmap 11 U
 
 confirmBlockTriggered udp
 
@@ -11,8 +10,7 @@ if ! findInFile "^Unable to open ignore file .*/portsentry.ignore. Continuing wi
   err "Expected block anyway message not found"
 fi
 
-verbose "Re-connect to UDP localhost:11"
-nmap -sU -p11-11 localhost >/dev/null
+runNmap 11 U
 
 confirmAlreadyBlocked
 

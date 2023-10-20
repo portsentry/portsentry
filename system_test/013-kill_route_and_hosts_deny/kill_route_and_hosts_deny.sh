@@ -9,8 +9,7 @@ EOF
 
 chmod +x $TEST_DIR/routesim.sh
 
-verbose "expect connect to tcp localhost:11"
-nmap -sT -p11-11 localhost >/dev/null
+runNmap 11 T
 
 verbose "expect routesim.sh output"
 if ! findInFile "^127\.0\.0\.1" $TEST_DIR/routesim.stdout ; then

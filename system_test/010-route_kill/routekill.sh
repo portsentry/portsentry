@@ -9,8 +9,7 @@ EOF
 
 chmod +x $TEST_DIR/extcmd.sh
 
-verbose "expect connect to tcp localhost:11"
-nmap -sT -p11-11 localhost >/dev/null
+runNmap 11 T
 
 confirmBlockTriggered tcp
 

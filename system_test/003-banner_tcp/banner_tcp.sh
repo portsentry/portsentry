@@ -12,8 +12,7 @@ if ! findInFile "^Unable to open ignore file .*/portsentry.ignore. Continuing wi
   err "Expected block anyway message not found"
 fi
 
-verbose "Re-connect to tcp localhost:11"
-nmap -sT -p11-11 localhost >/dev/null
+runNmap 11 T
 
 confirmAlreadyBlocked
 
