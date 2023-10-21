@@ -7,6 +7,7 @@
 #include <poll.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "config_data.h"
@@ -22,7 +23,11 @@ int PortSentryStealthMode(void) {
   int tcpSockfd, udpSockfd, connectionDataSize;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct sockaddr_in client;
+#ifdef BSD
+  struct ip *ip = NULL;
+#else
   struct iphdr *ip = NULL;
+#endif
   struct tcphdr *tcp = NULL;
   struct udphdr *udp = NULL;
   struct pollfd fds[2];
@@ -87,24 +92,37 @@ int PortSentryStealthMode(void) {
 
       memset(&client, 0, sizeof(client));
       client.sin_family = AF_INET;
+#ifdef BSD
+      client.sin_addr.s_addr = ip->ip_src.s_addr;
+      if (ip->ip_p == IPPROTO_TCP) {
+#else
       client.sin_addr.s_addr = ip->saddr;
       if (ip->protocol == IPPROTO_TCP) {
+#endif
         tcp = (struct tcphdr *)p;
-        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(tcp->dest), IPPROTO_TCP)) == NULL)
+        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(tcp->th_dport), IPPROTO_TCP)) == NULL)
           continue;
-        client.sin_port = tcp->dest;
+        client.sin_port = tcp->th_dport;
+#ifdef BSD
+      } else if (ip->ip_p == IPPROTO_UDP) {
+#else
       } else if (ip->protocol == IPPROTO_UDP) {
+#endif
         udp = (struct udphdr *)p;
-        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(udp->dest), IPPROTO_UDP)) == NULL)
+        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(udp->uh_dport), IPPROTO_UDP)) == NULL)
           continue;
-        client.sin_port = udp->dest;
+        client.sin_port = udp->uh_dport;
       } else {
+#ifdef BSD
+        Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
+#else
         Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
+#endif
         continue;
       }
 
       // FIXME: Do we need this?
-      if (cd->protocol == IPPROTO_TCP && (tcp->ack == 1 || tcp->rst == 1)) {
+      if (cd->protocol == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
         continue;
       }
 
