@@ -11,6 +11,7 @@
 
 /* This is a simple program used in the system testing framework (see the system_test directory) */
 
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,7 +51,7 @@ int main(int argc, char **argv) {
 
   addr.sin_family = AF_INET;
   addr.sin_port = htons(port);
-  addr.sin_addr.s_addr = INADDR_ANY;
+  addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
   if (protocol == IPPROTO_TCP) {
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
