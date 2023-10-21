@@ -16,7 +16,7 @@ if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
   target_compile_options(portsentry PUBLIC -Wall -Wextra -pedantic -Werror -Wformat-security -Wstack-protector -fstack-protector-strong -pie -fPIE -D_FORTIFY_SOURCE=2)
 endif()
 
-target_link_libraries(portsentry PRIVATE $<$<CONFIG:Debug>:efence>)
+#target_link_libraries(portsentry PRIVATE $<$<CONFIG:Debug>:efence>)
 
 install(TARGETS portsentry DESTINATION usr/sbin)
 install(FILES examples/portsentry.conf DESTINATION etc/portsentry)
