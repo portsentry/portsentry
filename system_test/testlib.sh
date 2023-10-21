@@ -48,7 +48,26 @@ err() {
 }
 
 findInFile() {
-  grep -q "$1" $2
+  local str=$1
+  local file=$2
+  
+  if [ -z "$3" ]; then
+    local timeout=5
+  else
+    local timeout=$3
+  fi
+
+  while [ $timeout -gt 0 ]; do
+    debug "waiting for string $str in file $file"
+    if grep -q "$str" $file; then
+      debug "Found string $str in file $file"
+      return 0
+    fi
+    sleep 1
+    timeout=$((timeout - 1))
+  done
+
+  return 1
 }
 
 confirmBlockTriggered() {
