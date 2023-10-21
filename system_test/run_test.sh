@@ -86,7 +86,7 @@ run_portsentry() {
 }
 
 stop_portsentry() {
-  local pid=$(ps -ef|grep "$PORTSENTRY_EXEC -c $PORTSENTRY_CONF $switches"|grep -v grep | awk '{print $2}')
+  local pid=$(ps aux|grep "$PORTSENTRY_EXEC -c $PORTSENTRY_CONF $switches"|grep -v grep | awk '{print $2}')
   if [ -n "$pid" ]; then
     kill $pid
   else
