@@ -17,9 +17,9 @@
 /* $Id: portsentry_util.h,v 1.10 2003/05/23 17:42:07 crowland Exp crowland $ */
 /************************************************************************/
 
+#include "connection_data.h"
 #include <stdint.h>
 #include <sys/types.h>
-#include "connection_data.h"
 
 /* IP address length plus null */
 #define IPMAXBUF 16
@@ -34,4 +34,8 @@ int SetupPort(uint16_t port, int proto);
 int IsPortInUse(uint16_t port, int proto);
 char *ReportPacketType(struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
+#ifdef BSD
+int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket);
+#else
 int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct iphdr *ip, struct tcphdr *tcp, int *tcpAcceptSocket);
+#endif

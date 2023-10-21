@@ -249,7 +249,7 @@ char *ReportPacketType(struct tcphdr *tcpPkt) {
 
 char *ErrnoString(char *buf, const size_t buflen) {
   char *p;
-#if (_POSIX_C_SOURCE >= 200112L) && !_GNU_SOURCE
+#if ((_POSIX_C_SOURCE >= 200112L) && !_GNU_SOURCE) || defined(BSD)
   strerror_r(errno, buf, buflen);
   p = buf;
 #else
@@ -258,7 +258,11 @@ char *ErrnoString(char *buf, const size_t buflen) {
   return p;
 }
 
+#ifdef BSD
+int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
+#else
 int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct iphdr *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
+#endif
   int result;
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
 
@@ -308,7 +312,11 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
       Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, cd->port);
     }
 
+#ifdef BSD
+    if (ip->ip_hl > 5)
+#else
     if (ip->ihl > 5)
+#endif
       Log("attackalert: Packet from host: %s/%s to %s port: %d has IP options set (detection avoidance technique).", resolvedHost, target, GetProtocolString(cd->protocol), cd->port);
   }
 
