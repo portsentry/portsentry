@@ -7,6 +7,7 @@
 #include <poll.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "config_data.h"
@@ -20,7 +21,11 @@ int PortSentryAdvancedStealthMode(void) {
   int result, nfds, tcpSockfd, udpSockfd, count;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct sockaddr_in client;
+#ifdef BSD
+  struct ip *ip = NULL;
+#else
   struct iphdr *ip = NULL;
+#endif
   struct tcphdr *tcp = NULL;
   struct udphdr *udp = NULL;
   struct pollfd fds[2];
@@ -124,33 +129,51 @@ int PortSentryAdvancedStealthMode(void) {
 
       memset(&client, 0, sizeof(client));
       client.sin_family = AF_INET;
+#ifdef BSD
+      client.sin_addr.s_addr = ip->ip_src.s_addr;
+      if (ip->ip_p == IPPROTO_TCP) {
+#else
       client.sin_addr.s_addr = ip->saddr;
       if (ip->protocol == IPPROTO_TCP) {
+#endif
+
         tcp = (struct tcphdr *)p;
-        if (ntohs(tcp->dest) > configData.tcpAdvancedPort)
+        if (ntohs(tcp->th_dport) > configData.tcpAdvancedPort)
           continue;
-        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(tcp->dest), IPPROTO_TCP)) != NULL)
+        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(tcp->th_dport), IPPROTO_TCP)) != NULL)
           continue;
-        client.sin_port = tcp->dest;
+        client.sin_port = tcp->th_dport;
+#ifdef BSD
+      } else if (ip->ip_p == IPPROTO_UDP) {
+#else
       } else if (ip->protocol == IPPROTO_UDP) {
+#endif
         udp = (struct udphdr *)p;
-        if (ntohs(udp->dest) > configData.udpAdvancedPort)
+        if (ntohs(udp->uh_dport) > configData.udpAdvancedPort)
           continue;
-        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(udp->dest), IPPROTO_UDP)) != NULL)
+        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(udp->uh_dport), IPPROTO_UDP)) != NULL)
           continue;
-        client.sin_port = udp->dest;
+        client.sin_port = udp->uh_dport;
       } else {
+#ifdef BSD
+        Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
+#else
         Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
+#endif
         continue;
       }
 
       // Since we make heavy use of the ConnectionData structure create a temporary one to hold the current data
-      SetConnectionData(&tmpcd, (ip->protocol == IPPROTO_TCP) ? ntohs(tcp->dest) : ntohs(udp->dest), ip->protocol, FALSE);
+#ifdef BSD
+      SetConnectionData(&tmpcd, (ip->ip_p == IPPROTO_TCP) ? ntohs(tcp->th_dport) : ntohs(udp->uh_dport), ip->ip_p, FALSE);
+#else
+      SetConnectionData(&tmpcd, (ip->protocol == IPPROTO_TCP) ? ntohs(tcp->th_dport) : ntohs(udp->uh_dport), ip->protocol, FALSE);
+#endif
       tmpcd.portInUse = FALSE;
       cd = &tmpcd;
 
       // FIXME : Do we need this?
-      if (cd->protocol == IPPROTO_TCP && (tcp->ack == 1 || tcp->rst == 1)) {
+      if (cd->protocol == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
         continue;
       }
 
