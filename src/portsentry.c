@@ -38,6 +38,8 @@
 int main(int argc, char *argv[]) {
   ParseCmdline(argc, argv);
 
+  signal(SIGPIPE, SIG_IGN);
+
   readConfigFile();
 
   if (configData.logFlags & LOGFLAG_DEBUG) {
