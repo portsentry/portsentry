@@ -4,6 +4,8 @@
 #include <netinet/in.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "config_data.h"
