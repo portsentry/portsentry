@@ -16,6 +16,8 @@
 /*                                                                      */
 /* $Id: portsentry.h,v 1.32 2003/05/23 17:50:20 crowland Exp crowland $ */
 /************************************************************************/
+#include <sys/param.h>
+
 #define TCPPACKETLEN 80
 #define UDPPACKETLEN 68
 
