@@ -91,6 +91,34 @@ confirmAlreadyBlocked() {
   fi
 }
 
+confirmSynScan() {
+  verbose "expect syn scan block message"
+  if ! findInFile "^attackalert: TCP SYN/Normal scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+    err "Expected syn scan block message not found"
+  fi
+}
+
+confirmNullScan() {
+  verbose "expect null scan block message"
+  if ! findInFile "^attackalert: TCP NULL scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+    err "Expected null scan block message not found"
+  fi
+}
+
+confirmXmasScan() {
+  verbose "expect xmas scan block message"
+  if ! findInFile "^attackalert: TCP XMAS scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+    err "Expected xmas scan block message not found"
+  fi
+}
+
+confirmFinScan() {
+  verbose "expect fin scan block message"
+  if ! findInFile "^attackalert: TCP FIN scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+    err "Expected fin scan block message not found"
+  fi
+}
+
 waitForFile() {
   if [ -z "$1" ]; then
     err "waitForFile: no file specified"
@@ -128,6 +156,14 @@ runNmap() {
     local proto="T"
   elif [ "$2" = "U" ]; then
     local proto="U"
+  elif [ "$2" = "S" ]; then
+    local proto="S"
+  elif [ "$2" = "N" ]; then
+    local proto="N"
+  elif [ "$2" = "F" ]; then
+    local proto="F"
+  elif [ "$2" = "X" ]; then
+    local proto="X"
   else
     err "runNmap: invalid protocol $2"
   fi
