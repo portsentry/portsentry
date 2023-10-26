@@ -244,61 +244,43 @@ int NeverBlock(char *target, char *filename) {
   return (FALSE);
 }
 
-/* This writes out blocked hosts to the blocked file. It adds the hostname */
-/* time stamp, and port connection that was acted on */
-int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, const char *portType) {
+static int WriteToLogFile(const char *filename, const char *target, const char *resolvedHost, const int port, const char *portType) {
   FILE *output;
   char err[ERRNOMAXBUF];
-  int blockedStatus = TRUE, historyStatus = TRUE;
-
   struct tm tm, *tmptr;
-
   time_t current_time;
   current_time = time(0);
   tmptr = localtime_r(&current_time, &tm);
 
-  Debug("WriteBlocked: Opening block file: %s ", blockedFilename);
+  Debug("WriteToLogFile: Opening: %s ", filename);
 
-  if ((output = fopen(blockedFilename, "a")) == NULL) {
-    Error("adminalert: Cannot open blocked file: %s (%s)", blockedFilename, ErrnoString(err, sizeof(err)));
-    blockedStatus = FALSE;
-  } else {
-#ifdef BSD
-    fprintf(output, "%lld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
-            current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-            tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
-#else
-    fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
-            current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-            tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
-#endif
-    fclose(output);
-    blockedStatus = TRUE;
+  if ((output = fopen(filename, "a")) == NULL) {
+    Log("adminalert: Unable to open block log file: %s (%s)", filename, ErrnoString(err, sizeof(err)));
+    return FALSE;
   }
 
-  Debug("WriteBlocked: Opening history file: %s ", historyFilename);
-
-  if ((output = fopen(historyFilename, "a")) == NULL) {
-    Error("adminalert: Cannot open history file: %s (%s)", historyFilename, ErrnoString(err, sizeof(err)));
-    historyStatus = FALSE;
-  } else {
-#ifdef BSD
-    fprintf(output, "%lld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
-            current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-            tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
+#ifdef OpenBSD
+  fprintf(output, "%lld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
+          current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
+          tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
 #else
-    fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
-            current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-            tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
+  fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
+          current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
+          tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
 #endif
-    fclose(output);
-    historyStatus = TRUE;
-  }
 
-  if (historyStatus || blockedStatus == FALSE)
-    return (FALSE);
-  else
-    return (TRUE);
+  fclose(output);
+
+  return TRUE;
+}
+
+int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, const char *portType) {
+  int blockedStatus = TRUE, historyStatus = TRUE;
+
+  blockedStatus = WriteToLogFile(blockedFilename, target, resolvedHost, port, portType);
+  historyStatus = WriteToLogFile(historyFilename, target, resolvedHost, port, portType);
+
+  return (blockedStatus && historyStatus);
 }
 
 int BindSocket(int sockfd, int port, int proto) {
