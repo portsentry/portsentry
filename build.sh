@@ -3,30 +3,27 @@
 ACTION=$1
 
 if [ "$ACTION" = "clean" ]; then
-  rm -rf debug release
-  rm -f portsentry.blocked.*
+  rm -rf debug release && \
+  rm -f portsentry.blocked.* && \
   rm -f portsentry.history
-  exit 0
 elif [ "$ACTION" = "debug" ]; then
   if [ ! -d "debug" ]; then
-    mkdir debug
-    cd debug
-    cmake .. -D CMAKE_BUILD_TYPE=Debug
+    mkdir debug && \
+    cd debug && \
+    cmake .. -D CMAKE_BUILD_TYPE=Debug && \
     cd ..
   fi
-  cd debug
+  cd debug && \
   cmake --build . -v
-  exit 0
 elif [ "$ACTION" = "release" ]; then
   if [ ! -d "release" ]; then
-    mkdir release
-    cd release
-    cmake .. -D CMAKE_BUILD_TYPE=Release
+    mkdir release && \
+    cd release && \
+    cmake .. -D CMAKE_BUILD_TYPE=Release && \
     cd ..
   fi
-  cd release
+  cd release && \
   cmake --build . -v
-  exit 0
 elif [ "$ACTION" = "sast" ]; then
   rm -rf /tmp/portsentry
   rsync -avz ../portsentry /tmp/
@@ -44,7 +41,3 @@ else
   echo "Usage: $0 [debug|release|clean]"
   exit 1
 fi
-
-
-
-#rsync -avz -e ssh . portsentry:./portsentry
