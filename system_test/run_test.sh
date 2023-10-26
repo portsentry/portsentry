@@ -78,7 +78,7 @@ setup() {
 }
 
 run_portsentry() {
-  local switches=$(head -n 1 $PORTSENTRY_TEST)
+  local switches="$(head -n 1 $PORTSENTRY_TEST)"
   debug "switches: $switches"
 
   cd $TEST_DIR
@@ -86,7 +86,7 @@ run_portsentry() {
 }
 
 stop_portsentry() {
-  local pid=$(ps aux|grep "$PORTSENTRY_EXEC -c $PORTSENTRY_CONF $switches"|grep -v grep | awk '{print $2}')
+  local pid="$(ps aux|grep "$PORTSENTRY_EXEC -c $PORTSENTRY_CONF $switches"|grep -v grep | awk '{print $2}')"
   if [ -n "$pid" ]; then
     kill $pid
   else

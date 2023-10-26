@@ -48,7 +48,7 @@ err() {
 }
 
 findInFile() {
-  local str=$1
+  local str="$1"
   local file=$2
   
   if [ -z "$3" ]; then
