@@ -15,13 +15,8 @@
 /*                                                                      */
 /* $Id: portsentry.c,v 1.40 2003/05/23 17:41:25 crowland Exp crowland $ */
 /************************************************************************/
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/udp.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "advanced_sentry.h"
