@@ -25,6 +25,12 @@
 #define CMDLINE_HELP 'h'
 #define CMDLINE_VERSION 'V'
 
+// FIXME: Hack for now since NetBSD doesn't have getopt_long_only
+#define CMDLINE_SHORT_TCP 't'
+#define CMDLINE_SHORT_STEALTH 's'
+#define CMDLINE_SHORT_ADVANCED 'a'
+#define CMDLINE_SHORT_UDP 'u'
+
 static void Usage(void);
 static void Version(void);
 
@@ -51,7 +57,7 @@ void ParseCmdline(int argc, char **argv) {
 
   while (1) {
     int option_index = 0;
-    opt = getopt_long_only(argc, argv, "l:c:DdvhV", long_options, &option_index);
+    opt = getopt_long(argc, argv, "l:c:t:s:a:u:DdvhV", long_options, &option_index);
 
     if (opt >= CMDLINE_TCP && opt <= CMDLINE_AUDP && cmdlineConfig.sentryMode != SENTRY_MODE_NONE) {
       fprintf(stderr, "Error: Only one mode can be specified\n");
@@ -110,6 +116,32 @@ void ParseCmdline(int argc, char **argv) {
       break;
     case CMDLINE_VERSION:
       Version();
+      break;
+    case CMDLINE_SHORT_TCP:
+      cmdlineConfig.sentryMode = SENTRY_MODE_TCP;
+      break;
+    case CMDLINE_SHORT_STEALTH:
+      if (strncmp(optarg, "tcp", 3) == 0) {
+        cmdlineConfig.sentryMode = SENTRY_MODE_STCP;
+      } else if (strncmp(optarg, "udp", 3) == 0) {
+        cmdlineConfig.sentryMode = SENTRY_MODE_SUDP;
+      } else {
+        fprintf(stderr, "Error: Invalid stealth mode specified\n");
+        Exit(EXIT_FAILURE);
+      }
+      break;
+    case CMDLINE_SHORT_ADVANCED:
+      if (strncmp(optarg, "tcp", 3) == 0) {
+        cmdlineConfig.sentryMode = SENTRY_MODE_ATCP;
+      } else if (strncmp(optarg, "udp", 3) == 0) {
+        cmdlineConfig.sentryMode = SENTRY_MODE_AUDP;
+      } else {
+        fprintf(stderr, "Error: Invalid advanced mode specified\n");
+        Exit(EXIT_FAILURE);
+      }
+      break;
+    case CMDLINE_SHORT_UDP:
+      cmdlineConfig.sentryMode = SENTRY_MODE_UDP;
       break;
     default:
       printf("Unknown argument, getopt returned character code 0%o\n", opt);
