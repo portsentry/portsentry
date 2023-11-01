@@ -295,6 +295,7 @@ static void mergeToConfigData(struct ConfigData *fileConfig) {
   configData.logFlags = temp.logFlags;
   memcpy(configData.configFile, temp.configFile, sizeof(configData.configFile));
   configData.daemon = temp.daemon;
+  memcpy(configData.interfaces, temp.interfaces, sizeof(configData.interfaces));
 }
 
 static char *skipSpaceAndTab(char *buffer) {
