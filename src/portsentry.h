@@ -32,5 +32,7 @@
 
 #define ERRNOMAXBUF 1024
 
+#define MAX_INTERFACES 1024
+
 #undef max
 #define max(x, y) ((x) > (y) ? (x) : (y))

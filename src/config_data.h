@@ -1,7 +1,7 @@
 #pragma once
-
 #include <limits.h>
 #include <stdint.h>
+#include <net/if.h>
 
 #include "portsentry.h"
 
@@ -23,6 +23,9 @@ struct ConfigData {
   char killRoute[MAXBUF];
   char killHostsDeny[MAXBUF];
   char killRunCmd[MAXBUF];
+
+  // FIXME: Might be better to allocate this dynamically. Keep static for now
+  char interfaces[MAX_INTERFACES][IF_NAMESIZE];
 
   uint16_t tcpPorts[MAXSOCKS];
   int tcpPortsLength;
@@ -65,3 +68,4 @@ void PostProcessConfig(struct ConfigData *cd);
 void PrintConfigData(const struct ConfigData cd);
 char *GetSentryModeString(const enum SentryMode sentryMode);
 void SetConfigData(const struct ConfigData *fileConfig, const struct ConfigData *cmdlineConfig);
+int AddInterface(struct ConfigData *cd, const char *interface);

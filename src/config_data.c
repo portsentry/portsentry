@@ -33,6 +33,10 @@ void PostProcessConfig(struct ConfigData *cd) {
     }
     SafeStrncpy(cd->configFile, CONFIG_FILE, sizeof(cd->configFile));
   }
+
+  if (strlen(cd->interfaces[0]) == 0) {
+    SafeStrncpy(cd->interfaces[0], "ALL", IF_NAMESIZE);
+  }
 }
 
 void PrintConfigData(const struct ConfigData cd) {
@@ -41,6 +45,12 @@ void PrintConfigData(const struct ConfigData cd) {
   printf("killRoute: %s\n", cd.killRoute);
   printf("killHostsDeny: %s\n", cd.killHostsDeny);
   printf("killRunCmd %s\n", cd.killRunCmd);
+
+  i = 0;
+  while (strlen(cd.interfaces[i]) > 0) {
+    printf("interface: %s\n", cd.interfaces[i]);
+    i++;
+  }
 
   printf("tcpPorts (%d): ", cd.tcpPortsLength);
   for (i = 0; i < cd.tcpPortsLength; i++) {
@@ -119,4 +129,26 @@ char *GetSentryModeString(const enum SentryMode sentryMode) {
   default:
     return "unknown";
   }
+}
+
+int AddInterface(struct ConfigData *cd, const char *interface) {
+  int i;
+
+  if (strlen(interface) > (IF_NAMESIZE - 1)) {
+    fprintf(stderr, "Error: Interface name %s too long\n", interface);
+    Exit(EXIT_FAILURE);
+  }
+
+  for (i = 0; i < MAX_INTERFACES; i++) {
+    if (strlen(cd->interfaces[i]) > 0) {
+      if (strncmp(cd->interfaces[i], interface, strlen(cd->interfaces[i])) == 0) {
+        return TRUE;
+      }
+    } else {
+      SafeStrncpy(cd->interfaces[i], interface, sizeof(cd->interfaces[i]));
+      return TRUE;
+    }
+  }
+
+  return FALSE;
 }
