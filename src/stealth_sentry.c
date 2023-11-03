@@ -91,34 +91,7 @@ int PortSentryStealthMode(void) {
       if (PacketRead(fds[count].fd, packetBuffer, IP_MAXPACKET, &ip, &p) != TRUE)
         continue;
 
-      memset(&client, 0, sizeof(client));
-      client.sin_family = AF_INET;
-#ifdef BSD
-      client.sin_addr.s_addr = ip->ip_src.s_addr;
-      if (ip->ip_p == IPPROTO_TCP) {
-#else
-      client.sin_addr.s_addr = ip->saddr;
-      if (ip->protocol == IPPROTO_TCP) {
-#endif
-        tcp = (struct tcphdr *)p;
-        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(tcp->th_dport), IPPROTO_TCP)) == NULL)
-          continue;
-        client.sin_port = tcp->th_dport;
-#ifdef BSD
-      } else if (ip->ip_p == IPPROTO_UDP) {
-#else
-      } else if (ip->protocol == IPPROTO_UDP) {
-#endif
-        udp = (struct udphdr *)p;
-        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(udp->uh_dport), IPPROTO_UDP)) == NULL)
-          continue;
-        client.sin_port = udp->uh_dport;
-      } else {
-#ifdef BSD
-        Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
-#else
-        Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
-#endif
+      if (SetConvenienceData(connectionData, connectionDataSize, ip, p, &client, &cd, &tcp, &udp) != TRUE) {
         continue;
       }
 
