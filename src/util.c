@@ -27,6 +27,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
 
 #include "config_data.h"
 #include "connection_data.h"
@@ -334,6 +336,77 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
     }
   } else {
     Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
+  }
+
+  return TRUE;
+}
+
+#ifdef BSD
+int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp) {
+#else
+int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct iphdr *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp) {
+#endif
+  memset(client, 0, sizeof(struct sockaddr_in));
+  *tcp = NULL;
+  *udp = NULL;
+  *cd = NULL;
+
+  client->sin_family = AF_INET;
+#ifdef BSD
+  client->sin_addr.s_addr = ip->ip_src.s_addr;
+  if (ip->ip_p == IPPROTO_TCP) {
+#else
+  client->sin_addr.s_addr = ip->saddr;
+  if (ip->protocol == IPPROTO_TCP) {
+#endif
+    *tcp = (struct tcphdr *)p;
+    if (configData.sentryMode == SENTRY_MODE_ATCP) {
+      if (ntohs((*tcp)->th_dport) > configData.tcpAdvancedPort)
+        return FALSE;
+
+      /* In advanced mode, the connection data list contains ports which should be ignored- So,
+       * finding a match means we should not process. */
+      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*tcp)->th_dport), IPPROTO_TCP)) != NULL)
+        return FALSE;
+    } else if (configData.sentryMode == SENTRY_MODE_STCP) {
+      /* Find the port which should trigger the sentry */
+      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*tcp)->th_dport), IPPROTO_TCP)) == NULL)
+        return FALSE;
+    } else {
+      Error("adminalert: Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
+      Exit(EXIT_FAILURE);
+    }
+    client->sin_port = (*tcp)->th_dport;
+#ifdef BSD
+  } else if (ip->ip_p == IPPROTO_UDP) {
+#else
+  } else if (ip->protocol == IPPROTO_UDP) {
+#endif
+    *udp = (struct udphdr *)p;
+    if (configData.sentryMode == SENTRY_MODE_AUDP) {
+      if (ntohs((*udp)->uh_dport) > configData.udpAdvancedPort)
+        return FALSE;
+
+      /* In advanced mode, the connection data list contains ports which should be ignored- So,
+       * finding a match means we should not process. */
+      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*udp)->uh_dport), IPPROTO_UDP)) != NULL)
+        return FALSE;
+    } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
+      /* Find the port which should trigger the sentry */
+      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*udp)->uh_dport), IPPROTO_UDP)) == NULL)
+        return FALSE;
+    } else {
+      Error("adminalert: Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
+      Exit(EXIT_FAILURE);
+    }
+    client->sin_port = (*udp)->uh_dport;
+  } else {
+#ifdef BSD
+    Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
+#else
+    Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
+#endif
+    return FALSE;
   }
 
   return TRUE;

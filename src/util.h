@@ -17,10 +17,12 @@
 /* $Id: portsentry_util.h,v 1.10 2003/05/23 17:42:07 crowland Exp crowland $ */
 /************************************************************************/
 
-#include "connection_data.h"
 #include <stdint.h>
 #include <sys/types.h>
+#include <unistd.h>
+#include <netinet/udp.h>
 
+#include "connection_data.h"
 /* IP address length plus null */
 #define IPMAXBUF 16
 
@@ -36,6 +38,8 @@ char *ReportPacketType(struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
 #ifdef BSD
 int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket);
+int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp);
 #else
 int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct iphdr *ip, struct tcphdr *tcp, int *tcpAcceptSocket);
+int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct iphdr *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp);
 #endif
