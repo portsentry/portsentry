@@ -35,7 +35,7 @@ void PostProcessConfig(struct ConfigData *cd) {
   }
 
   if (strlen(cd->interfaces[0]) == 0) {
-    SafeStrncpy(cd->interfaces[0], "ALL", IF_NAMESIZE);
+    SafeStrncpy(cd->interfaces[0], "ALL_NLO", IF_NAMESIZE);
   }
 }
 
