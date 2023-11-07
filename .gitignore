@@ -2,3 +2,4 @@ portsentry
 debug
 release
 portsentry.blocked.*
+Testing/**
