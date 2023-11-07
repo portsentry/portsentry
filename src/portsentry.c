@@ -44,31 +44,31 @@ int main(int argc, char *argv[]) {
 
   if ((geteuid()) && (getuid()) != 0) {
     printf("You need to be root to run this.\n");
-    Exit(ERROR);
+    Exit(EXIT_FAILURE);
   }
 
   if (configData.daemon == TRUE) {
     if (DaemonSeed() == ERROR) {
       Error("adminalert: could not go into daemon mode. Shutting down.");
       printf("ERROR: could not go into daemon mode. Shutting down.\n");
-      Exit(ERROR);
+      Exit(EXIT_FAILURE);
     }
   }
 
   if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
     if (PortSentryConnectMode() == ERROR) {
       Error("adminalert: could not go into PortSentry mode. Shutting down.");
-      Exit(ERROR);
+      Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP) {
     if (PortSentryStealthMode() == ERROR) {
       Error("adminalert: could not go into PortSentry mode. Shutting down.");
-      Exit(ERROR);
+      Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_ATCP || configData.sentryMode == SENTRY_MODE_AUDP) {
     if (PortSentryAdvancedStealthMode() == ERROR) {
       Error("adminalert: could not go into PortSentry mode. Shutting down.");
-      Exit(ERROR);
+      Exit(EXIT_FAILURE);
     }
   }
 
