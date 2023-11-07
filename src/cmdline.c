@@ -193,7 +193,7 @@ static void Usage(void) {
   printf("--udp, -udp\tSet UDP mode\n");
   printf("--sudp, -sudp\tSet Stealth UDP mode\n");
   printf("--audp, -audp\tSet Advanced UDP mode\n");
-  printf("--interface, -i <interface> - Set interface to listen on. Use ALL for all interfaces, ALL_NLO for all interfaces except loopback (default: ALL)\n");
+  printf("--interface, -i <interface> - Set interface to listen on. Use ALL for all interfaces, ALL_NLO for all interfaces except loopback (default: ALL_NLO)\n");
   printf("--logoutput, -l [stdout|syslog] - Set Log output (default to stdout)\n");
   printf("--configfile, -c <path> - Set config file path\n");
   printf("--daemon, -D\tRun as a daemon\n");
