@@ -21,6 +21,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <netinet/udp.h>
+#include <netinet/tcp.h>
+#include <netinet/ip.h>
 
 #include "connection_data.h"
 /* IP address length plus null */
