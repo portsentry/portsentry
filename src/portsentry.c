@@ -27,7 +27,7 @@
 #include "io.h"
 #include "portsentry.h"
 #include "state_machine.h"
-#include "stealth_sentry.h"
+#include "stealth_sentry_pcap.h"
 #include "util.h"
 
 int main(int argc, char *argv[]) {
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
       Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP) {
-    if (PortSentryStealthMode() == ERROR) {
+    if (PortSentryStealthModePcap() == ERROR) {
       Error("adminalert: could not go into PortSentry mode. Shutting down.");
       Exit(EXIT_FAILURE);
     }
