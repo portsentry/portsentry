@@ -37,6 +37,28 @@ elif [ "$ACTION" = "sast" ]; then
   flawfinder src
 
   exit 0
+elif [ "$ACTION" = "cdt" ]; then
+  $0 clean && \
+  $0 debug && \
+  $0 test-debug
+
+  if [ "$?" -ne 0 ]; then
+    echo "Build failed"
+    cat debug/Testing/Temporary/LastTest.log
+    exit 1
+  fi
+elif [ "$ACTION" = "test-debug" ]; then
+  cd debug && \
+  ctest
+elif [ "$ACTION" = "all" ]; then
+  $0 clean && \
+  $0 debug && \
+  $0 test-debug && \
+  $0 release && \
+  $0 test-release
+elif [ "$ACTION" = "test-release" ]; then
+  cd release && \
+  ctest
 else
   echo "Usage: $0 [debug|release|clean]"
   exit 1
