@@ -228,7 +228,7 @@ void FreeListenerModule(struct ListenerModule *lm) {
   free(lm);
 }
 
-void Init(struct ListenerModule *lm) {
+void InitListenerModule(struct ListenerModule *lm) {
   PrepDevices(lm);
 }
 

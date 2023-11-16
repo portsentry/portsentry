@@ -8,7 +8,7 @@ struct ListenerModule {
 
 struct ListenerModule *AllocListenerModule(void);
 void FreeListenerModule(struct ListenerModule *lm);
-void Init(struct ListenerModule *lm);
+void InitListenerModule(struct ListenerModule *lm);
 uint8_t AddDevice(struct ListenerModule *lm, struct Device *add);
 uint8_t RemoveDevice(struct ListenerModule *lm, struct Device *remove);
 
