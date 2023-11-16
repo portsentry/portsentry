@@ -67,17 +67,17 @@ static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name) {
   assert(lm != NULL);
 
   if (FindDeviceByName(lm, name) == TRUE) {
-    Error("Device %s appears twice\n", name);
+    Error("Device %s appears twice", name);
     return FALSE;
   }
 
   if ((dev = CreateDevice(name)) == NULL) {
-    Error("Unable to allocate memory for device %s\n", name);
+    Error("Unable to allocate memory for device %s", name);
     return FALSE;
   }
 
   if (AddDevice(lm, dev) == FALSE) {
-    Error("Unable to add device %s\n", name);
+    Error("Unable to add device %s", name);
     FreeDevice(dev);
     return FALSE;
   }
@@ -90,7 +90,7 @@ static void AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo) {
   char errbuf[PCAP_ERRBUF_SIZE];
 
   if (pcap_findalldevs(&alldevs, errbuf) == PCAP_ERROR) {
-    Error("Unable to retrieve network interfaces: %s\n", errbuf);
+    Error("Unable to retrieve network interfaces: %s", errbuf);
     Exit(EXIT_FAILURE);
   }
 
@@ -100,8 +100,7 @@ static void AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo) {
     }
 
     if (CreateAndAddDevice(lm, d->name) == FALSE) {
-      pcap_freealldevs(alldevs);
-      Exit(EXIT_FAILURE);
+      Error("Unable to add device %s, skipping", d->name);
     }
   }
 
@@ -131,7 +130,7 @@ static void PrepDevices(struct ListenerModule *lm) {
   }
 
   if (lm->root == NULL) {
-    Error("No network devices could be added\n");
+    Error("No network devices could be added");
     Exit(EXIT_FAILURE);
   }
 
@@ -140,32 +139,32 @@ static void PrepDevices(struct ListenerModule *lm) {
     next = current->next;
 
     if (pcap_lookupnet(current->name, &current->net, &current->mask, errbuf) < 0) {
-      Error("Unable to retrieve network/netmask for device %s, skipping\n", current->name);
+      Error("Unable to retrieve network/netmask for device %s, skipping", current->name);
       RemoveDevice(lm, current);
     }
 
     if ((current->handle = PcapOpenLiveImmediate(current->name, BUFSIZ, 0, BUFFER_TIMEOUT, errbuf)) == NULL) {
-      Error("Couldn't open device %s: %s\n", current->name, errbuf);
+      Error("Couldn't open device %s: %s", current->name, errbuf);
       RemoveDevice(lm, current);
     }
 
     if (pcap_setnonblock(current->handle, 1, errbuf) < 0) {
-      Error("Unable to set pcap_setnonblock on %s: %s\n", current->name, errbuf);
+      Error("Unable to set pcap_setnonblock on %s: %s", current->name, errbuf);
       RemoveDevice(lm, current);
     }
 
     if (pcap_setdirection(current->handle, PCAP_D_IN) < 0) {
-      Error("Couldn't set direction on %s: %s\n", current->name, pcap_geterr(current->handle));
+      Error("Couldn't set direction on %s: %s", current->name, pcap_geterr(current->handle));
       RemoveDevice(lm, current);
     }
 
     if (pcap_datalink(current->handle) != DLT_EN10MB) {
-      Error("Device %s doesn't provide Ethernet headers - not supported\n", current->name);
+      Error("Device %s doesn't provide Ethernet headers - not supported", current->name);
       RemoveDevice(lm, current);
     }
 
     if ((current->fd = pcap_get_selectable_fd(current->handle)) < 0) {
-      Error("Couldn't get file descriptor on device %s: %s\n", current->name, pcap_geterr(current->handle));
+      Error("Couldn't get file descriptor on device %s: %s", current->name, pcap_geterr(current->handle));
       RemoveDevice(lm, current);
     }
 
@@ -175,7 +174,7 @@ static void PrepDevices(struct ListenerModule *lm) {
   }
 
   if (lm->root == NULL) {
-    Error("No network devices could be initiated, stopping\n");
+    Error("No network devices could be initiated, stopping");
     Exit(EXIT_FAILURE);
   }
 }
@@ -203,7 +202,7 @@ struct ListenerModule *AllocListenerModule(void) {
 
   lm = malloc(sizeof(struct ListenerModule));
   if (lm == NULL) {
-    Error("Unable to allocate memory for listener module\n");
+    Error("Unable to allocate memory for listener module");
     return NULL;
   }
 
@@ -240,7 +239,7 @@ uint8_t AddDevice(struct ListenerModule *lm, struct Device *add) {
   }
 
   if (FindDeviceByName(lm, add->name) == TRUE) {
-    Verbose("Device %s already specified\n", add->name);
+    Verbose("Device %s already specified", add->name);
     return FALSE;
   }
 
@@ -290,6 +289,10 @@ uint8_t FindDeviceByName(struct ListenerModule *lm, const char *name) {
   struct Device *current;
 
   if (lm == NULL) {
+    return FALSE;
+  }
+
+  if (strlen(name) > IF_NAMESIZE) {
     return FALSE;
   }
 

@@ -12,13 +12,13 @@ struct Device *CreateDevice(const char *name) {
   struct Device *new;
 
   if (strlen(name) > IF_NAMESIZE) {
-    Error("Device name %s is too long\n", name);
+    Error("Device name %s is too long", name);
     return NULL;
   }
 
   new = malloc(sizeof(struct Device));
   if (new == NULL) {
-    Error("Unable to allocate memory for device\n");
+    Error("Unable to allocate memory for device");
     return NULL;
   }
 
