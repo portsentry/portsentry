@@ -7,6 +7,7 @@ struct Device {
   char name[IF_NAMESIZE];
   bpf_u_int32 mask;
   bpf_u_int32 net;
+  int fd;
   struct Device *next;
 };
 
