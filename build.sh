@@ -50,6 +50,12 @@ elif [ "$ACTION" = "cdt" ]; then
 elif [ "$ACTION" = "test-debug" ]; then
   cd debug && \
   ctest
+elif [ "$ACTION" = "rebuild" ]; then
+  $0 clean && \
+  $0 debug
+elif [ "$ACTION" = "rebuild-release" ]; then
+  $0 clean && \
+  $0 release
 elif [ "$ACTION" = "all" ]; then
   $0 clean && \
   $0 debug && \
