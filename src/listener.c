@@ -12,7 +12,7 @@
 
 #define BUFFER_TIMEOUT 2000
 
-pcap_t *pcap_open_live_immediate(const char *source, int snaplen, int promisc, int to_ms, char *errbuf);
+pcap_t *PcapOpenLiveImmediate(const char *source, int snaplen, int promisc, int to_ms, char *errbuf);
 static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name);
 static void AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo);
 static void PrepDevices(struct ListenerModule *lm);
@@ -28,7 +28,7 @@ static void PrepDevices(struct ListenerModule *lm);
  * for other Unixes as well, so it's no harm in doing it this way. Using immediate mode
  * with a non-blocking fd makes pcap a bit snappier anyway so it's a win-win.
  * */
-pcap_t *pcap_open_live2(const char *source, int snaplen, int promisc, int to_ms, char *errbuf) {
+pcap_t *PcapOpenLiveImmediate(const char *source, int snaplen, int promisc, int to_ms, char *errbuf) {
   pcap_t *p;
   int status;
 
@@ -144,7 +144,7 @@ static void PrepDevices(struct ListenerModule *lm) {
       RemoveDevice(lm, current);
     }
 
-    if ((current->handle = pcap_open_live_immediate(current->name, BUFSIZ, 0, BUFFER_TIMEOUT, errbuf)) == NULL) {
+    if ((current->handle = PcapOpenLiveImmediate(current->name, BUFSIZ, 0, BUFFER_TIMEOUT, errbuf)) == NULL) {
       Error("Couldn't open device %s: %s\n", current->name, errbuf);
       RemoveDevice(lm, current);
     }
