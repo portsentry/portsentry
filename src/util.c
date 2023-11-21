@@ -47,8 +47,6 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
     return (NULL);
   }
 
-  /* Null terminate string. Why the hell strncpy doesn't do this */
-  /* for you is mystery to me. God I hate C. */
   memset(dest, '\0', size);
   strncpy(dest, src, size - 1);
 
