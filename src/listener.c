@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <poll.h>
 
 #include "portsentry.h"
 #include "listener.h"
@@ -14,8 +15,8 @@
 
 pcap_t *PcapOpenLiveImmediate(const char *source, int snaplen, int promisc, int to_ms, char *errbuf);
 static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name);
-static void AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo);
-static void PrepDevices(struct ListenerModule *lm);
+static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo);
+static int PrepDevices(struct ListenerModule *lm);
 // static int GetNoDevices(struct ListenerModule *lm);
 
 /* Heavily inspired by src/lib/libpcap/pcap-bpf.c from OpenBSD's pcap implementation.
@@ -85,13 +86,13 @@ static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name) {
   return TRUE;
 }
 
-static void AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo) {
+static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo) {
   pcap_if_t *alldevs, *d;
   char errbuf[PCAP_ERRBUF_SIZE];
 
   if (pcap_findalldevs(&alldevs, errbuf) == PCAP_ERROR) {
     Error("Unable to retrieve network interfaces: %s", errbuf);
-    Exit(EXIT_FAILURE);
+    return FALSE;
   }
 
   for (d = alldevs; d != NULL; d = d->next) {
@@ -99,31 +100,35 @@ static void AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo) {
       continue;
     }
 
+    Verbose("Adding device %s", d->name);
     if (CreateAndAddDevice(lm, d->name) == FALSE) {
       Error("Unable to add device %s, skipping", d->name);
     }
   }
 
   pcap_freealldevs(alldevs);
+  return TRUE;
 }
 
-static void PrepDevices(struct ListenerModule *lm) {
+static int PrepDevices(struct ListenerModule *lm) {
   int i;
-  char errbuf[PCAP_ERRBUF_SIZE];
-  struct Device *current, *next;
 
   assert(lm != NULL);
   assert(strlen(configData.interfaces[0]) > 0);
 
-  if (strncmp(configData.interfaces[0], "ALL_NLO", IF_NAMESIZE) == 0) {
-    AutoPrepDevices(lm, FALSE);
-  } else if (strncmp(configData.interfaces[0], "ALL", IF_NAMESIZE) == 0) {
-    AutoPrepDevices(lm, TRUE);
+  if (strncmp(configData.interfaces[0], "ALL_NLO", (IF_NAMESIZE - 1)) == 0) {
+    if (AutoPrepDevices(lm, FALSE) == FALSE) {
+      return FALSE;
+    }
+  } else if (strncmp(configData.interfaces[0], "ALL", (IF_NAMESIZE - 1)) == 0) {
+    if (AutoPrepDevices(lm, TRUE) == FALSE) {
+      return FALSE;
+    }
   } else {
     i = 0;
     while (strlen(configData.interfaces[i]) > 0) {
       if (CreateAndAddDevice(lm, configData.interfaces[i]) == FALSE) {
-        Exit(EXIT_FAILURE);
+        Error("Unable to add device %s, skipping", configData.interfaces[i]);
       }
       i++;
     }
@@ -131,56 +136,13 @@ static void PrepDevices(struct ListenerModule *lm) {
 
   if (lm->root == NULL) {
     Error("No network devices could be added");
-    Exit(EXIT_FAILURE);
+    return FALSE;
   }
 
-  current = lm->root;
-  while (current != NULL) {
-    next = current->next;
-
-    if (pcap_lookupnet(current->name, &current->net, &current->mask, errbuf) < 0) {
-      Error("Unable to retrieve network/netmask for device %s, skipping", current->name);
-      RemoveDevice(lm, current);
-    }
-
-    if ((current->handle = PcapOpenLiveImmediate(current->name, BUFSIZ, 0, BUFFER_TIMEOUT, errbuf)) == NULL) {
-      Error("Couldn't open device %s: %s", current->name, errbuf);
-      RemoveDevice(lm, current);
-    }
-
-    if (pcap_setnonblock(current->handle, 1, errbuf) < 0) {
-      Error("Unable to set pcap_setnonblock on %s: %s", current->name, errbuf);
-      RemoveDevice(lm, current);
-    }
-
-    if (pcap_setdirection(current->handle, PCAP_D_IN) < 0) {
-      Error("Couldn't set direction on %s: %s", current->name, pcap_geterr(current->handle));
-      RemoveDevice(lm, current);
-    }
-
-    if (pcap_datalink(current->handle) != DLT_EN10MB) {
-      Error("Device %s doesn't provide Ethernet headers - not supported", current->name);
-      RemoveDevice(lm, current);
-    }
-
-    if ((current->fd = pcap_get_selectable_fd(current->handle)) < 0) {
-      Error("Couldn't get file descriptor on device %s: %s", current->name, pcap_geterr(current->handle));
-      RemoveDevice(lm, current);
-    }
-
-    // TODO: Setup filter on device
-
-    current = next;
-  }
-
-  if (lm->root == NULL) {
-    Error("No network devices could be initiated, stopping");
-    Exit(EXIT_FAILURE);
-  }
+  return TRUE;
 }
 
-/*
-static int GetNoDevices(struct ListenerModule *lm) {
+int GetNoDevices(const struct ListenerModule *lm) {
   int count;
   struct Device *current;
 
@@ -195,7 +157,6 @@ static int GetNoDevices(struct ListenerModule *lm) {
 
   return count;
 }
-*/
 
 struct ListenerModule *AllocListenerModule(void) {
   struct ListenerModule *lm;
@@ -227,8 +188,72 @@ void FreeListenerModule(struct ListenerModule *lm) {
   free(lm);
 }
 
-void InitListenerModule(struct ListenerModule *lm) {
-  PrepDevices(lm);
+int InitListenerModule(struct ListenerModule *lm) {
+  char errbuf[PCAP_ERRBUF_SIZE];
+  struct Device *current, *next;
+
+  if (PrepDevices(lm) == FALSE) {
+    return FALSE;
+  }
+
+  current = lm->root;
+  while (current != NULL) {
+    next = current->next;
+
+    if (pcap_lookupnet(current->name, &current->net, &current->mask, errbuf) < 0) {
+      Error("Unable to retrieve network/netmask for device %s, skipping", current->name);
+      RemoveDevice(lm, current);
+      goto next;
+    }
+
+    if ((current->handle = PcapOpenLiveImmediate(current->name, BUFSIZ, 0, BUFFER_TIMEOUT, errbuf)) == NULL) {
+      Error("Couldn't open device %s: %s", current->name, errbuf);
+      RemoveDevice(lm, current);
+      goto next;
+    }
+
+    if (pcap_setnonblock(current->handle, 1, errbuf) < 0) {
+      Error("Unable to set pcap_setnonblock on %s: %s", current->name, errbuf);
+      RemoveDevice(lm, current);
+      goto next;
+    }
+
+    if (pcap_setdirection(current->handle, PCAP_D_IN) < 0) {
+      Error("Couldn't set direction on %s: %s", current->name, pcap_geterr(current->handle));
+      RemoveDevice(lm, current);
+      goto next;
+    }
+
+    if (pcap_datalink(current->handle) != DLT_EN10MB) {
+      Error("Device %s doesn't provide Ethernet headers, ignoring", current->name);
+      RemoveDevice(lm, current);
+      goto next;
+    }
+
+    if ((current->fd = pcap_get_selectable_fd(current->handle)) < 0) {
+      Error("Couldn't get file descriptor on device %s: %s", current->name, pcap_geterr(current->handle));
+      RemoveDevice(lm, current);
+      goto next;
+    }
+
+    // TODO: Setup filter on device
+
+  next:
+    current = next;
+  }
+
+  if (lm->root == NULL) {
+    Error("No network devices could be initiated, stopping");
+    return FALSE;
+  }
+
+  current = lm->root;
+  while (current != NULL) {
+    Verbose("Device %s ready", current->name);
+    current = current->next;
+  }
+
+  return TRUE;
 }
 
 uint8_t AddDevice(struct ListenerModule *lm, struct Device *add) {
@@ -292,13 +317,13 @@ uint8_t FindDeviceByName(struct ListenerModule *lm, const char *name) {
     return FALSE;
   }
 
-  if (strlen(name) > IF_NAMESIZE) {
+  if (strlen(name) > (IF_NAMESIZE - 1)) {
     return FALSE;
   }
 
   current = lm->root;
   while (current != NULL) {
-    if (strncmp(current->name, name, IF_NAMESIZE) == 0) {
+    if (strncmp(current->name, name, (IF_NAMESIZE - 1)) == 0) {
       return TRUE;
     }
 
@@ -306,4 +331,96 @@ uint8_t FindDeviceByName(struct ListenerModule *lm, const char *name) {
   }
 
   return FALSE;
+}
+
+struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
+  struct pollfd *fds = NULL;
+  struct Device *current = NULL;
+  int i = 0;
+
+  if ((fds = malloc(sizeof(struct pollfd) * GetNoDevices(lm))) == NULL) {
+    Error("Unable to allocate memory for pollfd");
+    return NULL;
+  }
+
+  current = lm->root;
+  while (current != NULL) {
+    fds[i].fd = current->fd;
+    fds[i].events = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
+    fds[i].revents = 0;
+    current = current->next;
+    i++;
+  }
+
+  *nfds = i;
+
+  return fds;
+}
+
+struct Device *GetDeviceByFd(const struct ListenerModule *lm, const int fd) {
+  for (struct Device *current = lm->root; current != NULL; current = current->next) {
+    if (current->fd == fd) {
+      return current;
+    }
+  }
+
+  return NULL;
+}
+
+#if 0
+void printPacket(const u_char *packet, const struct pcap_pkthdr *header) {
+  /*
+    struct iphdr *iphdr;
+    struct in_addr saddr, daddr;
+    struct ether_header *eptr;
+    struct tcphdr *tcphdr;
+    struct udphdr *udphdr;
+    int iplen;
+    char csaddr[16], cdaddr[16];
+  */
+  fprintf(stderr, "Jacked a packet %p with length of %d [%d]\n", (void *)packet, header->caplen, header->len);
+  /*
+  eptr = (struct ether_header *)packet;
+  iphdr = (struct iphdr *)(packet + sizeof(struct ether_header));
+  printf("Source Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+         eptr->ether_shost[0], eptr->ether_shost[1], eptr->ether_shost[2],
+         eptr->ether_shost[3], eptr->ether_shost[4], eptr->ether_shost[5]);
+  printf("Destination Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+         eptr->ether_dhost[0], eptr->ether_dhost[1], eptr->ether_dhost[2],
+         eptr->ether_dhost[3], eptr->ether_dhost[4], eptr->ether_dhost[5]);
+  printf("Ethernet type hex:%x dec:%d\n", ntohs(eptr->ether_type),
+         ntohs(eptr->ether_type));
+
+  saddr.s_addr = iphdr->saddr;
+  daddr.s_addr = iphdr->daddr;
+  snprintf(csaddr, sizeof(csaddr), "%s", inet_ntoa(saddr));
+  snprintf(cdaddr, sizeof(cdaddr), "%s", inet_ntoa(daddr));
+  printf("ihl: %d proto: %s ver: %d saddr: %s daddr: %s\n", iphdr->ihl,
+         iphdr->protocol == IPPROTO_TCP   ? "tcp"
+         : iphdr->protocol == IPPROTO_UDP ? "udp"
+                                          : "other",
+         iphdr->version, csaddr, cdaddr);
+
+  iplen = iphdr->ihl * 4;
+  printf("iplen: %d\n", iplen);
+
+  if (iphdr->protocol == IPPROTO_TCP) {
+    tcphdr = (struct tcphdr *)(packet + sizeof(struct ether_header) +
+                               iplen);
+    printf("sport: %d dport: %d\n", ntohs(tcphdr->th_sport),
+           ntohs(tcphdr->th_dport));
+  } else if (iphdr->protocol == IPPROTO_UDP) {
+    udphdr = (struct udphdr *)(packet + sizeof(struct ether_header) +
+                               iplen);
+    printf("sport: %d dport: %d\n", ntohs(udphdr->uh_sport),
+           ntohs(udphdr->uh_dport));
+  }
+*/
+  printf("\n");
+}
+#endif
+
+void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+  (void)args;
+  fprintf(stderr, "Jacked a packet %p with length of %d [%d]\n", (void *)packet, header->caplen, header->len);
 }
