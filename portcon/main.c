@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
     }
 
     result = read(sock, buf, BUF_SIZE);
-  } else if (protocol == IPPROTO_UDP) {
+  } else {
     sendto(sock, "Hello", 5, 0, (struct sockaddr *)&addr, sizeof(addr));
     if ((result = recvfrom(sock, buf, BUF_SIZE, 0, (struct sockaddr *)&addr, &addr_len)) == -1) {
       perror("recvfrom");
