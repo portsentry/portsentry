@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <netinet/in.h>
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
