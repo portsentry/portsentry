@@ -11,7 +11,7 @@
 struct Device *CreateDevice(const char *name) {
   struct Device *new;
 
-  if (strlen(name) > IF_NAMESIZE) {
+  if (strlen(name) > (IF_NAMESIZE - 1)) {
     Error("Device name %s is too long", name);
     return NULL;
   }
