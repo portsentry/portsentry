@@ -379,6 +379,8 @@ void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *
 static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet) {
   int iplen;
   char saddr[16], daddr[16];
+  struct tcphdr *tcphdr;
+  struct udphdr *udphdr;
 #ifdef BSD
   struct ip *iphdr;
   iphdr = (struct ip *)(packet + sizeof(struct ether_header));
@@ -409,57 +411,24 @@ static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *heade
          iphdr->version, saddr, daddr);
 #endif
 
-  printf("\n");
-}
-#if 0
-void printPacket(const u_char *packet, const struct pcap_pkthdr *header) {
-  /*
-    struct iphdr *iphdr;
-    struct in_addr saddr, daddr;
-    struct ether_header *eptr;
-    struct tcphdr *tcphdr;
-    struct udphdr *udphdr;
-    int iplen;
-    char csaddr[16], cdaddr[16];
-  */
-  fprintf(stderr, "Jacked a packet %p with length of %d [%d]\n", (void *)packet, header->caplen, header->len);
-  /*
-  eptr = (struct ether_header *)packet;
-  iphdr = (struct iphdr *)(packet + sizeof(struct ether_header));
-  printf("Source Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
-         eptr->ether_shost[0], eptr->ether_shost[1], eptr->ether_shost[2],
-         eptr->ether_shost[3], eptr->ether_shost[4], eptr->ether_shost[5]);
-  printf("Destination Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
-         eptr->ether_dhost[0], eptr->ether_dhost[1], eptr->ether_dhost[2],
-         eptr->ether_dhost[3], eptr->ether_dhost[4], eptr->ether_dhost[5]);
-  printf("Ethernet type hex:%x dec:%d\n", ntohs(eptr->ether_type),
-         ntohs(eptr->ether_type));
-
-  saddr.s_addr = iphdr->saddr;
-  daddr.s_addr = iphdr->daddr;
-  snprintf(csaddr, sizeof(csaddr), "%s", inet_ntoa(saddr));
-  snprintf(cdaddr, sizeof(cdaddr), "%s", inet_ntoa(daddr));
-  printf("ihl: %d proto: %s ver: %d saddr: %s daddr: %s\n", iphdr->ihl,
-         iphdr->protocol == IPPROTO_TCP   ? "tcp"
-         : iphdr->protocol == IPPROTO_UDP ? "udp"
-                                          : "other",
-         iphdr->version, csaddr, cdaddr);
-
-  iplen = iphdr->ihl * 4;
-  printf("iplen: %d\n", iplen);
-
+#ifdef BSD
+  if (iphdr->ip_p == IPPROTO_TCP) {
+#else
   if (iphdr->protocol == IPPROTO_TCP) {
+#endif
     tcphdr = (struct tcphdr *)(packet + sizeof(struct ether_header) +
                                iplen);
     printf("sport: %d dport: %d\n", ntohs(tcphdr->th_sport),
            ntohs(tcphdr->th_dport));
+#ifdef BSD
+  } else if (iphdr->ip_p == IPPROTO_UDP) {
+#else
   } else if (iphdr->protocol == IPPROTO_UDP) {
+#endif
     udphdr = (struct udphdr *)(packet + sizeof(struct ether_header) +
                                iplen);
     printf("sport: %d dport: %d\n", ntohs(udphdr->uh_sport),
            ntohs(udphdr->uh_dport));
   }
-*/
   printf("\n");
 }
-#endif
