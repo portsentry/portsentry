@@ -52,8 +52,15 @@ int PortSentryStealthModePcap(void) {
           goto exit;
         }
 
-        // TODO: Yikes... We might need to call pcap_dispatch() multiple times until it signals that it's done(?)
-        ret = pcap_dispatch(current->handle, -1, HandlePacket, (u_char *)current->name);
+        do {
+          ret = pcap_dispatch(current->handle, -1, HandlePacket, (u_char *)current->name);
+
+          if (ret == PCAP_ERROR) {
+            Error("pcap_dispatch() failed %s, ignoring", pcap_geterr(current->handle));
+          } else if (ret == PCAP_ERROR_BREAK) {
+            Error("Got PCAP_ERROR_BREAK, ignoring");
+          }
+        } while (ret > 0);
       }
     }
   }
