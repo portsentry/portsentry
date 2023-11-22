@@ -379,6 +379,7 @@ void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *
 
 static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet) {
   int iplen;
+  uint8_t protocol, ipVersion, hl;
   char saddr[16], daddr[16];
   struct tcphdr *tcphdr;
   struct udphdr *udphdr;
@@ -388,48 +389,33 @@ static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *heade
   ntohstr(saddr, sizeof(saddr), iphdr->ip_src.s_addr);
   ntohstr(daddr, sizeof(daddr), iphdr->ip_dst.s_addr);
   iplen = iphdr->ip_hl * 4;
+  protocol = iphdr->ip_p;
+  ipVersion = iphdr->ip_v;
+  hl = iphdr->ip_hl;
 #else
   struct iphdr *iphdr;
   iphdr = (struct iphdr *)(packet + sizeof(struct ether_header));
   ntohstr(saddr, sizeof(saddr), iphdr->saddr);
   ntohstr(daddr, sizeof(daddr), iphdr->daddr);
   iplen = iphdr->ihl * 4;
+  protocol = iphdr->protocol;
+  ipVersion = iphdr->version;
+  hl = iphdr->ihl;
 #endif
 
   printf("%s: %d [%d] ", interface, header->caplen, header->len);
+  printf("ihl: %d IP len: %d proto: %s ver: %d saddr: %s daddr: %s ", hl, iplen,
+         protocol == IPPROTO_TCP   ? "tcp"
+         : protocol == IPPROTO_UDP ? "udp"
+                                   : "other",
+         ipVersion, saddr, daddr);
 
-#ifdef BSD
-  printf("ihl: %d IP len: %d proto: %s ver: %d saddr: %s daddr: %s ", iphdr->ip_hl, iplen,
-         iphdr->ip_p == IPPROTO_TCP   ? "tcp"
-         : iphdr->ip_p == IPPROTO_UDP ? "udp"
-                                      : "other",
-         iphdr->ip_v, saddr, daddr);
-#else
-  printf("ihl: %d IP len: %d proto: %s ver: %d saddr: %s daddr: %s ", iphdr->ihl, iplen,
-         iphdr->protocol == IPPROTO_TCP   ? "tcp"
-         : iphdr->protocol == IPPROTO_UDP ? "udp"
-                                          : "other",
-         iphdr->version, saddr, daddr);
-#endif
-
-#ifdef BSD
-  if (iphdr->ip_p == IPPROTO_TCP) {
-#else
-  if (iphdr->protocol == IPPROTO_TCP) {
-#endif
-    tcphdr = (struct tcphdr *)(packet + sizeof(struct ether_header) +
-                               iplen);
-    printf("sport: %d dport: %d\n", ntohs(tcphdr->th_sport),
-           ntohs(tcphdr->th_dport));
-#ifdef BSD
-  } else if (iphdr->ip_p == IPPROTO_UDP) {
-#else
-  } else if (iphdr->protocol == IPPROTO_UDP) {
-#endif
-    udphdr = (struct udphdr *)(packet + sizeof(struct ether_header) +
-                               iplen);
-    printf("sport: %d dport: %d\n", ntohs(udphdr->uh_sport),
-           ntohs(udphdr->uh_dport));
+  if (protocol == IPPROTO_TCP) {
+    tcphdr = (struct tcphdr *)(packet + sizeof(struct ether_header) + iplen);
+    printf("sport: %d dport: %d", ntohs(tcphdr->th_sport), ntohs(tcphdr->th_dport));
+  } else if (protocol == IPPROTO_UDP) {
+    udphdr = (struct udphdr *)(packet + sizeof(struct ether_header) + iplen);
+    printf("sport: %d dport: %d", ntohs(udphdr->uh_sport), ntohs(udphdr->uh_dport));
   }
   printf("\n");
 }
