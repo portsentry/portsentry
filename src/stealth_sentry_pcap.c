@@ -8,7 +8,7 @@
 #include "io.h"
 #include "util.h"
 
-#define POLL_TIMEOUT -1
+#define POLL_TIMEOUT 500
 
 int PortSentryStealthModePcap(void) {
   int status = TRUE, ret, nfds = 0, i;
@@ -51,8 +51,9 @@ int PortSentryStealthModePcap(void) {
           status = FALSE;
           goto exit;
         }
-        Verbose("Packet received on %s", current->name);
-        ret = pcap_dispatch(current->handle, -1, HandlePacket, NULL);
+
+        // TODO: Yikes... We might need to call pcap_dispatch() multiple times until it signals that it's done(?)
+        ret = pcap_dispatch(current->handle, -1, HandlePacket, (u_char *)current->name);
       }
     }
   }
