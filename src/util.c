@@ -409,3 +409,15 @@ int SetConvenienceData(struct ConnectionData *connectionData, const int connecti
 
   return TRUE;
 }
+
+int ntohstr(char *buf, const int bufSize, const uint32_t addr) {
+  struct in_addr saddr;
+
+  if (bufSize < 16)
+    return FALSE;
+
+  saddr.s_addr = addr;
+  snprintf(buf, bufSize, "%s", inet_ntoa(saddr));
+
+  return TRUE;
+}
