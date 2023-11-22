@@ -3,6 +3,11 @@
 #include <string.h>
 #include <assert.h>
 #include <poll.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <net/if_arp.h>
+#include <netinet/if_ether.h>
+#include <netinet/ip.h>
 
 #include "portsentry.h"
 #include "listener.h"
@@ -17,7 +22,7 @@ pcap_t *PcapOpenLiveImmediate(const char *source, int snaplen, int promisc, int 
 static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name);
 static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo);
 static int PrepDevices(struct ListenerModule *lm);
-// static int GetNoDevices(struct ListenerModule *lm);
+static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet);
 
 /* Heavily inspired by src/lib/libpcap/pcap-bpf.c from OpenBSD's pcap implementation.
  * We must use pcap_create() and pcap_activate() instead of pcap_open_live() because
@@ -367,6 +372,45 @@ struct Device *GetDeviceByFd(const struct ListenerModule *lm, const int fd) {
   return NULL;
 }
 
+void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+  PrintPacket(args, header, packet);
+}
+
+static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet) {
+  int iplen;
+  char saddr[16], daddr[16];
+#ifdef BSD
+  struct ip *iphdr;
+  iphdr = (struct ip *)(packet + sizeof(struct ether_header));
+  ntohstr(saddr, sizeof(saddr), iphdr->ip_src.s_addr);
+  ntohstr(daddr, sizeof(daddr), iphdr->ip_dst.s_addr);
+  iplen = iphdr->ip_hl * 4;
+#else
+  struct iphdr *iphdr;
+  iphdr = (struct iphdr *)(packet + sizeof(struct ether_header));
+  ntohstr(saddr, sizeof(saddr), iphdr->saddr);
+  ntohstr(daddr, sizeof(daddr), iphdr->daddr);
+  iplen = iphdr->ihl * 4;
+#endif
+
+  printf("%s: %d [%d] ", interface, header->caplen, header->len);
+
+#ifdef BSD
+  printf("ihl: %d IP len: %d proto: %s ver: %d saddr: %s daddr: %s ", iphdr->ip_hl, iplen,
+         iphdr->ip_p == IPPROTO_TCP   ? "tcp"
+         : iphdr->ip_p == IPPROTO_UDP ? "udp"
+                                      : "other",
+         iphdr->ip_v, saddr, daddr);
+#else
+  printf("ihl: %d IP len: %d proto: %s ver: %d saddr: %s daddr: %s ", iphdr->ihl, iplen,
+         iphdr->protocol == IPPROTO_TCP   ? "tcp"
+         : iphdr->protocol == IPPROTO_UDP ? "udp"
+                                          : "other",
+         iphdr->version, saddr, daddr);
+#endif
+
+  printf("\n");
+}
 #if 0
 void printPacket(const u_char *packet, const struct pcap_pkthdr *header) {
   /*
@@ -419,8 +463,3 @@ void printPacket(const u_char *packet, const struct pcap_pkthdr *header) {
   printf("\n");
 }
 #endif
-
-void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
-  (void)args;
-  fprintf(stderr, "Jacked a packet %p with length of %d [%d]\n", (void *)packet, header->caplen, header->len);
-}
