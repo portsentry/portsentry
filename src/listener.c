@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <poll.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <net/if_arp.h>
