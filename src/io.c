@@ -111,6 +111,15 @@ void Verbose(char *logentry, ...) {
   va_end(argsPtr);
 }
 
+void Crash(int errCode, char *logentry, ...) {
+  va_list argsPtr;
+  va_start(argsPtr, logentry);
+  LogEntry(LogTypeError, logentry, argsPtr);
+  va_end(argsPtr);
+
+  Exit(errCode);
+}
+
 void Exit(int status) {
   Log("PortSentry is shutting down");
 
