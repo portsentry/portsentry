@@ -29,7 +29,80 @@ struct Device *CreateDevice(const char *name) {
   return new;
 }
 
+int AddAddress(struct Device *device, const char *address, int type) {
+  char **addresses;
+  int addresses_count;
+
+  assert(device != NULL);
+  assert(address != NULL);
+
+  if (AddressExists(device, address, type) == TRUE) {
+    return TRUE;
+  }
+
+  if (type == AF_INET) {
+    addresses = device->inet4_addrs;
+    addresses_count = device->inet4_addrs_count;
+  } else if (type == AF_INET6) {
+    addresses = device->inet6_addrs;
+    addresses_count = device->inet6_addrs_count;
+  } else {
+    Crash(1, "Invalid address type");
+  }
+
+  if ((addresses = realloc(addresses, sizeof(char *) * (addresses_count + 1))) == NULL) {
+    Crash(1, "Unable to reallocate IP address memory");
+  }
+
+  if ((addresses[addresses_count] = strdup(address)) == NULL) {
+    Crash(1, "Unable to allocate memory for address %s", address);
+  }
+
+  addresses_count++;
+
+  if (type == AF_INET) {
+    device->inet4_addrs = addresses;
+    device->inet4_addrs_count = addresses_count;
+  } else if (type == AF_INET6) {
+    device->inet6_addrs = addresses;
+    device->inet6_addrs_count = addresses_count;
+  } else {
+    Crash(1, "Invalid address type");
+  }
+
+  return TRUE;
+}
+
+int AddressExists(const struct Device *device, const char *address, int type) {
+  int i;
+  char **addresses;
+  int addresses_count;
+
+  assert(device != NULL);
+  assert(address != NULL);
+
+  if (type == AF_INET) {
+    addresses = device->inet4_addrs;
+    addresses_count = device->inet4_addrs_count;
+  } else if (type == AF_INET6) {
+    addresses = device->inet6_addrs;
+    addresses_count = device->inet6_addrs_count;
+  } else {
+    Crash(1, "Invalid address type");
+  }
+
+  for (i = 0; i < addresses_count; i++) {
+    if (strncmp(addresses[i], address, strlen(addresses[i])) == 0) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
 uint8_t FreeDevice(struct Device *device) {
+  int i;
+
   if (device == NULL) {
     return FALSE;
   }
@@ -37,6 +110,22 @@ uint8_t FreeDevice(struct Device *device) {
   if (device->handle != NULL) {
     pcap_close(device->handle);
     device->handle = NULL;
+  }
+
+  if (device->inet4_addrs != NULL) {
+    for (i = 0; i < device->inet4_addrs_count; i++) {
+      free(device->inet4_addrs[i]);
+    }
+    free(device->inet4_addrs);
+    device->inet4_addrs = NULL;
+  }
+
+  if (device->inet6_addrs != NULL) {
+    for (i = 0; i < device->inet6_addrs_count; i++) {
+      free(device->inet6_addrs[i]);
+    }
+    free(device->inet6_addrs);
+    device->inet6_addrs = NULL;
   }
 
   free(device);
