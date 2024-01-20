@@ -5,6 +5,7 @@
 #include <poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <ifaddrs.h>
 #include <netinet/in.h>
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
@@ -24,6 +25,9 @@ static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name);
 static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo);
 static int PrepDevices(struct ListenerModule *lm);
 static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet);
+static int SetupFilter(struct Device *device);
+static char *AllocAndBuildPcapFilter(struct Device *device);
+static void PrintDevices(const struct ListenerModule *lm);
 
 /* Heavily inspired by src/lib/libpcap/pcap-bpf.c from OpenBSD's pcap implementation.
  * We must use pcap_create() and pcap_activate() instead of pcap_open_live() because
@@ -106,6 +110,11 @@ static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo) {
       continue;
     }
 
+    // When using ALL or ALL_NLO (and thus use pcap_findalldevs()), don't include the "any" device
+    if ((strncmp(d->name, "any", 3) == 0) && strlen(d->name) == 3) {
+      continue;
+    }
+
     Verbose("Adding device %s", d->name);
     if (CreateAndAddDevice(lm, d->name) == FALSE) {
       Error("Unable to add device %s, skipping", d->name);
@@ -148,6 +157,183 @@ static int PrepDevices(struct ListenerModule *lm) {
   return TRUE;
 }
 
+static int RetrieveAddresses(struct ListenerModule *lm) {
+  int status = TRUE;
+  struct ifaddrs *ifaddrs = NULL, *ifa = NULL;
+  struct Device *dev;
+  char err[ERRNOMAXBUF];
+  char host[NI_MAXHOST];
+
+  if (getifaddrs(&ifaddrs) == -1) {
+    Error("Unable to retrieve network addresses: %s", ErrnoString(err, ERRNOMAXBUF));
+    status = FALSE;
+    goto cleanup;
+  }
+
+  for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
+    if (ifa->ifa_addr == NULL) {
+      continue;
+    }
+
+    if (ifa->ifa_addr->sa_family != AF_INET && ifa->ifa_addr->sa_family != AF_INET6) {
+      continue;
+    }
+
+    for (dev = lm->root; dev != NULL; dev = dev->next) {
+      if (strncmp(dev->name, ifa->ifa_name, strlen(dev->name)) == 0) {
+        if (getnameinfo(ifa->ifa_addr, (ifa->ifa_addr->sa_family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == -1) {
+          Crash(1, "Unable to retrieve network addresses for device %s: %s", dev->name, ErrnoString(err, ERRNOMAXBUF));
+        }
+
+        // FIXME: Verify that we don't filter on link-local addresses?
+        if (strncmp(host, "fe80", 4) == 0) {
+          continue;
+        } else if (strncmp(host, "169.254", 7) == 0) {
+          continue;
+        }
+
+        Debug("Found address %s for device %s: %s", ifa->ifa_name, dev->name, host);
+
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+          AddAddress(dev, host, AF_INET);
+        } else if (ifa->ifa_addr->sa_family == AF_INET6) {
+          AddAddress(dev, host, AF_INET6);
+        } else {
+          Error("Unknown address family %d for address %s, ignoring", ifa->ifa_addr->sa_family, host);
+        }
+      }
+    }
+  }
+
+cleanup:
+  if (ifaddrs != NULL) {
+    freeifaddrs(ifaddrs);
+  }
+
+  return status;
+}
+
+static char *AllocAndBuildPcapFilter(struct Device *device) {
+  int i, filterLen, ret;
+  char *filter = NULL, *p;
+  char tmp[16];
+
+  assert(device != NULL);
+
+  filterLen = 1; // Opening (
+  for (i = 0; i < device->inet4_addrs_count; i++) {
+    filterLen += strlen(device->inet4_addrs[i]) + 16; // "ip dst host <IP> or "
+  }
+
+  for (i = 0; i < device->inet6_addrs_count; i++) {
+    filterLen += strlen(device->inet6_addrs[i]) + 17; // "ip6 dst host <IP> or "
+  }
+  filterLen -= 4; // Remove last " or "
+  filterLen += 7; // ") and ("
+
+  if (configData.sentryMode == SENTRY_MODE_STCP) {
+    for (i = 0; i < configData.tcpPortsLength; i++) {
+      if ((ret = sprintf(tmp, "%d", configData.tcpPorts[i])) < 0) {
+        Error("Unable to convert port %d to string", configData.tcpPorts[i]);
+        return NULL;
+      }
+      filterLen += 17 + ret; // "tcp dst port <PORT> or "
+    }
+  } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
+    for (i = 0; i < configData.udpPortsLength; i++) {
+      if ((ret = sprintf(tmp, "%d", configData.udpPorts[i])) < 0) {
+        Error("Unable to convert port %d to string", configData.udpPorts[i]);
+        return NULL;
+      }
+      filterLen += 17 + ret; // "udp dst port <PORT> or "
+    }
+  } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
+    ret = sprintf(tmp, "0-%d", configData.tcpAdvancedPort);
+    filterLen += 18 + ret; // "tcp dst portrange <PORT>"
+
+    for (i = 0; i < configData.tcpAdvancedExcludePortsLength; i++) {
+      if ((ret = sprintf(tmp, "%d", configData.tcpAdvancedExcludePorts[i])) < 0) {
+        Error("Unable to convert port %d to string", configData.tcpAdvancedExcludePorts[i]);
+        return NULL;
+      }
+      filterLen += 14 + ret; // " and not port <PORT>"
+    }
+  } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
+    ret = sprintf(tmp, "0-%d", configData.udpAdvancedPort);
+    filterLen += 18 + ret; // "udp dst portrange <PORT>"
+
+    for (i = 0; i < configData.udpAdvancedExcludePortsLength; i++) {
+      if ((ret = sprintf(tmp, "%d", configData.udpAdvancedExcludePorts[i])) < 0) {
+        Error("Unable to convert port %d to string", configData.udpAdvancedExcludePorts[i]);
+        return NULL;
+      }
+      filterLen += 14 + ret; // " and not port <PORT>"
+    }
+  } else {
+    Error("Unknown sentry mode %d", configData.sentryMode);
+    return NULL;
+  }
+
+  filterLen -= 4; // Remove last " or "
+  filterLen += 1; // Closing )
+
+  filterLen++; // '\0'
+
+  if ((filter = malloc(filterLen)) == NULL) {
+    Error("Unable to allocate memory for pcap filter");
+    return NULL;
+  }
+
+  p = filter;
+  *p++ = '(';
+
+  for (i = 0; i < device->inet4_addrs_count; i++) {
+    p += sprintf(p, "ip dst host %s or ", device->inet4_addrs[i]);
+  }
+
+  for (i = 0; i < device->inet6_addrs_count; i++) {
+    p += sprintf(p, "ip6 dst host %s or ", device->inet6_addrs[i]);
+  }
+
+  p -= 4; // Remove last " or "
+
+  p += sprintf(p, ") and (");
+
+  if (configData.sentryMode == SENTRY_MODE_STCP) {
+    for (i = 0; i < configData.tcpPortsLength; i++) {
+      p += sprintf(p, "tcp dst port %d or ", configData.tcpPorts[i]);
+    }
+    p -= 4; // Remove last " or "
+  } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
+    for (i = 0; i < configData.udpPortsLength; i++) {
+      p += sprintf(p, "udp dst port %d or ", configData.udpPorts[i]);
+    }
+    p -= 4; // Remove last " or "
+  } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
+    p += sprintf(p, "tcp dst portrange 0-%d", configData.tcpAdvancedPort);
+
+    for (i = 0; i < configData.tcpAdvancedExcludePortsLength; i++) {
+      p += sprintf(p, " and not port %d", configData.tcpAdvancedExcludePorts[i]);
+    }
+  } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
+    p += sprintf(p, "udp dst portrange 0-%d", configData.udpAdvancedPort);
+
+    for (i = 0; i < configData.udpAdvancedExcludePortsLength; i++) {
+      p += sprintf(p, " and not port %d", configData.udpAdvancedExcludePorts[i]);
+    }
+  } else {
+    Error("Unknown sentry mode %d", configData.sentryMode);
+    return NULL;
+  }
+
+  *p++ = ')';
+  *p = '\0';
+
+  Debug("Device: %s pcap filter len %d: [%s]", device->name, filterLen, filter);
+
+  return filter;
+}
+
 int GetNoDevices(const struct ListenerModule *lm) {
   int count;
   struct Device *current;
@@ -167,8 +353,7 @@ int GetNoDevices(const struct ListenerModule *lm) {
 struct ListenerModule *AllocListenerModule(void) {
   struct ListenerModule *lm;
 
-  lm = malloc(sizeof(struct ListenerModule));
-  if (lm == NULL) {
+  if ((lm = malloc(sizeof(struct ListenerModule))) == NULL) {
     Error("Unable to allocate memory for listener module");
     return NULL;
   }
@@ -201,6 +386,8 @@ int InitListenerModule(struct ListenerModule *lm) {
   if (PrepDevices(lm) == FALSE) {
     return FALSE;
   }
+
+  RetrieveAddresses(lm);
 
   current = lm->root;
   while (current != NULL) {
@@ -242,7 +429,11 @@ int InitListenerModule(struct ListenerModule *lm) {
       goto next;
     }
 
-    // TODO: Setup filter on device
+    if (SetupFilter(current) == FALSE) {
+      Error("Unable to setup filter for device %s, skipping", current->name);
+      RemoveDevice(lm, current);
+      goto next;
+    }
 
   next:
     current = next;
@@ -253,10 +444,8 @@ int InitListenerModule(struct ListenerModule *lm) {
     return FALSE;
   }
 
-  current = lm->root;
-  while (current != NULL) {
-    Verbose("Device %s ready", current->name);
-    current = current->next;
+  if ((configData.logFlags & LOGFLAG_VERBOSE) != 0) {
+    PrintDevices(lm);
   }
 
   return TRUE;
@@ -418,4 +607,61 @@ static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *heade
     printf("sport: %d dport: %d", ntohs(udphdr->uh_sport), ntohs(udphdr->uh_dport));
   }
   printf("\n");
+}
+
+static int SetupFilter(struct Device *device) {
+  struct bpf_program fp;
+  char *filter = NULL;
+  int status = FALSE;
+
+  assert(device != NULL);
+  assert(device->handle != NULL);
+
+  if ((filter = AllocAndBuildPcapFilter(device)) == NULL) {
+    goto exit;
+  }
+
+  if (pcap_compile(device->handle, &fp, filter, 0, device->net) == PCAP_ERROR) {
+    Error("Unable to compile pcap filter %s: %s", filter, pcap_geterr(device->handle));
+    goto exit;
+  }
+
+  if (pcap_setfilter(device->handle, &fp) == PCAP_ERROR) {
+    Error("Unable to set filter %s: %s", filter, pcap_geterr(device->handle));
+    goto exit;
+  }
+
+  status = TRUE;
+
+exit:
+  if (filter != NULL) {
+    free(filter);
+    filter = NULL;
+  }
+
+  return status;
+}
+
+static void PrintDevices(const struct ListenerModule *lm) {
+  int i;
+  struct Device *current;
+
+  if (lm == NULL) {
+    return;
+  }
+
+  current = lm->root;
+  while (current != NULL) {
+    Verbose("Ready Device: %s pcap handle: %p, fd: %d pcap net: %d, mask: %d", current->name, current->handle, current->fd, current->net, current->mask);
+
+    for (i = 0; i < current->inet4_addrs_count; i++) {
+      Verbose("  inet4 addr: %s", current->inet4_addrs[i]);
+    }
+
+    for (i = 0; i < current->inet6_addrs_count; i++) {
+      Verbose("  inet6 addr: %s", current->inet6_addrs[i]);
+    }
+
+    current = current->next;
+  }
 }
