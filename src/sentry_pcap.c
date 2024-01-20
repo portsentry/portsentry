@@ -10,7 +10,7 @@
 
 #define POLL_TIMEOUT 500
 
-int PortSentryStealthModePcap(void) {
+int PortSentryPcap(void) {
   int status = FALSE, ret, nfds = 0, i;
   char err[ERRNOMAXBUF];
   struct ListenerModule *lm = NULL;

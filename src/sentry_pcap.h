@@ -1,2 +1,2 @@
 #pragma once
-int PortSentryStealthModePcap(void);
+int PortSentryPcap(void);
