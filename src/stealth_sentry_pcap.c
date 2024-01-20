@@ -11,25 +11,22 @@
 #define POLL_TIMEOUT 500
 
 int PortSentryStealthModePcap(void) {
-  int status = TRUE, ret, nfds = 0, i;
+  int status = FALSE, ret, nfds = 0, i;
   char err[ERRNOMAXBUF];
   struct ListenerModule *lm = NULL;
   struct pollfd *fds = NULL;
   struct Device *current = NULL;
 
   if ((lm = AllocListenerModule()) == NULL) {
-    status = FALSE;
     goto exit;
   }
 
   if (InitListenerModule(lm) == FALSE) {
-    status = FALSE;
     goto exit;
   }
 
   if ((fds = SetupPollFds(lm, &nfds)) == NULL) {
     Error("Unable to allocate memory for pollfd");
-    status = FALSE;
     goto exit;
   }
 
@@ -38,7 +35,6 @@ int PortSentryStealthModePcap(void) {
 
     if (ret == -1) {
       Error("poll() failed %s", ErrnoString(err, sizeof(err)));
-      status = FALSE;
       goto exit;
     } else if (ret == 0) {
       continue;
@@ -48,7 +44,6 @@ int PortSentryStealthModePcap(void) {
       if (fds[i].revents & POLLIN) {
         if ((current = GetDeviceByFd(lm, fds[i].fd)) == NULL) {
           Error("Unable to find device by fd %d", fds[i].fd);
-          status = FALSE;
           goto exit;
         }
 
