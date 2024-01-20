@@ -2,7 +2,7 @@
 #include <poll.h>
 
 #include "portsentry.h"
-#include "stealth_sentry_pcap.h"
+#include "sentry_pcap.h"
 #include "listener.h"
 #include "device.h"
 #include "io.h"
