@@ -302,14 +302,18 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
 
   if (configData.sentryMode == SENTRY_MODE_STCP) {
     for (i = 0; i < configData.tcpPortsLength; i++) {
-      p += sprintf(p, "tcp dst port %d or ", configData.tcpPorts[i]);
+      if (i > 0) {
+        p += sprintf(p, " or ");
+      }
+      p += sprintf(p, "tcp dst port %d", configData.tcpPorts[i]);
     }
-    p -= 4;  // Remove last " or "
   } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
     for (i = 0; i < configData.udpPortsLength; i++) {
-      p += sprintf(p, "udp dst port %d or ", configData.udpPorts[i]);
+      if (i > 0) {
+        p += sprintf(p, " or ");
+      }
+      p += sprintf(p, "udp dst port %d", configData.udpPorts[i]);
     }
-    p -= 4;  // Remove last " or "
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
     p += sprintf(p, "tcp dst portrange 0-%d", configData.tcpAdvancedPort);
 
