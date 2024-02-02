@@ -30,11 +30,12 @@ struct Device *CreateDevice(const char *name) {
 }
 
 int AddAddress(struct Device *device, const char *address, int type) {
-  char **addresses;
-  int addresses_count;
+  char **addresses = NULL;
+  int addresses_count = 0;
 
   assert(device != NULL);
   assert(address != NULL);
+  assert(type == AF_INET || type == AF_INET6);
 
   if (AddressExists(device, address, type) == TRUE) {
     return TRUE;
@@ -75,11 +76,12 @@ int AddAddress(struct Device *device, const char *address, int type) {
 
 int AddressExists(const struct Device *device, const char *address, int type) {
   int i;
-  char **addresses;
-  int addresses_count;
+  char **addresses = NULL;
+  int addresses_count = 0;
 
   assert(device != NULL);
   assert(address != NULL);
+  assert(type == AF_INET || type == AF_INET6);
 
   if (type == AF_INET) {
     addresses = device->inet4_addrs;
