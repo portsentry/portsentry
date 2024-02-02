@@ -3,3 +3,4 @@ debug
 release
 portsentry.blocked.*
 Testing/**
+remotes.txt
