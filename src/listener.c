@@ -10,6 +10,7 @@
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#include <netdb.h>
 
 #include "portsentry.h"
 #include "listener.h"
@@ -220,16 +221,16 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
 
   assert(device != NULL);
 
-  filterLen = 1; // Opening (
+  filterLen = 1;  // Opening (
   for (i = 0; i < device->inet4_addrs_count; i++) {
-    filterLen += strlen(device->inet4_addrs[i]) + 16; // "ip dst host <IP> or "
+    filterLen += strlen(device->inet4_addrs[i]) + 16;  // "ip dst host <IP> or "
   }
 
   for (i = 0; i < device->inet6_addrs_count; i++) {
-    filterLen += strlen(device->inet6_addrs[i]) + 17; // "ip6 dst host <IP> or "
+    filterLen += strlen(device->inet6_addrs[i]) + 17;  // "ip6 dst host <IP> or "
   }
-  filterLen -= 4; // Remove last " or "
-  filterLen += 7; // ") and ("
+  filterLen -= 4;  // Remove last " or "
+  filterLen += 7;  // ") and ("
 
   if (configData.sentryMode == SENTRY_MODE_STCP) {
     for (i = 0; i < configData.tcpPortsLength; i++) {
@@ -237,7 +238,7 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
         Error("Unable to convert port %d to string", configData.tcpPorts[i]);
         return NULL;
       }
-      filterLen += 17 + ret; // "tcp dst port <PORT> or "
+      filterLen += 17 + ret;  // "tcp dst port <PORT> or "
     }
   } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
     for (i = 0; i < configData.udpPortsLength; i++) {
@@ -245,39 +246,39 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
         Error("Unable to convert port %d to string", configData.udpPorts[i]);
         return NULL;
       }
-      filterLen += 17 + ret; // "udp dst port <PORT> or "
+      filterLen += 17 + ret;  // "udp dst port <PORT> or "
     }
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
     ret = sprintf(tmp, "0-%d", configData.tcpAdvancedPort);
-    filterLen += 18 + ret; // "tcp dst portrange <PORT>"
+    filterLen += 18 + ret;  // "tcp dst portrange <PORT>"
 
     for (i = 0; i < configData.tcpAdvancedExcludePortsLength; i++) {
       if ((ret = sprintf(tmp, "%d", configData.tcpAdvancedExcludePorts[i])) < 0) {
         Error("Unable to convert port %d to string", configData.tcpAdvancedExcludePorts[i]);
         return NULL;
       }
-      filterLen += 14 + ret; // " and not port <PORT>"
+      filterLen += 14 + ret;  // " and not port <PORT>"
     }
   } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
     ret = sprintf(tmp, "0-%d", configData.udpAdvancedPort);
-    filterLen += 18 + ret; // "udp dst portrange <PORT>"
+    filterLen += 18 + ret;  // "udp dst portrange <PORT>"
 
     for (i = 0; i < configData.udpAdvancedExcludePortsLength; i++) {
       if ((ret = sprintf(tmp, "%d", configData.udpAdvancedExcludePorts[i])) < 0) {
         Error("Unable to convert port %d to string", configData.udpAdvancedExcludePorts[i]);
         return NULL;
       }
-      filterLen += 14 + ret; // " and not port <PORT>"
+      filterLen += 14 + ret;  // " and not port <PORT>"
     }
   } else {
     Error("Unknown sentry mode %d", configData.sentryMode);
     return NULL;
   }
 
-  filterLen -= 4; // Remove last " or "
-  filterLen += 1; // Closing )
+  filterLen -= 4;  // Remove last " or "
+  filterLen += 1;  // Closing )
 
-  filterLen++; // '\0'
+  filterLen++;  // '\0'
 
   if ((filter = malloc(filterLen)) == NULL) {
     Error("Unable to allocate memory for pcap filter");
@@ -295,7 +296,7 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
     p += sprintf(p, "ip6 dst host %s or ", device->inet6_addrs[i]);
   }
 
-  p -= 4; // Remove last " or "
+  p -= 4;  // Remove last " or "
 
   p += sprintf(p, ") and (");
 
@@ -303,12 +304,12 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
     for (i = 0; i < configData.tcpPortsLength; i++) {
       p += sprintf(p, "tcp dst port %d or ", configData.tcpPorts[i]);
     }
-    p -= 4; // Remove last " or "
+    p -= 4;  // Remove last " or "
   } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
     for (i = 0; i < configData.udpPortsLength; i++) {
       p += sprintf(p, "udp dst port %d or ", configData.udpPorts[i]);
     }
-    p -= 4; // Remove last " or "
+    p -= 4;  // Remove last " or "
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
     p += sprintf(p, "tcp dst portrange 0-%d", configData.tcpAdvancedPort);
 
