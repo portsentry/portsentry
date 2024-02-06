@@ -83,6 +83,20 @@ run_portsentry() {
 
   cd $TEST_DIR
   $PORTSENTRY_EXEC -c $PORTSENTRY_CONF $switches > $PORTSENTRY_STDOUT 2>$PORTSENTRY_STDERR &
+
+  timeout=5
+  while [ $timeout -gt 0 ]; do
+    debug "waiting for portsentry to report ready in $PORTSENTRY_STDOUT"
+    if grep -q "adminalert: PortSentry is now active and listening." $PORTSENTRY_STDOUT; then
+      return
+    fi
+    sleep 1
+    timeout=$((timeout - 1))
+  done
+
+  echo "Error: Unable to parse portsentry ready message, aborting"
+  stop_portsentry
+  exit 1
 }
 
 stop_portsentry() {
