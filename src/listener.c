@@ -566,7 +566,7 @@ struct Device *GetDeviceByFd(const struct ListenerModule *lm, const int fd) {
 
   return NULL;
 }
-
+/*
 void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
   PrintPacket(args, header, packet);
 }
@@ -613,7 +613,7 @@ static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *heade
   }
   printf("\n");
 }
-
+*/
 static int SetupFilter(struct Device *device) {
   struct bpf_program fp;
   char *filter = NULL;
