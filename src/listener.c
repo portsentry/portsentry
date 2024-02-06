@@ -25,7 +25,7 @@ pcap_t *PcapOpenLiveImmediate(const char *source, int snaplen, int promisc, int 
 static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name);
 static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo);
 static int PrepDevices(struct ListenerModule *lm);
-static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet);
+// static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet);
 static int SetupFilter(struct Device *device);
 static char *AllocAndBuildPcapFilter(struct Device *device);
 static void PrintDevices(const struct ListenerModule *lm);
