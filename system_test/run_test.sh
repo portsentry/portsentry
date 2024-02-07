@@ -84,6 +84,17 @@ run_portsentry() {
   cd $TEST_DIR
   $PORTSENTRY_EXEC -c $PORTSENTRY_CONF $switches > $PORTSENTRY_STDOUT 2>$PORTSENTRY_STDERR &
 
+  local timeout=5
+  while [ ! -f $PORTSENTRY_STDOUT ]; do
+    debug "waiting for $PORTSENTRY_STDOUT to be created"
+    sleep 1
+    timeout=$((timeout - 1))
+    if [ $timeout -eq 0 ]; then
+      echo "Error: Timeout waiting for $PORTSENTRY_STDOUT to be created"
+      exit 1
+    fi
+  done
+
   timeout=5
   while [ $timeout -gt 0 ]; do
     debug "waiting for portsentry to report ready in $PORTSENTRY_STDOUT"
