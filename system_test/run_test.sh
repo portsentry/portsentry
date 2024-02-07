@@ -106,31 +106,42 @@ run_portsentry() {
   done
 
   echo "Error: Unable to parse portsentry ready message, aborting"
-  stop_portsentry
+  report_and_stop
   exit 1
 }
 
 stop_portsentry() {
+  if [ -n "$1" ]; then
+    local dontExit=1
+  fi
+
   local pid="$(ps aux|grep "$PORTSENTRY_EXEC -c $PORTSENTRY_CONF $switches"|grep -v grep | awk '{print $2}')"
   if [ -n "$pid" ]; then
     kill $pid
-  else
+    return
+  fi
+
+  if [ -z "$dontExit" ]; then
     echo "Error: portsentry not running"
     exit 1
   fi
 }
 
+report_and_stop() {
+  echo "Detected test failure, stopping portsentry, printing portsentry run log and exit"
+  stop_portsentry 1
+  echo "#### PORTSENTRY STDOUT ####"
+  cat $PORTSENTRY_STDOUT
+  echo
+  echo "#### PORTSENTRY STDERR ####"
+  cat $PORTSENTRY_STDERR
+  exit 1
+}
+
 run_test() {
   cd $TEST_DIR
   if ! $PORTSENTRY_SCRIPT $TEST_DIR $PORTSENTRY_EXEC $PORTSENTRY_CONF $PORTSENTRY_TEST $PORTSENTRY_SCRIPT $PORTSENTRY_STDOUT $PORTSENTRY_STDERR; then
-    echo "Detected test failure, stopping portsentry, printing portsentry run log and exit"
-    stop_portsentry
-    echo "#### PORTSENTRY STDOUT ####"
-    cat $PORTSENTRY_STDOUT
-    echo
-    echo "#### PORTSENTRY STDERR ####"
-    cat $PORTSENTRY_STDERR
-    exit 1
+    report_and_stop
   fi
 }
 
