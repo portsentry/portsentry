@@ -240,6 +240,7 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
       }
       filterLen += 17 + ret;  // "tcp dst port <PORT> or "
     }
+    filterLen -= 4;  // Remove last " or "
   } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
     for (i = 0; i < configData.udpPortsLength; i++) {
       if ((ret = sprintf(tmp, "%d", configData.udpPorts[i])) < 0) {
@@ -248,6 +249,7 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
       }
       filterLen += 17 + ret;  // "udp dst port <PORT> or "
     }
+    filterLen -= 4;  // Remove last " or "
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
     ret = sprintf(tmp, "0-%d", configData.tcpAdvancedPort);
     filterLen += 18 + ret;  // "tcp dst portrange <PORT>"
@@ -275,10 +277,8 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
     return NULL;
   }
 
-  filterLen -= 4;  // Remove last " or "
   filterLen += 1;  // Closing )
-
-  filterLen++;  // '\0'
+  filterLen++;     // '\0'
 
   if ((filter = malloc(filterLen)) == NULL) {
     Error("Unable to allocate memory for pcap filter");
