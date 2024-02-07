@@ -399,7 +399,7 @@ int InitListenerModule(struct ListenerModule *lm) {
     next = current->next;
 
     if (pcap_lookupnet(current->name, &current->net, &current->mask, errbuf) < 0) {
-      Error("Unable to retrieve network/netmask for device %s, skipping", current->name);
+      Error("Unable to retrieve network/netmask for device %s: %s, skipping", current->name, errbuf);
       RemoveDevice(lm, current);
       goto next;
     }
