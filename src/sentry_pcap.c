@@ -1,6 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <poll.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <net/if_arp.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
 
@@ -137,8 +141,8 @@ static int PrepPacket(const u_char *interface, const struct pcap_pkthdr *header,
 
 #ifdef BSD
   *ip = (struct ip *)(packet + sizeof(struct ether_header));
-  iplen = ip->ip_hl * 4;
-  protocol = ip->ip_p;
+  iplen = (*ip)->ip_hl * 4;
+  protocol = (*ip)->ip_p;
 #else
   *ip = (struct iphdr *)(packet + sizeof(struct ether_header));
   iplen = (*ip)->ihl * 4;
@@ -187,17 +191,18 @@ static int SetSockaddrByPacket(struct sockaddr_in *client, const struct iphdr *i
 
 #ifdef BSD
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp) {
+  cd->protocol = ip->ip_p;
 #else
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp) {
-#endif
   cd->protocol = ip->protocol;
+#endif
   cd->sockfd = -1;
   cd->portInUse = FALSE;
 
   if (cd->protocol == IPPROTO_TCP) {
-    cd->port = ntohs(tcp->dest);
+    cd->port = ntohs(tcp->th_dport);
   } else if (cd->protocol == IPPROTO_UDP) {
-    cd->port = ntohs(udp->dest);
+    cd->port = ntohs(udp->uh_dport);
   } else {
     Error("adminalert: Unknown protocol %d detected while setting connection data", cd->protocol);
     return FALSE;
