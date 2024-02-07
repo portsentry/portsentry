@@ -57,6 +57,22 @@ findInFile() {
     local timeout=$3
   fi
 
+  while [ ! -f $file ]; do
+    debug "waiting for $file to be created"
+    sleep 1
+    timeout=$((timeout - 1))
+    if [ $timeout -eq 0 ]; then
+      echo "Error: Timeout waiting for $file to be created"
+      exit 1
+    fi
+  done
+
+  if [ -z "$3" ]; then
+    local timeout=5
+  else
+    local timeout=$3
+  fi
+
   while [ $timeout -gt 0 ]; do
     debug "waiting for string $str in file $file"
     if grep -q "$str" $file; then
@@ -169,6 +185,12 @@ runNmap() {
     err "runNmap: no port specified"
   fi
 
+  local NMAP=$(which nmap)
+  if [ -z "$NMAP" ]; then
+    err "runNmap: nmap not found"
+    exit 1
+  fi
+
   local port=$1
 
   if [ "$2" = "T" ]; then
@@ -188,5 +210,5 @@ runNmap() {
   fi
 
   verbose "expect connect to $proto localhost:$port"
-  nmap -s$proto -p$port-$port localhost >/dev/null
+  $NMAP -s$proto -p$port-$port localhost >/dev/null
 }
