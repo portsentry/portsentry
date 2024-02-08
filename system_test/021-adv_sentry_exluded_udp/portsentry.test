@@ -1,1 +1,1 @@
--audp -d -i lo
+-audp -d -i ALL

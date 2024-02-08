@@ -1,1 +1,1 @@
--atcp -d -i lo
+-atcp -d -i ALL
