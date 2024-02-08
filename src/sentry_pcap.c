@@ -20,11 +20,11 @@
 static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 
 #ifdef BSD
-static int PrepPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp);
+static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp);
 static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 #else
-static int PrepPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet, struct iphdr **ip, struct tcphdr **tcp, struct udphdr **udp);
+static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct iphdr **ip, struct tcphdr **tcp, struct udphdr **udp);
 static int SetSockaddrByPacket(struct sockaddr_in *client, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 #endif
@@ -69,7 +69,7 @@ int PortSentryPcap(void) {
         }
 
         do {
-          ret = pcap_dispatch(current->handle, -1, HandlePacket, (u_char *)current->name);
+          ret = pcap_dispatch(current->handle, -1, HandlePacket, (u_char *)current);
 
           if (ret == PCAP_ERROR) {
             Error("pcap_dispatch() failed %s, ignoring", pcap_geterr(current->handle));
@@ -94,6 +94,7 @@ exit:
 static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
   struct ConnectionData cd;
   struct sockaddr_in client;
+  struct Device *device = (struct Device *)args;
 #ifdef BSD
   struct ip *ip;
 #else
@@ -102,7 +103,7 @@ static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u
   struct tcphdr *tcp;
   struct udphdr *udp;
 
-  if (PrepPacket(args, header, packet, &ip, &tcp, &udp) == FALSE) {
+  if (PrepPacket(device, header, packet, &ip, &tcp, &udp) == FALSE) {
     return;
   }
 
@@ -127,32 +128,52 @@ static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u
 }
 
 #ifdef BSD
-static int PrepPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp) {
+static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp) {
 #else
-static int PrepPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet, struct iphdr **ip, struct tcphdr **tcp, struct udphdr **udp) {
+static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct iphdr **ip, struct tcphdr **tcp, struct udphdr **udp) {
 #endif
-  int iplen;
+  int iplen, len_to_proto;
   uint8_t protocol;
   *ip = NULL;
   *tcp = NULL;
   *udp = NULL;
-  (void)interface;
   (void)header;
 
 #ifdef BSD
-  *ip = (struct ip *)(packet + sizeof(struct ether_header));
+  if (device->have_ethernet_hdr == HAVE_ETHERNET_HDR_TRUE) {
+    *ip = (struct ip *)(packet + sizeof(struct ether_header));
+  } else if (device->have_ethernet_hdr == HAVE_ETHERNET_HDR_FALSE) {
+    *ip = (struct ip *)(packet);
+  } else {
+    Error("adminalert: Device %s have unknown ethernet hdr status set (have_ethernet_hdr: %d)", device->name, device->have_ethernet_hdr);
+    return FALSE;
+  }
+
   iplen = (*ip)->ip_hl * 4;
   protocol = (*ip)->ip_p;
 #else
-  *ip = (struct iphdr *)(packet + sizeof(struct ether_header));
+  if (device->have_ethernet_hdr == HAVE_ETHERNET_HDR_TRUE) {
+    *ip = (struct iphdr *)(packet + sizeof(struct ether_header));
+  } else if (device->have_ethernet_hdr == HAVE_ETHERNET_HDR_FALSE) {
+    *ip = (struct iphdr *)(packet);
+  } else {
+    Error("adminalert: Device %s have unknown ethernet hdr status set (have_ethernet_hdr: %d)", device->name, device->have_ethernet_hdr);
+  }
+
   iplen = (*ip)->ihl * 4;
   protocol = (*ip)->protocol;
 #endif
 
+  if (device->have_ethernet_hdr == HAVE_ETHERNET_HDR_TRUE) {
+    len_to_proto = sizeof(struct ether_header) + iplen;
+  } else {
+    len_to_proto = iplen;
+  }
+
   if (protocol == IPPROTO_TCP) {
-    *tcp = (struct tcphdr *)(packet + sizeof(struct ether_header) + iplen);
+    *tcp = (struct tcphdr *)(packet + len_to_proto);
   } else if (protocol == IPPROTO_UDP) {
-    *udp = (struct udphdr *)(packet + sizeof(struct ether_header) + iplen);
+    *udp = (struct udphdr *)(packet + len_to_proto);
   } else {
     Error("adminalert: Unknown protocol %d while processing packet", protocol);
     return FALSE;

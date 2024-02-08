@@ -2,6 +2,10 @@
 #include <net/if.h>
 #include <pcap.h>
 
+#define HAVE_ETHERNET_HDR_FALSE 0
+#define HAVE_ETHERNET_HDR_TRUE 1
+#define HAVE_ETHERNET_HDR_UNKNOWN 2
+
 struct Device {
   pcap_t *handle;
   char name[IF_NAMESIZE];
@@ -13,6 +17,8 @@ struct Device {
   int inet4_addrs_count;
   char **inet6_addrs;
   int inet6_addrs_count;
+
+  uint8_t have_ethernet_hdr;
 
   struct Device *next;
 };

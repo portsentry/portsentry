@@ -39,6 +39,7 @@ static void PrintDevices(const struct ListenerModule *lm);
  * in order for poll() (and select()/kevent()) to work properly. This approach works
  * for other Unixes as well, so it's no harm in doing it this way. Using immediate mode
  * with a non-blocking fd makes pcap a bit snappier anyway so it's a win-win.
+ * See: https://marc.info/?l=openbsd-tech&m=169878430118943&w=2 for more information.
  * */
 pcap_t *PcapOpenLiveImmediate(const char *source, int snaplen, int promisc, int to_ms, char *errbuf) {
   pcap_t *p;
@@ -422,10 +423,11 @@ int InitListenerModule(struct ListenerModule *lm) {
       goto next;
     }
 
+    // We assume that since pcap_lookupnet() succeeded, we have a valid link type
     if (pcap_datalink(current->handle) != DLT_EN10MB) {
-      Error("Device %s doesn't provide Ethernet headers, ignoring", current->name);
-      RemoveDevice(lm, current);
-      goto next;
+      current->have_ethernet_hdr = HAVE_ETHERNET_HDR_FALSE;
+    } else {
+      current->have_ethernet_hdr = HAVE_ETHERNET_HDR_TRUE;
     }
 
     if ((current->fd = pcap_get_selectable_fd(current->handle)) < 0) {
