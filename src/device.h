@@ -18,8 +18,6 @@ struct Device {
   char **inet6_addrs;
   int inet6_addrs_count;
 
-  uint8_t have_ethernet_hdr;
-
   struct Device *next;
 };
 

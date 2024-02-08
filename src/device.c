@@ -25,7 +25,6 @@ struct Device *CreateDevice(const char *name) {
   memset(new, 0, sizeof(struct Device));
 
   SafeStrncpy(new->name, name, IF_NAMESIZE);
-  new->have_ethernet_hdr = HAVE_ETHERNET_HDR_UNKNOWN;
 
   return new;
 }

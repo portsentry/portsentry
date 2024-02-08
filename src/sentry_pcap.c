@@ -23,10 +23,12 @@ static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u
 static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp);
 static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
+static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header);
 #else
 static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct iphdr **ip, struct tcphdr **tcp, struct udphdr **udp);
 static int SetSockaddrByPacket(struct sockaddr_in *client, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp);
+static void PrintPacket(const struct Device *device, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header);
 #endif
 
 int PortSentryPcap(void) {
@@ -139,35 +141,52 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
   *udp = NULL;
   (void)header;
 
+  // FIXME: Clean me up
+  if (pcap_datalink(device->handle) == DLT_EN10MB) {
 #ifdef BSD
-  if (device->have_ethernet_hdr == HAVE_ETHERNET_HDR_TRUE) {
     *ip = (struct ip *)(packet + sizeof(struct ether_header));
-  } else if (device->have_ethernet_hdr == HAVE_ETHERNET_HDR_FALSE) {
+#else
+    *ip = (struct iphdr *)(packet + sizeof(struct ether_header));
+#endif
+  } else if (pcap_datalink(device->handle) == DLT_RAW) {
+#ifdef BSD
     *ip = (struct ip *)(packet);
+#else
+    *ip = (struct iphdr *)(packet);
+#endif
+  } else if (pcap_datalink(device->handle) == DLT_NULL) {
+    uint32_t nulltype = *packet;
+    if (nulltype != 2) {
+      Error("adminalert: Packet on %s have unsupported nulltype set (nulltype: %d)", device->name, nulltype);
+      return FALSE;
+    }
+#ifdef BSD
+    *ip = (struct ip *)(packet + 4);
+#else
+    *ip = (struct iphdr *)(packet + 4);
+#endif
   } else {
-    Error("adminalert: Device %s have unknown ethernet hdr status set (have_ethernet_hdr: %d)", device->name, device->have_ethernet_hdr);
+    Error("adminalert: Packet on %s have unsupported datalink type set (datalink: %d)", device->name, pcap_datalink(device->handle));
     return FALSE;
   }
 
+#ifdef BSD
   iplen = (*ip)->ip_hl * 4;
   protocol = (*ip)->ip_p;
 #else
-  if (device->have_ethernet_hdr == HAVE_ETHERNET_HDR_TRUE) {
-    *ip = (struct iphdr *)(packet + sizeof(struct ether_header));
-  } else if (device->have_ethernet_hdr == HAVE_ETHERNET_HDR_FALSE) {
-    *ip = (struct iphdr *)(packet);
-  } else {
-    Error("adminalert: Device %s have unknown ethernet hdr status set (have_ethernet_hdr: %d)", device->name, device->have_ethernet_hdr);
-  }
-
   iplen = (*ip)->ihl * 4;
   protocol = (*ip)->protocol;
 #endif
 
-  if (device->have_ethernet_hdr == HAVE_ETHERNET_HDR_TRUE) {
+  if (pcap_datalink(device->handle) == DLT_EN10MB) {
     len_to_proto = sizeof(struct ether_header) + iplen;
-  } else {
+  } else if (pcap_datalink(device->handle) == DLT_RAW) {
     len_to_proto = iplen;
+  } else if (pcap_datalink(device->handle) == DLT_NULL) {
+    len_to_proto = 4 + iplen;
+  } else {
+    Error("adminalert: Packet on %s have unsupported datalink type set (datalink: %d)", device->name, pcap_datalink(device->handle));
+    return FALSE;
   }
 
   if (protocol == IPPROTO_TCP) {
@@ -175,7 +194,8 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
   } else if (protocol == IPPROTO_UDP) {
     *udp = (struct udphdr *)(packet + len_to_proto);
   } else {
-    Error("adminalert: Unknown protocol %d while processing packet", protocol);
+    Error("adminalert: Packet on %s have unknown protocol %d. Showing Packet:", device->name, protocol);
+    PrintPacket(device, *ip, *tcp, *udp, header);
     return FALSE;
   }
   return TRUE;
@@ -229,4 +249,45 @@ static int SetPcapConnectionData(struct ConnectionData *cd, const struct iphdr *
     return FALSE;
   }
   return TRUE;
+}
+
+#ifdef BSD
+static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header) {
+#else
+static void PrintPacket(const struct Device *device, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header) {
+#endif
+  int iplen;
+  uint8_t protocol, ipVersion, hl;
+  char saddr[16], daddr[16];
+
+#ifdef BSD
+  ntohstr(saddr, sizeof(saddr), ip->ip_src.s_addr);
+  ntohstr(daddr, sizeof(daddr), ip->ip_dst.s_addr);
+  iplen = ip->ip_hl * 4;
+  protocol = ip->ip_p;
+  ipVersion = ip->ip_v;
+  hl = ip->ip_hl;
+#else
+  ntohstr(saddr, sizeof(saddr), ip->saddr);
+  ntohstr(daddr, sizeof(daddr), ip->daddr);
+  iplen = ip->ihl * 4;
+  protocol = ip->protocol;
+  ipVersion = ip->version;
+  hl = ip->ihl;
+#endif
+
+  printf("%s: %d [%d] ", device->name, header->caplen, header->len);
+  printf("ihl: %d IP len: %d proto: %s (%d) ver: %d saddr: %s daddr: %s ", hl, iplen,
+         protocol == IPPROTO_TCP   ? "tcp"
+         : protocol == IPPROTO_UDP ? "udp"
+                                   : "other",
+         protocol,
+         ipVersion, saddr, daddr);
+
+  if (protocol == IPPROTO_TCP) {
+    printf("sport: %d dport: %d", ntohs(tcp->th_sport), ntohs(tcp->th_dport));
+  } else if (protocol == IPPROTO_UDP) {
+    printf("sport: %d dport: %d", ntohs(udp->uh_sport), ntohs(udp->uh_dport));
+  }
+  printf("\n");
 }

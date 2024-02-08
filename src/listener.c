@@ -424,10 +424,10 @@ int InitListenerModule(struct ListenerModule *lm) {
     }
 
     // We assume that since pcap_lookupnet() succeeded, we have a valid link type
-    if (pcap_datalink(current->handle) != DLT_EN10MB) {
-      current->have_ethernet_hdr = HAVE_ETHERNET_HDR_FALSE;
-    } else {
-      current->have_ethernet_hdr = HAVE_ETHERNET_HDR_TRUE;
+    if (pcap_datalink(current->handle) != DLT_EN10MB && pcap_datalink(current->handle) != DLT_RAW && pcap_datalink(current->handle) != DLT_NULL) {
+      Error("Device %s is unsupported (linktype: %d), skipping this device", current->name, pcap_datalink(current->handle));
+      RemoveDevice(lm, current);
+      goto next;
     }
 
     if ((current->fd = pcap_get_selectable_fd(current->handle)) < 0) {
