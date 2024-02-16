@@ -417,7 +417,13 @@ int InitListenerModule(struct ListenerModule *lm) {
       goto next;
     }
 
-    if (pcap_setdirection(current->handle, PCAP_D_IN) < 0) {
+    /*
+     * OpenBSD and NetBSD has some quirks with pcap_setdirection(). Neither one of them will detect packets on the loopback interface
+     * if direction is set to PCAP_D_IN for example. There are some other inconsistencies as well and I might not have found all of them.
+     * By setting direction to PCAP_D_INOUT we make sure to capture as much as possible. The BPF filter will take care of most unwanted packets
+     * anyway so atleast for now, we set this to PCAP_D_INOUT on all platforms in order to avoid any potential missed packets.
+     */
+    if (pcap_setdirection(current->handle, PCAP_D_INOUT) < 0) {
       Error("Couldn't set direction on %s: %s", current->name, pcap_geterr(current->handle));
       RemoveDevice(lm, current);
       goto next;
