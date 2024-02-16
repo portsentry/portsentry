@@ -14,6 +14,7 @@
 #include "device.h"
 #include "io.h"
 #include "util.h"
+#include "config_data.h"
 
 #define POLL_TIMEOUT 500
 
@@ -118,6 +119,10 @@ static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u
   }
 
   if (cd.protocol == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
+    Debug("Got TCP packet with ACK=%d RST=%d, ignoring, offending packet was:", (tcp->th_flags & TH_ACK) != 0 ? 1 : 0, (tcp->th_flags & TH_RST) != 0 ? 1 : 0);
+    if (configData.logFlags & LOGFLAG_DEBUG) {
+      PrintPacket(device, ip, tcp, udp, header);
+    }
     return;
   }
 
@@ -154,11 +159,31 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
 #else
     *ip = (struct iphdr *)(packet);
 #endif
-  } else if (pcap_datalink(device->handle) == DLT_NULL) {
+  } else if (
+      pcap_datalink(device->handle) == DLT_NULL
+#ifdef __OpenBSD__
+      || pcap_datalink(device->handle) == DLT_LOOP
+#endif
+  ) {
     uint32_t nulltype = *packet;
-    if (nulltype != 2) {
-      Error("adminalert: Packet on %s have unsupported nulltype set (nulltype: %d)", device->name, nulltype);
-      return FALSE;
+    if (pcap_datalink(device->handle) == DLT_NULL) {
+      if (nulltype != 2) {
+        Error("adminalert: Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_NULL dev", device->name, nulltype);
+        return FALSE;
+      }
+#ifdef __OpenBSD__
+    } else if (pcap_datalink(device->handle) == DLT_LOOP) {
+      /*
+       * FIXME: On OpenBSD 7.4 the nulltype is 0 on the loopback interface receiving IPv4 packets.
+       * According to libpcap documentation it's supposed to be a network byte-order AF_ value.
+       * If this holds true for OpenBSD's then packets are for some reason classified as AF_UNSPEC.
+       * Confirm this
+       */
+      if (nulltype != 0) {
+        Error("adminalert: Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_LOOP dev", device->name, nulltype);
+        return FALSE;
+      }
+#endif
     }
 #ifdef BSD
     *ip = (struct ip *)(packet + 4);
@@ -182,7 +207,12 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
     len_to_proto = sizeof(struct ether_header) + iplen;
   } else if (pcap_datalink(device->handle) == DLT_RAW) {
     len_to_proto = iplen;
-  } else if (pcap_datalink(device->handle) == DLT_NULL) {
+  } else if (
+      pcap_datalink(device->handle) == DLT_NULL
+#ifdef __OpenBSD__
+      || pcap_datalink(device->handle) == DLT_LOOP
+#endif
+  ) {
     len_to_proto = 4 + iplen;
   } else {
     Error("adminalert: Packet on %s have unsupported datalink type set (datalink: %d)", device->name, pcap_datalink(device->handle));
@@ -276,18 +306,18 @@ static void PrintPacket(const struct Device *device, const struct iphdr *ip, con
   hl = ip->ihl;
 #endif
 
-  printf("%s: %d [%d] ", device->name, header->caplen, header->len);
-  printf("ihl: %d IP len: %d proto: %s (%d) ver: %d saddr: %s daddr: %s ", hl, iplen,
-         protocol == IPPROTO_TCP   ? "tcp"
-         : protocol == IPPROTO_UDP ? "udp"
-                                   : "other",
-         protocol,
-         ipVersion, saddr, daddr);
+  fprintf(stderr, "%s: %d [%d] ", device->name, header->caplen, header->len);
+  fprintf(stderr, "ihl: %d IP len: %d proto: %s (%d) ver: %d saddr: %s daddr: %s ", hl, iplen,
+          protocol == IPPROTO_TCP   ? "tcp"
+          : protocol == IPPROTO_UDP ? "udp"
+                                    : "other",
+          protocol,
+          ipVersion, saddr, daddr);
 
   if (protocol == IPPROTO_TCP) {
-    printf("sport: %d dport: %d", ntohs(tcp->th_sport), ntohs(tcp->th_dport));
+    fprintf(stderr, "sport: %d dport: %d", ntohs(tcp->th_sport), ntohs(tcp->th_dport));
   } else if (protocol == IPPROTO_UDP) {
-    printf("sport: %d dport: %d", ntohs(udp->uh_sport), ntohs(udp->uh_dport));
+    fprintf(stderr, "sport: %d dport: %d", ntohs(udp->uh_sport), ntohs(udp->uh_dport));
   }
-  printf("\n");
+  fprintf(stderr, "\n");
 }
