@@ -430,7 +430,13 @@ int InitListenerModule(struct ListenerModule *lm) {
     }
 
     // We assume that since pcap_lookupnet() succeeded, we have a valid link type
-    if (pcap_datalink(current->handle) != DLT_EN10MB && pcap_datalink(current->handle) != DLT_RAW && pcap_datalink(current->handle) != DLT_NULL) {
+    if (pcap_datalink(current->handle) != DLT_EN10MB &&
+        pcap_datalink(current->handle) != DLT_RAW &&
+        pcap_datalink(current->handle) != DLT_NULL
+#ifdef __OpenBSD__
+        && pcap_datalink(current->handle) != DLT_LOOP
+#endif
+    ) {
       Error("Device %s is unsupported (linktype: %d), skipping this device", current->name, pcap_datalink(current->handle));
       RemoveDevice(lm, current);
       goto next;
