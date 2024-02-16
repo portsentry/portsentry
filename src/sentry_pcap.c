@@ -25,11 +25,13 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
 static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header);
+struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
 #else
 static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct iphdr **ip, struct tcphdr **tcp, struct udphdr **udp);
 static int SetSockaddrByPacket(struct sockaddr_in *client, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static void PrintPacket(const struct Device *device, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header);
+struct iphdr *GetIphdrByOffset(const u_char *packet, const int offset);
 #endif
 
 int PortSentryPcap(void) {
@@ -148,17 +150,9 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
 
   // FIXME: Clean me up
   if (pcap_datalink(device->handle) == DLT_EN10MB) {
-#ifdef BSD
-    *ip = (struct ip *)(packet + sizeof(struct ether_header));
-#else
-    *ip = (struct iphdr *)(packet + sizeof(struct ether_header));
-#endif
+    *ip = GetIphdrByOffset(packet, sizeof(struct ether_header));
   } else if (pcap_datalink(device->handle) == DLT_RAW) {
-#ifdef BSD
-    *ip = (struct ip *)(packet);
-#else
-    *ip = (struct iphdr *)(packet);
-#endif
+    *ip = GetIphdrByOffset(packet, 0);
   } else if (
       pcap_datalink(device->handle) == DLT_NULL
 #ifdef __OpenBSD__
@@ -185,11 +179,8 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
       }
 #endif
     }
-#ifdef BSD
-    *ip = (struct ip *)(packet + 4);
-#else
-    *ip = (struct iphdr *)(packet + 4);
-#endif
+
+    *ip = GetIphdrByOffset(packet, 4);
   } else {
     Error("adminalert: Packet on %s have unsupported datalink type set (datalink: %d)", device->name, pcap_datalink(device->handle));
     return FALSE;
@@ -320,4 +311,13 @@ static void PrintPacket(const struct Device *device, const struct iphdr *ip, con
     fprintf(stderr, "sport: %d dport: %d", ntohs(udp->uh_sport), ntohs(udp->uh_dport));
   }
   fprintf(stderr, "\n");
+}
+
+#ifdef BSD
+struct ip *GetIphdrByOffset(const u_char *packet, const int offset) {
+  return (struct ip *)(packet + offset);
+#else
+struct iphdr *GetIphdrByOffset(const u_char *packet, const int offset) {
+  return (struct iphdr *)(packet + offset);
+#endif
 }
