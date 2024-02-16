@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "config_data.h"
 #include "connect_sentry.h"
@@ -85,7 +86,7 @@ int PortSentryConnectMode(void) {
 
       if (connectionData[count].protocol == IPPROTO_TCP) {
         if ((incomingSockfd = accept(connectionData[count].sockfd, (struct sockaddr *)&client, &clientLength)) == -1) {
-          Log("attackalert: Possible stealth scan from unknown host to TCP port: %d (accept failed: %s)", connectionData[count].port, ErrnoString(err, sizeof(err)));
+          Log("attackalert: Possible stealth scan from unknown host to TCP port: %d (accept failed %d: %s)", connectionData[count].port, errno, ErrnoString(err, sizeof(err)));
           continue;
         }
       } else if (connectionData[count].protocol == IPPROTO_UDP) {
