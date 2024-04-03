@@ -252,8 +252,8 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
     }
     filterLen -= 4;  // Remove last " or "
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
-    ret = sprintf(tmp, "0-%d", configData.tcpAdvancedPort);
-    filterLen += 18 + ret;  // "tcp dst portrange <PORT>"
+    ret = sprintf(tmp, "%d", configData.tcpAdvancedPort);
+    filterLen += 30 + ret;  // "tcp[2:2] >= 0 and tcp[2:2] <= "
 
     for (i = 0; i < configData.tcpAdvancedExcludePortsLength; i++) {
       if ((ret = sprintf(tmp, "%d", configData.tcpAdvancedExcludePorts[i])) < 0) {
@@ -263,8 +263,8 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
       filterLen += 14 + ret;  // " and not port <PORT>"
     }
   } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
-    ret = sprintf(tmp, "0-%d", configData.udpAdvancedPort);
-    filterLen += 18 + ret;  // "udp dst portrange <PORT>"
+    ret = sprintf(tmp, "%d", configData.udpAdvancedPort);
+    filterLen += 30 + ret;  // "udp[2:2] >= 0 and udp[2:2] <= "
 
     for (i = 0; i < configData.udpAdvancedExcludePortsLength; i++) {
       if ((ret = sprintf(tmp, "%d", configData.udpAdvancedExcludePorts[i])) < 0) {
@@ -316,13 +316,14 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
       p += sprintf(p, "udp dst port %d", configData.udpPorts[i]);
     }
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
-    p += sprintf(p, "tcp dst portrange 0-%d", configData.tcpAdvancedPort);
+    // "tcp[2:2] >= 0 and tcp[2:2] <= "
+    p += sprintf(p, "tcp[2:2] >= 0 and tcp[2:2] <= %d", configData.tcpAdvancedPort);
 
     for (i = 0; i < configData.tcpAdvancedExcludePortsLength; i++) {
       p += sprintf(p, " and not port %d", configData.tcpAdvancedExcludePorts[i]);
     }
   } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
-    p += sprintf(p, "udp dst portrange 0-%d", configData.udpAdvancedPort);
+    p += sprintf(p, "udp[2:2] >= 0 and udp[2:2] <= %d", configData.udpAdvancedPort);
 
     for (i = 0; i < configData.udpAdvancedExcludePortsLength; i++) {
       p += sprintf(p, " and not port %d", configData.udpAdvancedExcludePorts[i]);
