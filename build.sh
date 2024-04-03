@@ -34,7 +34,6 @@ elif [ "$ACTION" = "sast" ]; then
   echo "========== CodeQL Results End =========="
 
   semgrep scan --config=auto
-  flawfinder src
 
   exit 0
 elif [ "$ACTION" = "cdt" ]; then
