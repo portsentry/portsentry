@@ -194,8 +194,6 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
       return FALSE;
     }
 
-    // Debug("Protocol type %d", ntohs(*(uint16_t *)(packet + 14)));
-
     *ip = GetIphdrByOffset(packet, 16);
   }
 #endif
