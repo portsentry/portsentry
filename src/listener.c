@@ -213,7 +213,7 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
 
   assert(device != NULL);
 
-  filterLen = 1;  // Opening (
+  filterLen = 0;
   for (i = 0; i < device->inet4_addrs_count; i++) {
     filterLen += strlen(device->inet4_addrs[i]) + 16;  // "ip dst host <IP> or "
   }
@@ -221,9 +221,12 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
   for (i = 0; i < device->inet6_addrs_count; i++) {
     filterLen += strlen(device->inet6_addrs[i]) + 17;  // "ip6 dst host <IP> or "
   }
-  filterLen -= 4;  // Remove last " or "
-  filterLen += 7;  // ") and ("
+  if (filterLen > 0) {
+    filterLen -= 4;  // Remove last " or "
+    filterLen += 7;  // Opening parenthesis ( + ") and "
+  }
 
+  filterLen += 1;  // Opening parenthesis (
   if (configData.sentryMode == SENTRY_MODE_STCP) {
     for (i = 0; i < configData.tcpPortsLength; i++) {
       if ((ret = sprintf(tmp, "%d", configData.tcpPorts[i])) < 0) {
@@ -278,19 +281,25 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
   }
 
   p = filter;
-  *p++ = '(';
 
   for (i = 0; i < device->inet4_addrs_count; i++) {
+    if (p == filter)
+      *p++ = '(';
     p += sprintf(p, "ip dst host %s or ", device->inet4_addrs[i]);
   }
 
   for (i = 0; i < device->inet6_addrs_count; i++) {
+    if (p == filter)
+      *p++ = '(';
     p += sprintf(p, "ip6 dst host %s or ", device->inet6_addrs[i]);
   }
 
-  p -= 4;  // Remove last " or "
+  if (p != filter) {
+    p -= 4;  // Remove last " or "
+    p += sprintf(p, ") and ");
+  }
 
-  p += sprintf(p, ") and (");
+  *p++ = '(';
 
   if (configData.sentryMode == SENTRY_MODE_STCP) {
     for (i = 0; i < configData.tcpPortsLength; i++) {
@@ -425,7 +434,9 @@ int InitListenerModule(struct ListenerModule *lm) {
     if (pcap_datalink(current->handle) != DLT_EN10MB &&
         pcap_datalink(current->handle) != DLT_RAW &&
         pcap_datalink(current->handle) != DLT_NULL
-#ifdef __OpenBSD__
+#ifdef __linux__
+        && pcap_datalink(current->handle) != DLT_LINUX_SLL
+#elif __OpenBSD__
         && pcap_datalink(current->handle) != DLT_LOOP
 #endif
     ) {

@@ -181,7 +181,25 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
     }
 
     *ip = GetIphdrByOffset(packet, 4);
-  } else {
+  }
+#ifdef __linux__
+  else if (pcap_datalink(device->handle) == DLT_LINUX_SLL) {
+    if (ntohs(*(uint16_t *)packet) != 0) {
+      Verbose("Packet type on %s is not \"sent to us by somebody else\"");
+      return FALSE;
+    }
+
+    if (ntohs(*(uint16_t *)(packet + 2)) != ARPHRD_ETHER) {
+      Verbose("Packet type on %s is not Ethernet (type: %d)", device->name, ntohs(*(uint16_t *)(packet + 2)));
+      return FALSE;
+    }
+
+    // Debug("Protocol type %d", ntohs(*(uint16_t *)(packet + 14)));
+
+    *ip = GetIphdrByOffset(packet, 16);
+  }
+#endif
+  else {
     Error("adminalert: Packet on %s have unsupported datalink type set (datalink: %d)", device->name, pcap_datalink(device->handle));
     return FALSE;
   }
@@ -194,6 +212,7 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
   protocol = (*ip)->protocol;
 #endif
 
+  // FIXME: This is not needed, use ip + iplen instead of packet
   if (pcap_datalink(device->handle) == DLT_EN10MB) {
     len_to_proto = sizeof(struct ether_header) + iplen;
   } else if (pcap_datalink(device->handle) == DLT_RAW) {
@@ -205,7 +224,13 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
 #endif
   ) {
     len_to_proto = 4 + iplen;
-  } else {
+  }
+#ifdef __linux__
+  else if (pcap_datalink(device->handle) == DLT_LINUX_SLL) {
+    len_to_proto = 16 + iplen;
+  }
+#endif
+  else {
     Error("adminalert: Packet on %s have unsupported datalink type set (datalink: %d)", device->name, pcap_datalink(device->handle));
     return FALSE;
   }
