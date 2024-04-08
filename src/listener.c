@@ -60,16 +60,7 @@ pcap_t *PcapOpenLiveImmediate(const char *source, int snaplen, int promisc, int 
     goto fail;
   return (p);
 fail:
-  if (status == PCAP_ERROR)
-    fprintf(stderr, "%s: %s", source, pcap_geterr(p));
-  else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
-           status == PCAP_ERROR_PERM_DENIED ||
-           status == PCAP_ERROR_PROMISC_PERM_DENIED)
-    fprintf(stderr, "%s: %s (%s)", source,
-            pcap_statustostr(status), pcap_geterr(p));
-  else
-    fprintf(stderr, "%s: %s", source,
-            pcap_statustostr(status));
+  SafeStrncpy(errbuf, pcap_geterr(p), PCAP_ERRBUF_SIZE);
   pcap_close(p);
   return (NULL);
 }
