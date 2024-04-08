@@ -20,19 +20,11 @@
 
 static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 
-#ifdef BSD
 static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp);
 static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header);
 struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
-#else
-static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct iphdr **ip, struct tcphdr **tcp, struct udphdr **udp);
-static int SetSockaddrByPacket(struct sockaddr_in *client, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp);
-static int SetPcapConnectionData(struct ConnectionData *cd, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp);
-static void PrintPacket(const struct Device *device, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header);
-struct iphdr *GetIphdrByOffset(const u_char *packet, const int offset);
-#endif
 
 int PortSentryPcap(void) {
   int status = FALSE, ret, nfds = 0, i;
@@ -100,11 +92,7 @@ static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u
   struct ConnectionData cd;
   struct sockaddr_in client;
   struct Device *device = (struct Device *)args;
-#ifdef BSD
   struct ip *ip;
-#else
-  struct iphdr *ip;
-#endif
   struct tcphdr *tcp;
   struct udphdr *udp;
 
@@ -136,11 +124,7 @@ static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u
   RunSentry(&cd, &client, ip, tcp, NULL);
 }
 
-#ifdef BSD
 static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp) {
-#else
-static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct iphdr **ip, struct tcphdr **tcp, struct udphdr **udp) {
-#endif
   int iplen;
   uint8_t protocol;
   *ip = NULL;
@@ -202,13 +186,8 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
     return FALSE;
   }
 
-#ifdef BSD
   iplen = (*ip)->ip_hl * 4;
   protocol = (*ip)->ip_p;
-#else
-  iplen = (*ip)->ihl * 4;
-  protocol = (*ip)->protocol;
-#endif
 
   if (protocol == IPPROTO_TCP) {
     *tcp = (struct tcphdr *)(((u_char *)*ip) + iplen);  // ip struct is wider than 1 byte so need recast
@@ -223,21 +202,12 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
   return TRUE;
 }
 
-#ifdef BSD
 static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp) {
-#else
-static int SetSockaddrByPacket(struct sockaddr_in *client, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp) {
-#endif
   uint8_t protocol;
 
   memset(client, 0, sizeof(struct sockaddr_in));
-#ifdef BSD
   protocol = ip->ip_p;
   client->sin_addr.s_addr = ip->ip_src.s_addr;
-#else
-  protocol = ip->protocol;
-  client->sin_addr.s_addr = ip->saddr;
-#endif
 
   client->sin_family = AF_INET;
   if (protocol == IPPROTO_TCP) {
@@ -252,13 +222,8 @@ static int SetSockaddrByPacket(struct sockaddr_in *client, const struct iphdr *i
   return TRUE;
 }
 
-#ifdef BSD
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp) {
   cd->protocol = ip->ip_p;
-#else
-static int SetPcapConnectionData(struct ConnectionData *cd, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp) {
-  cd->protocol = ip->protocol;
-#endif
   cd->sockfd = -1;
   cd->portInUse = FALSE;
 
@@ -273,30 +238,17 @@ static int SetPcapConnectionData(struct ConnectionData *cd, const struct iphdr *
   return TRUE;
 }
 
-#ifdef BSD
 static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header) {
-#else
-static void PrintPacket(const struct Device *device, const struct iphdr *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header) {
-#endif
   int iplen;
   uint8_t protocol, ipVersion, hl;
   char saddr[16], daddr[16];
 
-#ifdef BSD
   ntohstr(saddr, sizeof(saddr), ip->ip_src.s_addr);
   ntohstr(daddr, sizeof(daddr), ip->ip_dst.s_addr);
   iplen = ip->ip_hl * 4;
   protocol = ip->ip_p;
   ipVersion = ip->ip_v;
   hl = ip->ip_hl;
-#else
-  ntohstr(saddr, sizeof(saddr), ip->saddr);
-  ntohstr(daddr, sizeof(daddr), ip->daddr);
-  iplen = ip->ihl * 4;
-  protocol = ip->protocol;
-  ipVersion = ip->version;
-  hl = ip->ihl;
-#endif
 
   fprintf(stderr, "%s: %d [%d] ", device->name, header->caplen, header->len);
   fprintf(stderr, "ihl: %d IP len: %d proto: %s (%d) ver: %d saddr: %s daddr: %s ", hl, iplen,
@@ -314,11 +266,6 @@ static void PrintPacket(const struct Device *device, const struct iphdr *ip, con
   fprintf(stderr, "\n");
 }
 
-#ifdef BSD
 struct ip *GetIphdrByOffset(const u_char *packet, const int offset) {
   return (struct ip *)(packet + offset);
-#else
-struct iphdr *GetIphdrByOffset(const u_char *packet, const int offset) {
-  return (struct iphdr *)(packet + offset);
-#endif
 }

@@ -24,11 +24,7 @@ int PortSentryStealthMode(void) {
   int tcpSockfd, udpSockfd, connectionDataSize;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct sockaddr_in client;
-#ifdef BSD
   struct ip *ip = NULL;
-#else
-  struct iphdr *ip = NULL;
-#endif
   struct tcphdr *tcp = NULL;
   struct udphdr *udp = NULL;
   struct pollfd fds[2];

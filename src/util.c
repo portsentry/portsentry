@@ -258,11 +258,7 @@ char *ErrnoString(char *buf, const size_t buflen) {
   return p;
 }
 
-#ifdef BSD
 int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
-#else
-int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct iphdr *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
-#endif
   int result;
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
 
@@ -312,11 +308,7 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
       Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, cd->port);
     }
 
-#ifdef BSD
     if (ip->ip_hl > 5)
-#else
-    if (ip->ihl > 5)
-#endif
       Log("attackalert: Packet from host: %s/%s to %s port: %d has IP options set (detection avoidance technique).", resolvedHost, target, GetProtocolString(cd->protocol), cd->port);
   }
 
@@ -339,24 +331,15 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
   return TRUE;
 }
 
-#ifdef BSD
 int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp) {
-#else
-int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct iphdr *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp) {
-#endif
   memset(client, 0, sizeof(struct sockaddr_in));
   *tcp = NULL;
   *udp = NULL;
   *cd = NULL;
 
   client->sin_family = AF_INET;
-#ifdef BSD
   client->sin_addr.s_addr = ip->ip_src.s_addr;
   if (ip->ip_p == IPPROTO_TCP) {
-#else
-  client->sin_addr.s_addr = ip->saddr;
-  if (ip->protocol == IPPROTO_TCP) {
-#endif
     *tcp = (struct tcphdr *)p;
     if (configData.sentryMode == SENTRY_MODE_ATCP) {
       if (ntohs((*tcp)->th_dport) > configData.tcpAdvancedPort)
@@ -375,11 +358,7 @@ int SetConvenienceData(struct ConnectionData *connectionData, const int connecti
       Exit(EXIT_FAILURE);
     }
     client->sin_port = (*tcp)->th_dport;
-#ifdef BSD
   } else if (ip->ip_p == IPPROTO_UDP) {
-#else
-  } else if (ip->protocol == IPPROTO_UDP) {
-#endif
     *udp = (struct udphdr *)p;
     if (configData.sentryMode == SENTRY_MODE_AUDP) {
       if (ntohs((*udp)->uh_dport) > configData.udpAdvancedPort)
@@ -399,11 +378,7 @@ int SetConvenienceData(struct ConnectionData *connectionData, const int connecti
     }
     client->sin_port = (*udp)->uh_dport;
   } else {
-#ifdef BSD
     Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
-#else
-    Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
-#endif
     return FALSE;
   }
 

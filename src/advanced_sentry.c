@@ -22,11 +22,7 @@ int PortSentryAdvancedStealthMode(void) {
   int result, nfds, tcpSockfd, udpSockfd, count;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct sockaddr_in client;
-#ifdef BSD
   struct ip *ip = NULL;
-#else
-  struct iphdr *ip = NULL;
-#endif
   struct tcphdr *tcp = NULL;
   struct udphdr *udp = NULL;
   struct pollfd fds[2];
@@ -133,11 +129,7 @@ int PortSentryAdvancedStealthMode(void) {
       }
 
       // Since we make heavy use of the ConnectionData structure create a temporary one to hold the current data
-#ifdef BSD
       SetConnectionData(&tmpcd, (ip->ip_p == IPPROTO_TCP) ? ntohs(tcp->th_dport) : ntohs(udp->uh_dport), ip->ip_p, FALSE);
-#else
-      SetConnectionData(&tmpcd, (ip->protocol == IPPROTO_TCP) ? ntohs(tcp->th_dport) : ntohs(udp->uh_dport), ip->protocol, FALSE);
-#endif
       tmpcd.portInUse = FALSE;
       cd = &tmpcd;
 

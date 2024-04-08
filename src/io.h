@@ -44,8 +44,4 @@ int SubstString(const char *, const char *, const char *, char *);
 int CompareIPs(char *, char *, int);
 int testFileAccess(char *, char *);
 void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr_in *client);
-#ifdef BSD
 int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct ip **ipPtr, void **transportPtr);
-#else
-int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct iphdr **ipPtr, void **transportPtr);
-#endif

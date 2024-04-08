@@ -650,11 +650,7 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
 /* Read packet IP and transport headers and set ipPtr/transportPtr to their correct location
  * transportPtr is either a struct tcphdr * or struct udphdr *
  */
-#ifdef BSD
 int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct ip **ipPtr, void **transportPtr) {
-#else
-int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct iphdr **ipPtr, void **transportPtr) {
-#endif
   char err[ERRNOMAXBUF];
   size_t ipHeaderLength;
   ssize_t result;
@@ -663,38 +659,20 @@ int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct i
   if ((result = read(socket, packetBuffer, packetBufferSize)) == -1) {
     Error("adminalert: Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
     return ERROR;
-#ifdef BSD
   } else if (result < (ssize_t)sizeof(struct ip)) {
-#else
-  } else if (result < (ssize_t)sizeof(struct iphdr)) {
-#endif
     Error("adminalert: Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
     return ERROR;
   }
 
-#ifdef BSD
   *ipPtr = (struct ip *)packetBuffer;
-#else
-  *ipPtr = (struct iphdr *)packetBuffer;
-#endif
 
-#ifdef BSD
   if (((*ipPtr)->ip_hl < 5) || ((*ipPtr)->ip_hl > 15)) {
     addr.s_addr = (u_int)(*ipPtr)->ip_src.s_addr;
     Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", (*ipPtr)->ip_hl, inet_ntoa(addr));
-#else
-  if (((*ipPtr)->ihl < 5) || ((*ipPtr)->ihl > 15)) {
-    addr.s_addr = (u_int)(*ipPtr)->saddr;
-    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", (*ipPtr)->ihl, inet_ntoa(addr));
-#endif
     return (FALSE);
   }
 
-#ifdef BSD
   ipHeaderLength = (*ipPtr)->ip_hl * 4;
-#else
-  ipHeaderLength = (*ipPtr)->ihl * 4;
-#endif
 
   if (ipHeaderLength > packetBufferSize) {
     Error("adminalert: IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);
