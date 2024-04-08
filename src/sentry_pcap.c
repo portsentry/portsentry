@@ -141,7 +141,7 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
 #else
 static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct iphdr **ip, struct tcphdr **tcp, struct udphdr **udp) {
 #endif
-  int iplen, len_to_proto;
+  int iplen;
   uint8_t protocol;
   *ip = NULL;
   *tcp = NULL;
@@ -212,38 +212,16 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
   protocol = (*ip)->protocol;
 #endif
 
-  // FIXME: This is not needed, use ip + iplen instead of packet
-  if (pcap_datalink(device->handle) == DLT_EN10MB) {
-    len_to_proto = sizeof(struct ether_header) + iplen;
-  } else if (pcap_datalink(device->handle) == DLT_RAW) {
-    len_to_proto = iplen;
-  } else if (
-      pcap_datalink(device->handle) == DLT_NULL
-#ifdef __OpenBSD__
-      || pcap_datalink(device->handle) == DLT_LOOP
-#endif
-  ) {
-    len_to_proto = 4 + iplen;
-  }
-#ifdef __linux__
-  else if (pcap_datalink(device->handle) == DLT_LINUX_SLL) {
-    len_to_proto = 16 + iplen;
-  }
-#endif
-  else {
-    Error("adminalert: Packet on %s have unsupported datalink type set (datalink: %d)", device->name, pcap_datalink(device->handle));
-    return FALSE;
-  }
-
   if (protocol == IPPROTO_TCP) {
-    *tcp = (struct tcphdr *)(packet + len_to_proto);
+    *tcp = (struct tcphdr *)(((u_char *)*ip) + iplen);  // ip struct is wider than 1 byte so need recast
   } else if (protocol == IPPROTO_UDP) {
-    *udp = (struct udphdr *)(packet + len_to_proto);
+    *udp = (struct udphdr *)(((u_char *)*ip) + iplen);  // ip struct is wider than 1 byte so need recast
   } else {
     Error("adminalert: Packet on %s have unknown protocol %d. Showing Packet:", device->name, protocol);
     PrintPacket(device, *ip, *tcp, *udp, header);
     return FALSE;
   }
+
   return TRUE;
 }
 
