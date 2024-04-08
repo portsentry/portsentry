@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "stealth_sentry.h"
 #include "advanced_sentry.h"
 #include "cmdline.h"
 #include "config_data.h"
@@ -27,7 +28,7 @@
 #include "io.h"
 #include "portsentry.h"
 #include "state_machine.h"
-#include "stealth_sentry_pcap.h"
+#include "sentry_pcap.h"
 #include "util.h"
 
 int main(int argc, char *argv[]) {
@@ -61,13 +62,33 @@ int main(int argc, char *argv[]) {
       Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP) {
-    if (PortSentryStealthModePcap() == ERROR) {
-      Error("adminalert: could not go into PortSentry mode. Shutting down.");
+    if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
+      if (PortSentryPcap() == ERROR) {
+        Error("adminalert: could not go into PortSentry mode. Shutting down.");
+        Exit(EXIT_FAILURE);
+      }
+    } else if (configData.sentryMethod == SENTRY_METHOD_RAW) {
+      if (PortSentryStealthMode() == ERROR) {
+        Error("adminalert: could not go into PortSentry mode. Shutting down.");
+        Exit(EXIT_FAILURE);
+      }
+    } else {
+      Error("adminalert: invalid sentry method specified. Shutting down.");
       Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_ATCP || configData.sentryMode == SENTRY_MODE_AUDP) {
-    if (PortSentryAdvancedStealthMode() == ERROR) {
-      Error("adminalert: could not go into PortSentry mode. Shutting down.");
+    if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
+      if (PortSentryPcap() == ERROR) {
+        Error("adminalert: could not go into PortSentry mode. Shutting down.");
+        Exit(EXIT_FAILURE);
+      }
+    } else if (configData.sentryMethod == SENTRY_METHOD_RAW) {
+      if (PortSentryAdvancedStealthMode() == ERROR) {
+        Error("adminalert: could not go into PortSentry mode. Shutting down.");
+        Exit(EXIT_FAILURE);
+      }
+    } else {
+      Error("adminalert: invalid sentry method specified. Shutting down.");
       Exit(EXIT_FAILURE);
     }
   }

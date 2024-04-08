@@ -74,7 +74,7 @@ void readConfigFile(void) {
       Exit(EXIT_FAILURE);
     }
 
-    *(ptr + valueSize) = '\0'; // Remove trailing quote
+    *(ptr + valueSize) = '\0';  // Remove trailing quote
 
     setConfiguration(buffer, keySize, ptr, valueSize, line, &fileConfig);
   }
@@ -292,6 +292,7 @@ static void mergeToConfigData(struct ConfigData *fileConfig) {
   // Overlay values from the backup (cmdline) onto the configData
   // None of the options below are settable via the config file so they need to be added
   configData.sentryMode = temp.sentryMode;
+  configData.sentryMethod = temp.sentryMethod;
   configData.logFlags = temp.logFlags;
   memcpy(configData.configFile, temp.configFile, sizeof(configData.configFile));
   configData.daemon = temp.daemon;

@@ -102,6 +102,10 @@ void PrintConfigData(const struct ConfigData cd) {
                                                                       : cd.sentryMode == SENTRY_MODE_AUDP  ? "audp"
                                                                                                            : "unknown");
 
+  printf("sentryMethod: %s\n", cd.sentryMethod == SENTRY_METHOD_PCAP  ? "pcap"
+                               : cd.sentryMethod == SENTRY_METHOD_RAW ? "raw"
+                                                                      : "unknown");
+
   printf("log output stdout: %s\n", (cd.logFlags & LOGFLAG_OUTPUT_STDOUT) != 0 ? "true" : "false");
   printf("log output syslog: %s\n", (cd.logFlags & LOGFLAG_OUTPUT_SYSLOG) != 0 ? "true" : "false");
   printf("log debug: %s\n", (cd.logFlags & LOGFLAG_DEBUG) != 0 ? "true" : "false");

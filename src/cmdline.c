@@ -25,6 +25,7 @@
 #define CMDLINE_HELP 'h'
 #define CMDLINE_VERSION 'V'
 #define CMDLINE_INTERFACE 'i'
+#define CMDLINE_METHOD 'm'
 
 // FIXME: Hack for now since NetBSD doesn't have getopt_long_only
 #define CMDLINE_SHORT_TCP 't'
@@ -50,6 +51,7 @@ void ParseCmdline(int argc, char **argv) {
       {"logoutput", required_argument, 0, CMDLINE_LOGOUTPUT},
       {"configfile", required_argument, 0, CMDLINE_CONFIGFILE},
       {"daemon", no_argument, 0, CMDLINE_DAEMON},
+      {"method", required_argument, 0, CMDLINE_METHOD},
       {"debug", no_argument, 0, CMDLINE_DEBUG},
       {"verbose", no_argument, 0, CMDLINE_VERBOSE},
       {"help", no_argument, 0, CMDLINE_HELP},
@@ -60,7 +62,7 @@ void ParseCmdline(int argc, char **argv) {
 
   while (1) {
     int option_index = 0;
-    opt = getopt_long(argc, argv, "l:c:t:s:a:u:i:DdvhV", long_options, &option_index);
+    opt = getopt_long(argc, argv, "l:c:t:s:a:u:i:m:DdvhV", long_options, &option_index);
 
     if (opt >= CMDLINE_TCP && opt <= CMDLINE_AUDP && cmdlineConfig.sentryMode != SENTRY_MODE_NONE) {
       fprintf(stderr, "Error: Only one mode can be specified\n");
@@ -120,6 +122,16 @@ void ParseCmdline(int argc, char **argv) {
       }
       SafeStrncpy(cmdlineConfig.configFile, optarg, sizeof(cmdlineConfig.configFile));
       break;
+    case CMDLINE_METHOD:
+      if (strncmp(optarg, "pcap", 4) == 0) {
+        cmdlineConfig.sentryMethod = SENTRY_METHOD_PCAP;
+      } else if (strncmp(optarg, "raw", 3) == 0) {
+        cmdlineConfig.sentryMethod = SENTRY_METHOD_RAW;
+      } else {
+        fprintf(stderr, "Error: Invalid sentry method specified\n");
+        Exit(EXIT_FAILURE);
+      }
+      break;
     case CMDLINE_DAEMON:
       cmdlineConfig.daemon = TRUE;
       break;
@@ -173,6 +185,13 @@ void ParseCmdline(int argc, char **argv) {
     Exit(EXIT_FAILURE);
   }
 
+#ifdef BSD
+  if (cmdlineConfig.sentryMethod == SENTRY_METHOD_RAW) {
+    fprintf(stderr, "Error: Raw sockets not supported on BSD\n");
+    Exit(EXIT_FAILURE);
+  }
+#endif
+
   PostProcessConfig(&cmdlineConfig);
 
   if (cmdlineConfig.logFlags & LOGFLAG_DEBUG) {
@@ -196,6 +215,7 @@ static void Usage(void) {
   printf("--interface, -i <interface> - Set interface to listen on. Use ALL for all interfaces, ALL_NLO for all interfaces except loopback (default: ALL_NLO)\n");
   printf("--logoutput, -l [stdout|syslog] - Set Log output (default to stdout)\n");
   printf("--configfile, -c <path> - Set config file path\n");
+  printf("--method, -m [pcap|raw] - Set sentry method. Use libpcap or linux raw sockets (only available on linux) (default: pcap)\n");
   printf("--daemon, -D\tRun as a daemon\n");
   printf("--debug, -d\tEnable debugging output\n");
   printf("--verbose, -v\tEnable verbose output\n");

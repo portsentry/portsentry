@@ -19,6 +19,9 @@ enum SentryMode { SENTRY_MODE_NONE = 0,
                   SENTRY_MODE_SUDP,
                   SENTRY_MODE_AUDP };
 
+enum SentryMethod { SENTRY_METHOD_PCAP = 0,
+  SENTRY_METHOD_RAW };
+
 struct ConfigData {
   char killRoute[MAXBUF];
   char killHostsDeny[MAXBUF];
@@ -55,6 +58,7 @@ struct ConfigData {
   int configTriggerCount;
 
   enum SentryMode sentryMode;
+  enum SentryMethod sentryMethod;
 
   uint8_t logFlags;
 
