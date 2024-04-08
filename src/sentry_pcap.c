@@ -169,7 +169,7 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
 #ifdef __linux__
   else if (pcap_datalink(device->handle) == DLT_LINUX_SLL) {
     if (ntohs(*(uint16_t *)packet) != 0) {
-      Verbose("Packet type on %s is not \"sent to us by somebody else\"");
+      Verbose("Packet type on %s is not \"sent to us by somebody else\"", device->name);
       return FALSE;
     }
 
