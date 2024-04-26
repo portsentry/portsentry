@@ -215,7 +215,7 @@ static void Usage(void) {
   printf("--interface, -i <interface> - Set interface to listen on. Use ALL for all interfaces, ALL_NLO for all interfaces except loopback (default: ALL_NLO)\n");
   printf("--logoutput, -l [stdout|syslog] - Set Log output (default to stdout)\n");
   printf("--configfile, -c <path> - Set config file path\n");
-  printf("--method, -m [pcap|raw] - Set sentry method. Use libpcap or linux raw sockets (only available on linux) (default: pcap)\n");
+  printf("--method, -m\t[pcap|raw] - Set sentry method. Use libpcap or linux raw sockets (only available on linux) (default: pcap)\n");
   printf("--daemon, -D\tRun as a daemon\n");
   printf("--debug, -d\tEnable debugging output\n");
   printf("--verbose, -v\tEnable verbose output\n");
