@@ -16,6 +16,8 @@
 /*                                                                      */
 /* $Id: portsentry.h,v 1.32 2003/05/23 17:50:20 crowland Exp crowland $ */
 /************************************************************************/
+#include <sys/param.h>
+
 #define TCPPACKETLEN 80
 #define UDPPACKETLEN 68
 
@@ -29,6 +31,8 @@
 #define MAXSOCKS 64
 
 #define ERRNOMAXBUF 1024
+
+#define MAX_INTERFACES 1024
 
 #undef max
 #define max(x, y) ((x) > (y) ? (x) : (y))

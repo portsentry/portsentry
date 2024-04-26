@@ -1,1 +1,1 @@
--stcp -d
+-stcp -d -i ALL

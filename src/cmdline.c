@@ -24,12 +24,21 @@
 #define CMDLINE_VERBOSE 'v'
 #define CMDLINE_HELP 'h'
 #define CMDLINE_VERSION 'V'
+#define CMDLINE_INTERFACE 'i'
+#define CMDLINE_METHOD 'm'
+
+// FIXME: Hack for now since NetBSD doesn't have getopt_long_only
+#define CMDLINE_SHORT_TCP 't'
+#define CMDLINE_SHORT_STEALTH 's'
+#define CMDLINE_SHORT_ADVANCED 'a'
+#define CMDLINE_SHORT_UDP 'u'
 
 static void Usage(void);
 static void Version(void);
 
 void ParseCmdline(int argc, char **argv) {
   int opt;
+  uint8_t ifFlagAll = FALSE, ifFlagNlo = FALSE, ifFlagOther = FALSE;
   struct ConfigData cmdlineConfig;
   const struct option long_options[] = {
       {"tcp", no_argument, 0, CMDLINE_TCP},
@@ -38,9 +47,11 @@ void ParseCmdline(int argc, char **argv) {
       {"udp", no_argument, 0, CMDLINE_UDP},
       {"sudp", no_argument, 0, CMDLINE_SUDP},
       {"audp", no_argument, 0, CMDLINE_AUDP},
+      {"interface", required_argument, 0, CMDLINE_INTERFACE},
       {"logoutput", required_argument, 0, CMDLINE_LOGOUTPUT},
       {"configfile", required_argument, 0, CMDLINE_CONFIGFILE},
       {"daemon", no_argument, 0, CMDLINE_DAEMON},
+      {"method", required_argument, 0, CMDLINE_METHOD},
       {"debug", no_argument, 0, CMDLINE_DEBUG},
       {"verbose", no_argument, 0, CMDLINE_VERBOSE},
       {"help", no_argument, 0, CMDLINE_HELP},
@@ -51,7 +62,7 @@ void ParseCmdline(int argc, char **argv) {
 
   while (1) {
     int option_index = 0;
-    opt = getopt_long_only(argc, argv, "l:c:DdvhV", long_options, &option_index);
+    opt = getopt_long(argc, argv, "l:c:t:s:a:u:i:m:DdvhV", long_options, &option_index);
 
     if (opt >= CMDLINE_TCP && opt <= CMDLINE_AUDP && cmdlineConfig.sentryMode != SENTRY_MODE_NONE) {
       fprintf(stderr, "Error: Only one mode can be specified\n");
@@ -79,6 +90,21 @@ void ParseCmdline(int argc, char **argv) {
     case CMDLINE_AUDP:
       cmdlineConfig.sentryMode = SENTRY_MODE_AUDP;
       break;
+    case CMDLINE_INTERFACE:
+      if (strncmp(optarg, "ALL", 5) == 0) {
+        ifFlagAll = TRUE;
+      } else if (strncmp(optarg, "ALL_NLO", 9) == 0) {
+        ifFlagNlo = TRUE;
+      } else {
+        ifFlagOther = TRUE;
+      }
+
+      if ((ifFlagAll && ifFlagNlo) || (ifFlagNlo && ifFlagOther) || (ifFlagOther && ifFlagAll)) {
+        fprintf(stderr, "Error: Only one interface type can be specified (ALL, ALL_NLO or interfaces)\n");
+        Exit(EXIT_FAILURE);
+      }
+      AddInterface(&cmdlineConfig, optarg);
+      break;
     case CMDLINE_LOGOUTPUT:
       if (strcmp(optarg, "stdout") == 0) {
         cmdlineConfig.logFlags |= LOGFLAG_OUTPUT_STDOUT;
@@ -96,6 +122,16 @@ void ParseCmdline(int argc, char **argv) {
       }
       SafeStrncpy(cmdlineConfig.configFile, optarg, sizeof(cmdlineConfig.configFile));
       break;
+    case CMDLINE_METHOD:
+      if (strncmp(optarg, "pcap", 4) == 0) {
+        cmdlineConfig.sentryMethod = SENTRY_METHOD_PCAP;
+      } else if (strncmp(optarg, "raw", 3) == 0) {
+        cmdlineConfig.sentryMethod = SENTRY_METHOD_RAW;
+      } else {
+        fprintf(stderr, "Error: Invalid sentry method specified\n");
+        Exit(EXIT_FAILURE);
+      }
+      break;
     case CMDLINE_DAEMON:
       cmdlineConfig.daemon = TRUE;
       break;
@@ -111,6 +147,32 @@ void ParseCmdline(int argc, char **argv) {
     case CMDLINE_VERSION:
       Version();
       break;
+    case CMDLINE_SHORT_TCP:
+      cmdlineConfig.sentryMode = SENTRY_MODE_TCP;
+      break;
+    case CMDLINE_SHORT_STEALTH:
+      if (strncmp(optarg, "tcp", 3) == 0) {
+        cmdlineConfig.sentryMode = SENTRY_MODE_STCP;
+      } else if (strncmp(optarg, "udp", 3) == 0) {
+        cmdlineConfig.sentryMode = SENTRY_MODE_SUDP;
+      } else {
+        fprintf(stderr, "Error: Invalid stealth mode specified\n");
+        Exit(EXIT_FAILURE);
+      }
+      break;
+    case CMDLINE_SHORT_ADVANCED:
+      if (strncmp(optarg, "tcp", 3) == 0) {
+        cmdlineConfig.sentryMode = SENTRY_MODE_ATCP;
+      } else if (strncmp(optarg, "udp", 3) == 0) {
+        cmdlineConfig.sentryMode = SENTRY_MODE_AUDP;
+      } else {
+        fprintf(stderr, "Error: Invalid advanced mode specified\n");
+        Exit(EXIT_FAILURE);
+      }
+      break;
+    case CMDLINE_SHORT_UDP:
+      cmdlineConfig.sentryMode = SENTRY_MODE_UDP;
+      break;
     default:
       printf("Unknown argument, getopt returned character code 0%o\n", opt);
       Exit(EXIT_FAILURE);
@@ -122,6 +184,13 @@ void ParseCmdline(int argc, char **argv) {
     fprintf(stderr, "Error: No sentry mode specified\n");
     Exit(EXIT_FAILURE);
   }
+
+#ifdef BSD
+  if (cmdlineConfig.sentryMethod == SENTRY_METHOD_RAW) {
+    fprintf(stderr, "Error: Raw sockets not supported on BSD\n");
+    Exit(EXIT_FAILURE);
+  }
+#endif
 
   PostProcessConfig(&cmdlineConfig);
 
@@ -143,8 +212,10 @@ static void Usage(void) {
   printf("--udp, -udp\tSet UDP mode\n");
   printf("--sudp, -sudp\tSet Stealth UDP mode\n");
   printf("--audp, -audp\tSet Advanced UDP mode\n");
+  printf("--interface, -i <interface> - Set interface to listen on. Use ALL for all interfaces, ALL_NLO for all interfaces except loopback (default: ALL_NLO)\n");
   printf("--logoutput, -l [stdout|syslog] - Set Log output (default to stdout)\n");
   printf("--configfile, -c <path> - Set config file path\n");
+  printf("--method, -m\t[pcap|raw] - Set sentry method. Use libpcap or linux raw sockets (only available on linux) (default: pcap)\n");
   printf("--daemon, -D\tRun as a daemon\n");
   printf("--debug, -d\tEnable debugging output\n");
   printf("--verbose, -v\tEnable verbose output\n");

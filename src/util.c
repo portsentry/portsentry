@@ -27,6 +27,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
 
 #include "config_data.h"
 #include "connection_data.h"
@@ -45,8 +47,6 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
     return (NULL);
   }
 
-  /* Null terminate string. Why the hell strncpy doesn't do this */
-  /* for you is mystery to me. God I hate C. */
   memset(dest, '\0', size);
   strncpy(dest, src, size - 1);
 
@@ -229,28 +229,27 @@ char *ReportPacketType(struct tcphdr *tcpPkt) {
   static char packetDesc[MAXBUF];
   static char *packetDescPtr = packetDesc;
 
-  if ((tcpPkt->syn == 0) && (tcpPkt->fin == 0) && (tcpPkt->ack == 0) &&
-      (tcpPkt->psh == 0) && (tcpPkt->rst == 0) && (tcpPkt->urg == 0))
+  if (tcpPkt->th_flags == 0)
     snprintf(packetDesc, MAXBUF, "TCP NULL scan");
-  else if ((tcpPkt->fin == 1) && (tcpPkt->urg == 1) && (tcpPkt->psh == 1))
+  else if (((tcpPkt->th_flags & TH_FIN) != 0) && ((tcpPkt->th_flags & TH_URG) != 0) && ((tcpPkt->th_flags & TH_PUSH) != 0))
     snprintf(packetDesc, MAXBUF, "TCP XMAS scan");
-  else if ((tcpPkt->fin == 1) && (tcpPkt->syn != 1) && (tcpPkt->ack != 1) &&
-           (tcpPkt->psh != 1) && (tcpPkt->rst != 1) && (tcpPkt->urg != 1))
+  else if (((tcpPkt->th_flags & TH_FIN) != 0) && ((tcpPkt->th_flags & TH_SYN) == 0) && ((tcpPkt->th_flags & TH_ACK) == 0) &&
+           ((tcpPkt->th_flags & TH_PUSH) == 0) && ((tcpPkt->th_flags & TH_RST) == 0) && ((tcpPkt->th_flags & TH_URG) == 0))
     snprintf(packetDesc, MAXBUF, "TCP FIN scan");
-  else if ((tcpPkt->syn == 1) && (tcpPkt->fin != 1) && (tcpPkt->ack != 1) &&
-           (tcpPkt->psh != 1) && (tcpPkt->rst != 1) && (tcpPkt->urg != 1))
+  else if (((tcpPkt->th_flags & TH_SYN) != 0) && ((tcpPkt->th_flags & TH_FIN) == 0) && ((tcpPkt->th_flags & TH_ACK) == 0) &&
+           ((tcpPkt->th_flags & TH_PUSH) == 0) && ((tcpPkt->th_flags & TH_RST) == 0) && ((tcpPkt->th_flags & TH_URG) == 0))
     snprintf(packetDesc, MAXBUF, "TCP SYN/Normal scan");
   else
     snprintf(packetDesc, MAXBUF,
              "Unknown Type: TCP Packet Flags: SYN: %d FIN: %d ACK: %d PSH: %d URG: %d RST: %d",
-             tcpPkt->syn, tcpPkt->fin, tcpPkt->ack, tcpPkt->psh, tcpPkt->urg, tcpPkt->rst);
-
+             tcpPkt->th_flags & TH_SYN ? 1 : 0, tcpPkt->th_flags & TH_FIN ? 1 : 0, tcpPkt->th_flags & TH_ACK ? 1 : 0,
+             tcpPkt->th_flags & TH_PUSH ? 1 : 0, tcpPkt->th_flags & TH_URG ? 1 : 0, tcpPkt->th_flags & TH_RST ? 1 : 0);
   return (packetDescPtr);
 }
 
 char *ErrnoString(char *buf, const size_t buflen) {
   char *p;
-#if (_POSIX_C_SOURCE >= 200112L) && !_GNU_SOURCE
+#if ((_POSIX_C_SOURCE >= 200112L) && !_GNU_SOURCE) || defined(BSD)
   strerror_r(errno, buf, buflen);
   p = buf;
 #else
@@ -259,7 +258,7 @@ char *ErrnoString(char *buf, const size_t buflen) {
   return p;
 }
 
-int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct iphdr *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
+int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
   int result;
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
 
@@ -309,7 +308,7 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
       Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, cd->port);
     }
 
-    if (ip->ihl > 5)
+    if (ip->ip_hl > 5)
       Log("attackalert: Packet from host: %s/%s to %s port: %d has IP options set (detection avoidance technique).", resolvedHost, target, GetProtocolString(cd->protocol), cd->port);
   }
 
@@ -328,6 +327,72 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
   } else {
     Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
   }
+
+  return TRUE;
+}
+
+int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp) {
+  memset(client, 0, sizeof(struct sockaddr_in));
+  *tcp = NULL;
+  *udp = NULL;
+  *cd = NULL;
+
+  client->sin_family = AF_INET;
+  client->sin_addr.s_addr = ip->ip_src.s_addr;
+  if (ip->ip_p == IPPROTO_TCP) {
+    *tcp = (struct tcphdr *)p;
+    if (configData.sentryMode == SENTRY_MODE_ATCP) {
+      if (ntohs((*tcp)->th_dport) > configData.tcpAdvancedPort)
+        return FALSE;
+
+      /* In advanced mode, the connection data list contains ports which should be ignored- So,
+       * finding a match means we should not process. */
+      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*tcp)->th_dport), IPPROTO_TCP)) != NULL)
+        return FALSE;
+    } else if (configData.sentryMode == SENTRY_MODE_STCP) {
+      /* Find the port which should trigger the sentry */
+      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*tcp)->th_dport), IPPROTO_TCP)) == NULL)
+        return FALSE;
+    } else {
+      Error("adminalert: Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
+      Exit(EXIT_FAILURE);
+    }
+    client->sin_port = (*tcp)->th_dport;
+  } else if (ip->ip_p == IPPROTO_UDP) {
+    *udp = (struct udphdr *)p;
+    if (configData.sentryMode == SENTRY_MODE_AUDP) {
+      if (ntohs((*udp)->uh_dport) > configData.udpAdvancedPort)
+        return FALSE;
+
+      /* In advanced mode, the connection data list contains ports which should be ignored- So,
+       * finding a match means we should not process. */
+      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*udp)->uh_dport), IPPROTO_UDP)) != NULL)
+        return FALSE;
+    } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
+      /* Find the port which should trigger the sentry */
+      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*udp)->uh_dport), IPPROTO_UDP)) == NULL)
+        return FALSE;
+    } else {
+      Error("adminalert: Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
+      Exit(EXIT_FAILURE);
+    }
+    client->sin_port = (*udp)->uh_dport;
+  } else {
+    Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+int ntohstr(char *buf, const int bufSize, const uint32_t addr) {
+  struct in_addr saddr;
+
+  if (bufSize < 16)
+    return FALSE;
+
+  saddr.s_addr = addr;
+  snprintf(buf, bufSize, "%s", inet_ntoa(saddr));
 
   return TRUE;
 }

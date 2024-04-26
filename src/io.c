@@ -111,6 +111,15 @@ void Verbose(char *logentry, ...) {
   va_end(argsPtr);
 }
 
+void Crash(int errCode, char *logentry, ...) {
+  va_list argsPtr;
+  va_start(argsPtr, logentry);
+  LogEntry(LogTypeError, logentry, argsPtr);
+  va_end(argsPtr);
+
+  Exit(errCode);
+}
+
 void Exit(int status) {
   Log("PortSentry is shutting down");
 
@@ -244,49 +253,43 @@ int NeverBlock(char *target, char *filename) {
   return (FALSE);
 }
 
-/* This writes out blocked hosts to the blocked file. It adds the hostname */
-/* time stamp, and port connection that was acted on */
-int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, const char *portType) {
+static int WriteToLogFile(const char *filename, const char *target, const char *resolvedHost, const int port, const char *portType) {
   FILE *output;
   char err[ERRNOMAXBUF];
-  int blockedStatus = TRUE, historyStatus = TRUE;
-
   struct tm tm, *tmptr;
-
   time_t current_time;
   current_time = time(0);
   tmptr = localtime_r(&current_time, &tm);
 
-  Debug("WriteBlocked: Opening block file: %s ", blockedFilename);
+  Debug("WriteToLogFile: Opening: %s ", filename);
 
-  if ((output = fopen(blockedFilename, "a")) == NULL) {
-    Error("adminalert: Cannot open blocked file: %s (%s)", blockedFilename, ErrnoString(err, sizeof(err)));
-    blockedStatus = FALSE;
-  } else {
-    fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
-            current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-            tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
-    fclose(output);
-    blockedStatus = TRUE;
+  if ((output = fopen(filename, "a")) == NULL) {
+    Log("adminalert: Unable to open block log file: %s (%s)", filename, ErrnoString(err, sizeof(err)));
+    return FALSE;
   }
 
-  Debug("WriteBlocked: Opening history file: %s ", historyFilename);
+#ifdef OpenBSD
+  fprintf(output, "%lld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
+          current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
+          tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
+#else
+  fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
+          current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
+          tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
+#endif
 
-  if ((output = fopen(historyFilename, "a")) == NULL) {
-    Error("adminalert: Cannot open history file: %s (%s)", historyFilename, ErrnoString(err, sizeof(err)));
-    historyStatus = FALSE;
-  } else {
-    fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
-            current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-            tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
-    fclose(output);
-    historyStatus = TRUE;
-  }
+  fclose(output);
 
-  if (historyStatus || blockedStatus == FALSE)
-    return (FALSE);
-  else
-    return (TRUE);
+  return TRUE;
+}
+
+int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, const char *portType) {
+  int blockedStatus = TRUE, historyStatus = TRUE;
+
+  blockedStatus = WriteToLogFile(blockedFilename, target, resolvedHost, port, portType);
+  historyStatus = WriteToLogFile(historyFilename, target, resolvedHost, port, portType);
+
+  return (blockedStatus && historyStatus);
 }
 
 int BindSocket(int sockfd, int port, int proto) {
@@ -647,7 +650,7 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
 /* Read packet IP and transport headers and set ipPtr/transportPtr to their correct location
  * transportPtr is either a struct tcphdr * or struct udphdr *
  */
-int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct iphdr **ipPtr, void **transportPtr) {
+int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct ip **ipPtr, void **transportPtr) {
   char err[ERRNOMAXBUF];
   size_t ipHeaderLength;
   ssize_t result;
@@ -656,20 +659,20 @@ int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct i
   if ((result = read(socket, packetBuffer, packetBufferSize)) == -1) {
     Error("adminalert: Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
     return ERROR;
-  } else if (result < (ssize_t)sizeof(struct iphdr)) {
+  } else if (result < (ssize_t)sizeof(struct ip)) {
     Error("adminalert: Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
     return ERROR;
   }
 
-  *ipPtr = (struct iphdr *)packetBuffer;
+  *ipPtr = (struct ip *)packetBuffer;
 
-  if (((*ipPtr)->ihl < 5) || ((*ipPtr)->ihl > 15)) {
-    addr.s_addr = (u_int)(*ipPtr)->saddr;
-    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", (*ipPtr)->ihl, inet_ntoa(addr));
+  if (((*ipPtr)->ip_hl < 5) || ((*ipPtr)->ip_hl > 15)) {
+    addr.s_addr = (u_int)(*ipPtr)->ip_src.s_addr;
+    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", (*ipPtr)->ip_hl, inet_ntoa(addr));
     return (FALSE);
   }
 
-  ipHeaderLength = (*ipPtr)->ihl * 4;
+  ipHeaderLength = (*ipPtr)->ip_hl * 4;
 
   if (ipHeaderLength > packetBufferSize) {
     Error("adminalert: IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);

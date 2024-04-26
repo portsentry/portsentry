@@ -1,9 +1,8 @@
 #!/bin/sh
 
-for f in $(find . -maxdepth 1 -type d -not -path "\." | sort); do
+for f in $(find . -maxdepth 1 -mindepth 1 -type d |sort); do
   echo "Running test $f"
-  test_script=$(find $f -name "*.sh" -type f |tail -n 1)
-  if ! ./run_test.sh ../debug/portsentry $f/portsentry.conf $f/portsentry.test $test_script; then
+  if ! ./run_test.sh ../debug/portsentry $f; then
     echo "Stopping further tests due to failure"
     exit 1
   fi

@@ -1,3 +1,4 @@
+#include <sys/types.h>
 #include <arpa/inet.h>
 #include <assert.h>
 #include <netdb.h>
@@ -7,6 +8,7 @@
 #include <poll.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "config_data.h"
@@ -22,7 +24,7 @@ int PortSentryStealthMode(void) {
   int tcpSockfd, udpSockfd, connectionDataSize;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct sockaddr_in client;
-  struct iphdr *ip = NULL;
+  struct ip *ip = NULL;
   struct tcphdr *tcp = NULL;
   struct udphdr *udp = NULL;
   struct pollfd fds[2];
@@ -85,26 +87,12 @@ int PortSentryStealthMode(void) {
       if (PacketRead(fds[count].fd, packetBuffer, IP_MAXPACKET, &ip, &p) != TRUE)
         continue;
 
-      memset(&client, 0, sizeof(client));
-      client.sin_family = AF_INET;
-      client.sin_addr.s_addr = ip->saddr;
-      if (ip->protocol == IPPROTO_TCP) {
-        tcp = (struct tcphdr *)p;
-        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(tcp->dest), IPPROTO_TCP)) == NULL)
-          continue;
-        client.sin_port = tcp->dest;
-      } else if (ip->protocol == IPPROTO_UDP) {
-        udp = (struct udphdr *)p;
-        if ((cd = FindConnectionData(connectionData, connectionDataSize, ntohs(udp->dest), IPPROTO_UDP)) == NULL)
-          continue;
-        client.sin_port = udp->dest;
-      } else {
-        Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->protocol);
+      if (SetConvenienceData(connectionData, connectionDataSize, ip, p, &client, &cd, &tcp, &udp) != TRUE) {
         continue;
       }
 
       // FIXME: Do we need this?
-      if (cd->protocol == IPPROTO_TCP && (tcp->ack == 1 || tcp->rst == 1)) {
+      if (cd->protocol == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
         continue;
       }
 

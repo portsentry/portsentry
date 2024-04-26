@@ -48,7 +48,42 @@ err() {
 }
 
 findInFile() {
-  grep -q "$1" $2
+  local str="$1"
+  local file=$2
+  
+  if [ -z "$3" ]; then
+    local timeout=5
+  else
+    local timeout=$3
+  fi
+
+  while [ ! -f $file ]; do
+    debug "waiting for $file to be created"
+    sleep 1
+    timeout=$((timeout - 1))
+    if [ $timeout -eq 0 ]; then
+      echo "Error: Timeout waiting for $file to be created"
+      exit 1
+    fi
+  done
+
+  if [ -z "$3" ]; then
+    local timeout=5
+  else
+    local timeout=$3
+  fi
+
+  while [ $timeout -gt 0 ]; do
+    debug "waiting for string $str in file $file"
+    if grep -q "$str" $file; then
+      debug "Found string $str in file $file"
+      return 0
+    fi
+    sleep 1
+    timeout=$((timeout - 1))
+  done
+
+  return 1
 }
 
 confirmBlockTriggered() {
@@ -91,6 +126,34 @@ confirmAlreadyBlocked() {
   fi
 }
 
+confirmSynScan() {
+  verbose "expect syn scan block message"
+  if ! findInFile "^attackalert: TCP SYN/Normal scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+    err "Expected syn scan block message not found"
+  fi
+}
+
+confirmNullScan() {
+  verbose "expect null scan block message"
+  if ! findInFile "^attackalert: TCP NULL scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+    err "Expected null scan block message not found"
+  fi
+}
+
+confirmXmasScan() {
+  verbose "expect xmas scan block message"
+  if ! findInFile "^attackalert: TCP XMAS scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+    err "Expected xmas scan block message not found"
+  fi
+}
+
+confirmFinScan() {
+  verbose "expect fin scan block message"
+  if ! findInFile "^attackalert: TCP FIN scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+    err "Expected fin scan block message not found"
+  fi
+}
+
 waitForFile() {
   if [ -z "$1" ]; then
     err "waitForFile: no file specified"
@@ -122,16 +185,30 @@ runNmap() {
     err "runNmap: no port specified"
   fi
 
+  local NMAP=$(which nmap)
+  if [ -z "$NMAP" ]; then
+    err "runNmap: nmap not found"
+    exit 1
+  fi
+
   local port=$1
 
   if [ "$2" = "T" ]; then
     local proto="T"
   elif [ "$2" = "U" ]; then
     local proto="U"
+  elif [ "$2" = "S" ]; then
+    local proto="S"
+  elif [ "$2" = "N" ]; then
+    local proto="N"
+  elif [ "$2" = "F" ]; then
+    local proto="F"
+  elif [ "$2" = "X" ]; then
+    local proto="X"
   else
     err "runNmap: invalid protocol $2"
   fi
 
   verbose "expect connect to $proto localhost:$port"
-  nmap -s$proto -p$port-$port localhost >/dev/null
+  $NMAP -s$proto -p$port-$port localhost >/dev/null
 }
