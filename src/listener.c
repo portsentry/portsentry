@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <assert.h>
 #include <poll.h>
@@ -27,6 +28,8 @@ static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo);
 static int PrepDevices(struct ListenerModule *lm);
 // static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet);
 static int SetupFilter(struct Device *device);
+static char *ReallocFilter(char *filter, int newLen);
+static char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);
 static char *AllocAndBuildPcapFilter(struct Device *device);
 static void PrintDevices(const struct ListenerModule *lm);
 
@@ -206,135 +209,117 @@ cleanup:
   return status;
 }
 
+static char *ReallocFilter(char *filter, int newLen) {
+  char *newFilter = NULL;
+
+  if ((newFilter = realloc(filter, newLen)) == NULL) {
+    Error("Unable to reallocate %d bytes of memory for pcap filter", newLen);
+    Exit(EXIT_FAILURE);
+  }
+
+  return newFilter;
+}
+
+static char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
+  int neededBufferLen;
+  char *p;
+  va_list args;
+
+  // Calculate the length of the buffer needed (excluding the null terminator)
+  va_start(args, append);
+  neededBufferLen = vsnprintf(NULL, 0, append, args);
+  va_end(args);
+
+  // First time we're called, make sure we alloc room for the null terminator since *snprintf auto adds it and force truncate if it doesn't fit
+  if (filter == NULL)
+    neededBufferLen += 1;
+
+  filter = ReallocFilter(filter, *filterLen + neededBufferLen);
+
+  // First time we're called, start at the beginning of the buffer. Otherwise, go to end of buffer - the null terminator
+  if (*filterLen == 0)
+    p = filter;
+  else
+    p = filter + *filterLen - 1;
+
+  // store the new length of the buffer
+  *filterLen += neededBufferLen;
+
+  // Append the new string to the buffer, *snprintf will add the null terminator
+  va_start(args, append);
+  vsnprintf(p, (p == filter) ? neededBufferLen : neededBufferLen + 1, append, args);
+  va_end(args);
+
+  return filter;
+}
+
 static char *AllocAndBuildPcapFilter(struct Device *device) {
-  int i, filterLen, ret;
-  char *filter = NULL, *p;
-  char tmp[16];
+  int i;
+  int filterLen = 0;
+  char *filter = NULL;
 
   assert(device != NULL);
 
-  filterLen = 0;
+  if (device->inet4_addrs_count > 0 || device->inet6_addrs_count > 0) {
+    filter = ReallocAndAppend(filter, &filterLen, "(");
+  }
+
   for (i = 0; i < device->inet4_addrs_count; i++) {
-    filterLen += strlen(device->inet4_addrs[i]) + 16;  // "ip dst host <IP> or "
+    if (i > 0) {
+      filter = ReallocAndAppend(filter, &filterLen, " or ");
+    }
+    filter = ReallocAndAppend(filter, &filterLen, "ip dst host %s", device->inet4_addrs[i]);
+  }
+
+  if (device->inet4_addrs_count > 0 && device->inet6_addrs_count > 0) {
+    filter = ReallocAndAppend(filter, &filterLen, " or ");
   }
 
   for (i = 0; i < device->inet6_addrs_count; i++) {
-    filterLen += strlen(device->inet6_addrs[i]) + 17;  // "ip6 dst host <IP> or "
-  }
-  if (filterLen > 0) {
-    filterLen -= 4;  // Remove last " or "
-    filterLen += 7;  // Opening parenthesis ( + ") and "
+    if (i > 0) {
+      filter = ReallocAndAppend(filter, &filterLen, " or ");
+    }
+    filter = ReallocAndAppend(filter, &filterLen, "ip6 dst host %s", device->inet6_addrs[i]);
   }
 
-  filterLen += 1;  // Opening parenthesis (
+  if (device->inet4_addrs_count > 0 || device->inet6_addrs_count > 0) {
+    filter = ReallocAndAppend(filter, &filterLen, ")");
+  }
+
+  filter = ReallocAndAppend(filter, &filterLen, " and (");
+
   if (configData.sentryMode == SENTRY_MODE_STCP) {
     for (i = 0; i < configData.tcpPortsLength; i++) {
-      if ((ret = sprintf(tmp, "%d", configData.tcpPorts[i])) < 0) {
-        Error("Unable to convert port %d to string", configData.tcpPorts[i]);
-        return NULL;
+      if (i > 0) {
+        filter = ReallocAndAppend(filter, &filterLen, " or ");
       }
-      filterLen += 17 + ret;  // "tcp dst port <PORT> or "
+      filter = ReallocAndAppend(filter, &filterLen, "tcp dst port %d", configData.tcpPorts[i]);
     }
-    filterLen -= 4;  // Remove last " or "
   } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
     for (i = 0; i < configData.udpPortsLength; i++) {
-      if ((ret = sprintf(tmp, "%d", configData.udpPorts[i])) < 0) {
-        Error("Unable to convert port %d to string", configData.udpPorts[i]);
-        return NULL;
+      if (i > 0) {
+        filter = ReallocAndAppend(filter, &filterLen, " or ");
       }
-      filterLen += 17 + ret;  // "udp dst port <PORT> or "
+      filter = ReallocAndAppend(filter, &filterLen, "udp dst port %d", configData.udpPorts[i]);
     }
-    filterLen -= 4;  // Remove last " or "
   } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
-    ret = sprintf(tmp, "%d", configData.tcpAdvancedPort);
-    filterLen += 30 + ret;  // "tcp[2:2] >= 0 and tcp[2:2] <= "
+    filter = ReallocAndAppend(filter, &filterLen, "tcp[2:2] >= 0 and tcp[2:2] <= %d", configData.tcpAdvancedPort);
 
     for (i = 0; i < configData.tcpAdvancedExcludePortsLength; i++) {
-      if ((ret = sprintf(tmp, "%d", configData.tcpAdvancedExcludePorts[i])) < 0) {
-        Error("Unable to convert port %d to string", configData.tcpAdvancedExcludePorts[i]);
-        return NULL;
-      }
-      filterLen += 14 + ret;  // " and not port <PORT>"
+      filter = ReallocAndAppend(filter, &filterLen, " and not port %d", configData.tcpAdvancedExcludePorts[i]);
     }
   } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
-    ret = sprintf(tmp, "%d", configData.udpAdvancedPort);
-    filterLen += 30 + ret;  // "udp[2:2] >= 0 and udp[2:2] <= "
+    filter = ReallocAndAppend(filter, &filterLen, "udp[2:2] >= 0 and udp[2:2] <= %d", configData.udpAdvancedPort);
 
     for (i = 0; i < configData.udpAdvancedExcludePortsLength; i++) {
-      if ((ret = sprintf(tmp, "%d", configData.udpAdvancedExcludePorts[i])) < 0) {
-        Error("Unable to convert port %d to string", configData.udpAdvancedExcludePorts[i]);
-        return NULL;
-      }
-      filterLen += 14 + ret;  // " and not port <PORT>"
+      filter = ReallocAndAppend(filter, &filterLen, " and not port %d", configData.udpAdvancedExcludePorts[i]);
     }
   } else {
     Error("Unknown sentry mode %d", configData.sentryMode);
     return NULL;
   }
 
-  filterLen += 1;  // Closing )
-  filterLen++;     // '\0'
-
-  if ((filter = malloc(filterLen)) == NULL) {
-    Error("Unable to allocate memory for pcap filter");
-    return NULL;
-  }
-
-  p = filter;
-
-  for (i = 0; i < device->inet4_addrs_count; i++) {
-    if (p == filter)
-      *p++ = '(';
-    p += sprintf(p, "ip dst host %s or ", device->inet4_addrs[i]);
-  }
-
-  for (i = 0; i < device->inet6_addrs_count; i++) {
-    if (p == filter)
-      *p++ = '(';
-    p += sprintf(p, "ip6 dst host %s or ", device->inet6_addrs[i]);
-  }
-
-  if (p != filter) {
-    p -= 4;  // Remove last " or "
-    p += sprintf(p, ") and ");
-  }
-
-  *p++ = '(';
-
-  if (configData.sentryMode == SENTRY_MODE_STCP) {
-    for (i = 0; i < configData.tcpPortsLength; i++) {
-      if (i > 0) {
-        p += sprintf(p, " or ");
-      }
-      p += sprintf(p, "tcp dst port %d", configData.tcpPorts[i]);
-    }
-  } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
-    for (i = 0; i < configData.udpPortsLength; i++) {
-      if (i > 0) {
-        p += sprintf(p, " or ");
-      }
-      p += sprintf(p, "udp dst port %d", configData.udpPorts[i]);
-    }
-  } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
-    // "tcp[2:2] >= 0 and tcp[2:2] <= "
-    p += sprintf(p, "tcp[2:2] >= 0 and tcp[2:2] <= %d", configData.tcpAdvancedPort);
-
-    for (i = 0; i < configData.tcpAdvancedExcludePortsLength; i++) {
-      p += sprintf(p, " and not port %d", configData.tcpAdvancedExcludePorts[i]);
-    }
-  } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
-    p += sprintf(p, "udp[2:2] >= 0 and udp[2:2] <= %d", configData.udpAdvancedPort);
-
-    for (i = 0; i < configData.udpAdvancedExcludePortsLength; i++) {
-      p += sprintf(p, " and not port %d", configData.udpAdvancedExcludePorts[i]);
-    }
-  } else {
-    Error("Unknown sentry mode %d", configData.sentryMode);
-    return NULL;
-  }
-
-  *p++ = ')';
-  *p = '\0';
+  filter = ReallocAndAppend(filter, &filterLen, ")");
 
   Debug("Device: %s pcap filter len %d: [%s]", device->name, filterLen, filter);
 
