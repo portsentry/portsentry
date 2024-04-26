@@ -5,6 +5,7 @@ PORTSENTRY_EXEC=""
 PORTSENTRY_CONF=""
 PORTSENTRY_TEST=""
 PORTSENTRY_SCRIPT=""
+PORTSENTRY_HOOK_PRE_SETUP=""
 
 log() {
   echo "$@"
@@ -23,15 +24,16 @@ init() {
     exit 1
   fi
 
-  if [ $# -lt 3 ]; then
-    echo "Usage: $0 <portsentry binary> <portsentry conf file> <test definitions file> <script>"
+  if [ $# -lt 2 ]; then
+    echo "Usage: $0 <portsentry binary> <directory containing test files>"
     exit 1
   fi
 
   PORTSENTRY_EXEC=$1
-  PORTSENTRY_CONF=$2
-  PORTSENTRY_TEST=$3
-  PORTSENTRY_SCRIPT=$4
+  PORTSENTRY_CONF=$2/portsentry.conf
+  PORTSENTRY_TEST=$2/portsentry.test
+  PORTSENTRY_SCRIPT=$2/test.sh
+  PORTSENTRY_HOOK_PRE_SETUP=$2/hook_pre_setup.sh
 
   if [ ! -x $PORTSENTRY_EXEC ]; then
     echo "Error: portsentry executable file: $PORTSENTRY_EXEC not found or not executable"
@@ -51,6 +53,12 @@ init() {
   if [ ! -x $PORTSENTRY_SCRIPT ]; then
     echo "Error: portsentry script file: $PORTSENTRY_SCRIPT not found or not executable"
     exit 1
+  fi
+}
+
+hook_pre_setup() {
+  if [ -x $PORTSENTRY_HOOK_PRE_SETUP ]; then
+    . $PORTSENTRY_HOOK_PRE_SETUP
   fi
 }
 
@@ -146,6 +154,7 @@ run_test() {
 }
 
 init $@
+hook_pre_setup
 setup
 run_portsentry
 run_test
