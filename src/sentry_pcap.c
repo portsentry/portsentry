@@ -18,8 +18,6 @@
 
 #define POLL_TIMEOUT 500
 
-static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
-
 static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp);
 static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
@@ -88,7 +86,7 @@ exit:
   return status;
 }
 
-static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
   struct ConnectionData cd;
   struct sockaddr_in client;
   struct Device *device = (struct Device *)args;
@@ -131,8 +129,9 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
   *tcp = NULL;
   *udp = NULL;
 
-  // FIXME: Clean me up
-  if (pcap_datalink(device->handle) == DLT_EN10MB) {
+  if (device == NULL) {
+    *ip = GetIphdrByOffset(packet, 0);
+  } else if (pcap_datalink(device->handle) == DLT_EN10MB) {
     *ip = GetIphdrByOffset(packet, sizeof(struct ether_header));
   } else if (pcap_datalink(device->handle) == DLT_RAW) {
     *ip = GetIphdrByOffset(packet, 0);
@@ -193,8 +192,10 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
   } else if (protocol == IPPROTO_UDP) {
     *udp = (struct udphdr *)(((u_char *)*ip) + iplen);  // ip struct is wider than 1 byte so need recast
   } else {
-    Error("adminalert: Packet on %s have unknown protocol %d. Showing Packet:", device->name, protocol);
-    PrintPacket(device, *ip, *tcp, *udp, header);
+    Error("adminalert: Packet on %s have unknown protocol %d", (device != NULL) ? device->name : "NOT SET", protocol);
+    if (configData.logFlags & LOGFLAG_DEBUG) {
+      PrintPacket(device, *ip, *tcp, *udp, header);
+    }
     return FALSE;
   }
 
@@ -249,7 +250,9 @@ static void PrintPacket(const struct Device *device, const struct ip *ip, const 
   ipVersion = ip->ip_v;
   hl = ip->ip_hl;
 
-  fprintf(stderr, "%s: ", device->name);
+  if (device != NULL) {
+    fprintf(stderr, "%s: ", device->name);
+  }
 
   if (header != NULL) {
     fprintf(stderr, "%d [%d] ", header->caplen, header->len);
