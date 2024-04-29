@@ -130,7 +130,6 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
   *ip = NULL;
   *tcp = NULL;
   *udp = NULL;
-  (void)header;
 
   // FIXME: Clean me up
   if (pcap_datalink(device->handle) == DLT_EN10MB) {
@@ -250,7 +249,12 @@ static void PrintPacket(const struct Device *device, const struct ip *ip, const 
   ipVersion = ip->ip_v;
   hl = ip->ip_hl;
 
-  fprintf(stderr, "%s: %d [%d] ", device->name, header->caplen, header->len);
+  fprintf(stderr, "%s: ", device->name);
+
+  if (header != NULL) {
+    fprintf(stderr, "%d [%d] ", header->caplen, header->len);
+  }
+
   fprintf(stderr, "ihl: %d IP len: %d proto: %s (%d) ver: %d saddr: %s daddr: %s ", hl, iplen,
           protocol == IPPROTO_TCP   ? "tcp"
           : protocol == IPPROTO_UDP ? "udp"
