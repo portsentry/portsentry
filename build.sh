@@ -49,22 +49,21 @@ elif [ "$ACTION" = "cdt" ]; then
 elif [ "$ACTION" = "test-debug" ]; then
   cd debug && \
   ctest
-elif [ "$ACTION" = "rebuild" ]; then
-  $0 clean && \
-  $0 debug
-elif [ "$ACTION" = "rebuild-release" ]; then
-  $0 clean && \
-  $0 release
-elif [ "$ACTION" = "all" ]; then
-  $0 clean && \
-  $0 debug && \
-  $0 test-debug && \
-  $0 release && \
-  $0 test-release
 elif [ "$ACTION" = "test-release" ]; then
   cd release && \
   ctest
+elif [ "$ACTION" = "docker" ]; then
+  docker build -t portsentry:latest -f docker/Dockerfile .
 else
-  echo "Usage: $0 [debug|release|clean]"
-  exit 1
+  echo "Usage: $0 <command>"
+  echo "Commands:"
+  echo "  clean         - Remove all build files/caches"
+  echo "  debug         - Build debug version"
+  echo "  release       - Build release version"
+  echo "  sast          - Run static analysis tools"
+  echo "  cdt           - Run clean, debug, test-debug in sequence"
+  echo "  test-debug    - Run unit tests for debug build"
+  echo "  test-release  - Run unit tests for release build"
+  echo "  docker        - Build docker image"
+  exit 0
 fi
