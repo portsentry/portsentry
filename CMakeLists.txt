@@ -6,7 +6,7 @@ set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny fi
 set(MAXSTATE 50 CACHE STRING "Maximum number of hosts to keep in a \"previous connect\" state engine")
 
 set(STANDARD_COMPILE_OPTS -Wall -Wextra -pedantic -Werror -Wformat-security -Wstack-protector -fstack-protector-strong -fPIE -D_FORTIFY_SOURCE=2)
-set(CORE_SOURCE_FILES src/config_data.c src/configfile.c src/io.c src/util.c src/state_machine.c src/cmdline.c src/connect_sentry.c src/connection_data.c src/stealth_sentry.c src/advanced_sentry.c src/listener.c src/device.c src/sentry_pcap.c)
+set(CORE_SOURCE_FILES src/config_data.c src/configfile.c src/io.c src/util.c src/state_machine.c src/cmdline.c src/connect_sentry.c src/connection_data.c src/stealth_sentry.c src/advanced_sentry.c src/listener.c src/device.c src/sentry_pcap.c src/sighandler.c)
 
 option(BUILD_FUZZER "Build fuzzer tests" OFF)
 
@@ -23,6 +23,7 @@ target_link_libraries(lportsentry INTERFACE pcap)
 # PORTSENTRY - main program
 add_executable(portsentry src/portsentry.c)
 target_compile_options(portsentry PRIVATE ${STANDARD_COMPILE_OPTS})
+target_include_directories(portsentry PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(portsentry PRIVATE -pie)
 target_link_libraries(portsentry PRIVATE pcap PRIVATE lportsentry)
 
