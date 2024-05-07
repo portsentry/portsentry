@@ -15,7 +15,6 @@
 /*                                                                      */
 /* $Id: portsentry.c,v 1.40 2003/05/23 17:41:25 crowland Exp crowland $ */
 /************************************************************************/
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -27,14 +26,21 @@
 #include "connect_sentry.h"
 #include "io.h"
 #include "portsentry.h"
-#include "state_machine.h"
 #include "sentry_pcap.h"
-#include "util.h"
+#include "sighandler.h"
+#include "config.h"
+
+uint8_t g_isRunning = TRUE;
 
 int main(int argc, char *argv[]) {
+  printf("PortSentry %d.%d\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR);
+
   ParseCmdline(argc, argv);
 
-  signal(SIGPIPE, SIG_IGN);
+  if (SetupSignalHandlers() != TRUE) {
+    fprintf(stderr, "Could not setup signal handler. Shutting down.\n");
+    Exit(EXIT_FAILURE);
+  }
 
   readConfigFile();
 
@@ -44,14 +50,13 @@ int main(int argc, char *argv[]) {
   }
 
   if ((geteuid()) && (getuid()) != 0) {
-    printf("You need to be root to run this.\n");
+    fprintf(stderr, "You need to be root to run this.\n");
     Exit(EXIT_FAILURE);
   }
 
   if (configData.daemon == TRUE) {
     if (DaemonSeed() == ERROR) {
-      Error("adminalert: could not go into daemon mode. Shutting down.");
-      printf("ERROR: could not go into daemon mode. Shutting down.\n");
+      fprintf(stderr, "Could not go into daemon mode. Shutting down.\n");
       Exit(EXIT_FAILURE);
     }
   }
@@ -93,5 +98,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  printf("Portsentry exiting\n");
   return EXIT_SUCCESS;
 }
