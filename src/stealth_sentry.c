@@ -20,9 +20,11 @@
 #include "stealth_sentry.h"
 #include "util.h"
 
+extern uint8_t g_isRunning;
+
 int PortSentryStealthMode(void) {
   int count, nfds, result;
-  int tcpSockfd, udpSockfd, connectionDataSize;
+  int tcpSockfd = -1, udpSockfd = -1, connectionDataSize;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct sockaddr_in client;
   struct ip *ip = NULL;
@@ -70,7 +72,7 @@ int PortSentryStealthMode(void) {
 
   Log("adminalert: PortSentry is now active and listening.");
 
-  for (;;) {
+  while (g_isRunning == TRUE) {
     result = poll(fds, nfds, -1);
     if (result == -1) {
       if (errno == EINTR) {
@@ -108,6 +110,11 @@ int PortSentryStealthMode(void) {
     }
   }
 
-  close(tcpSockfd);
-  close(udpSockfd);
+  if (tcpSockfd != -1)
+    close(tcpSockfd);
+
+  if (udpSockfd != -1)
+    close(udpSockfd);
+
+  return TRUE;
 }
