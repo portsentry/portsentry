@@ -5,3 +5,17 @@ services:
     restart: unless-stopped
     network_mode: host
     command: ["--stcp", "-v", "-d", "-i", "ALL"]
+#    volumes:
+# Add a custom config file
+#      - type: bind
+#        source: <path-to>/portsentry.conf
+#        target: /etc/portsentry/portsentry.conf
+#        read_only: true
+# Add a custom ignore file
+#      - type: bind
+#        source: <path-to>/portsentry.ignore
+#        target: /etc/portsentry/portsentry.ignore
+# If you want access to portsentrys runtime-generated files (history and block log)
+#      - type: bind
+#        source: <path-to-run-dir>
+#        target: /var/run
