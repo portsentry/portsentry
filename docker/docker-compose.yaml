@@ -4,4 +4,4 @@ services:
     image: portsentry
     restart: unless-stopped
     network_mode: host
-    command: [ "--stcp", "-v", "-d" ]
+    command: ["--stcp", "-v", "-d", "-i", "ALL"]
