@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <signal.h>
 #include <stdint.h>
 
@@ -15,8 +16,14 @@ int SetupSignalHandlers(void) {
   sa.sa_flags = 0;
   sigemptyset(&sa.sa_mask);
 
-  sigaction(SIGINT, &sa, NULL);
-  sigaction(SIGTERM, &sa, NULL);
+  if (sigaction(SIGINT, &sa, NULL) == -1) {
+    perror("sigaction SIGINT");
+    return FALSE;
+  }
+  if (sigaction(SIGTERM, &sa, NULL) == -1) {
+    perror("sigaction SIGTERM");
+    return FALSE;
+  }
 
   return TRUE;
 }
