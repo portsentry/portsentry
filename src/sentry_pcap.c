@@ -24,6 +24,8 @@ static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip,
 static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header);
 struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
 
+extern uint8_t g_isRunning;
+
 int PortSentryPcap(void) {
   int status = FALSE, ret, nfds = 0, i;
   char err[ERRNOMAXBUF];
@@ -46,7 +48,7 @@ int PortSentryPcap(void) {
 
   Log("adminalert: PortSentry is now active and listening.");
 
-  while (1) {
+  while (g_isRunning == TRUE) {
     ret = poll(fds, nfds, POLL_TIMEOUT);
 
     if (ret == -1) {
