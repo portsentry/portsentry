@@ -119,25 +119,31 @@ run_portsentry() {
 }
 
 stop_portsentry() {
-  if [ -n "$1" ]; then
-    local dontExit=1
-  fi
+  local pid="$(ps auxww|grep "$PORTSENTRY_EXEC -c $PORTSENTRY_CONF $switches"|grep -v grep | awk '{print $2}')"
 
-  local pid="$(ps aux|grep "$PORTSENTRY_EXEC -c $PORTSENTRY_CONF $switches"|grep -v grep | awk '{print $2}')"
+  debug "Stopping portsentry with pid: $pid"
   if [ -n "$pid" ]; then
     kill $pid
     return
   fi
 
-  if [ -z "$dontExit" ]; then
-    echo "Error: portsentry not running"
-    exit 1
-  fi
+  timeout=5
+  while [ $timeout -gt 0 ]; do
+    debug "waiting for portsentry to stop $PORTSENTRY_STDOUT"
+    if grep -q "PortSentry is shutting down" $PORTSENTRY_STDOUT; then
+      return
+    fi
+    sleep 1
+    timeout=$((timeout - 1))
+  done
+
+  echo "Error: Unable to parse portsentry stop message, aborting"
+  exit 1
 }
 
 report_and_stop() {
   echo "Detected test failure, stopping portsentry, printing portsentry run log and exit"
-  stop_portsentry 1
+  stop_portsentry
   echo "#### PORTSENTRY STDOUT ####"
   cat $PORTSENTRY_STDOUT
   echo
