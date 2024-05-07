@@ -1,0 +1,7 @@
+services:
+  portsentry:
+    container_name: portsentry
+    image: portsentry
+    restart: unless-stopped
+    network_mode: host
+    command: [ "--stcp", "-v", "-d" ]
