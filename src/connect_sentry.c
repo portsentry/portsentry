@@ -18,6 +18,8 @@
 #include "state_machine.h"
 #include "util.h"
 
+extern uint8_t g_isRunning;
+
 int PortSentryConnectMode(void) {
   struct sockaddr_in client;
   socklen_t clientLength;
@@ -59,7 +61,7 @@ int PortSentryConnectMode(void) {
 
   Log("adminalert: PortSentry is now active and listening.");
 
-  for (;;) {
+  while (g_isRunning == TRUE) {
     FD_ZERO(&selectFds);
 
     for (count = 0; count < connectionDataSize; count++) {
@@ -110,4 +112,5 @@ int PortSentryConnectMode(void) {
   }
 
   CloseConnectionData(connectionData, connectionDataSize);
+  return TRUE;
 }

@@ -18,8 +18,10 @@
 #include "state_machine.h"
 #include "util.h"
 
+extern uint8_t g_isRunning;
+
 int PortSentryAdvancedStealthMode(void) {
-  int result, nfds, tcpSockfd, udpSockfd, count;
+  int result, nfds, tcpSockfd = -1, udpSockfd = -1, count;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct sockaddr_in client;
   struct ip *ip = NULL;
@@ -106,7 +108,7 @@ int PortSentryAdvancedStealthMode(void) {
 
   Log("adminalert: PortSentry is now active and listening.");
 
-  for (;;) {
+  while (g_isRunning == TRUE) {
     result = poll(fds, nfds, -1);
     if (result == -1) {
       Error("adminalert: poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
@@ -146,6 +148,9 @@ int PortSentryAdvancedStealthMode(void) {
     }
   }
 
-  close(tcpSockfd);
-  close(udpSockfd);
+  if (tcpSockfd != -1)
+    close(tcpSockfd);
+  if (udpSockfd != -1)
+    close(udpSockfd);
+  return TRUE;
 }
