@@ -7,6 +7,7 @@
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#include <errno.h>
 
 #include "portsentry.h"
 #include "sentry_pcap.h"
@@ -52,6 +53,9 @@ int PortSentryPcap(void) {
     ret = poll(fds, nfds, POLL_TIMEOUT);
 
     if (ret == -1) {
+      if (errno == EINTR) {
+        continue;
+      }
       Error("poll() failed %s", ErrnoString(err, sizeof(err)));
       goto exit;
     } else if (ret == 0) {

@@ -71,6 +71,9 @@ int PortSentryConnectMode(void) {
     result = select(MAXSOCKS, &selectFds, NULL, NULL, (struct timeval *)NULL);
 
     if (result < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
       Error("adminalert: select call failed: %s. Shutting down.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     } else if (result == 0) {

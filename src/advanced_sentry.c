@@ -10,6 +10,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "config_data.h"
 #include "connection_data.h"
@@ -111,6 +112,9 @@ int PortSentryAdvancedStealthMode(void) {
   while (g_isRunning == TRUE) {
     result = poll(fds, nfds, -1);
     if (result == -1) {
+      if (errno == EINTR) {
+        continue;
+      }
       Error("adminalert: poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     } else if (result == 0) {

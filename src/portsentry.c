@@ -98,6 +98,5 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  printf("Portsentry exiting\n");
-  return EXIT_SUCCESS;
+  Exit(EXIT_SUCCESS);
 }
