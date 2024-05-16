@@ -39,6 +39,6 @@ int SetupPort(uint16_t port, int proto);
 int IsPortInUse(uint16_t port, int proto);
 char *ReportPacketType(struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
-int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket);
+void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket);
 int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp);
 int ntohstr(char *buf, const int bufSize, const uint32_t addr);

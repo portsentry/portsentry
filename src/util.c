@@ -258,13 +258,14 @@ char *ErrnoString(char *buf, const size_t buflen) {
   return p;
 }
 
-int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
+void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
   int result;
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
+  int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100;  // -100 => unset
 
   if (configData.sentryMode == SENTRY_MODE_TCP && tcpAcceptSocket == NULL) {
     Error("RunSentry: tcpAcceptSocket is NULL in connect mode");
-    return FALSE;
+    goto sentry_exit;
   }
 
   SafeStrncpy(target, inet_ntoa(client->sin_addr), IPMAXBUF);
@@ -273,16 +274,16 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
     Debug("RunSentry connect mode: accepted %s connection from: %s", (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
   }
 
-  if ((result = NeverBlock(target, configData.ignoreFile)) == ERROR) {
+  if ((flagIgnored = NeverBlock(target, configData.ignoreFile)) == ERROR) {
     Error("Unable to open ignore file %s. Continuing without it", configData.ignoreFile);
-    result = FALSE;
-  } else if (result == TRUE) {
+    flagIgnored = FALSE;
+  } else if (flagIgnored == TRUE) {
     Log("attackalert: Host: %s found in ignore file %s, aborting actions", target, configData.ignoreFile);
-    return FALSE;
+    goto sentry_exit;
   }
 
-  if (CheckStateEngine(target) != TRUE) {
-    return FALSE;
+  if ((flagTriggerCountExceeded = CheckStateEngine(target)) != TRUE) {
+    goto sentry_exit;
   }
 
   if (configData.sentryMode == SENTRY_MODE_TCP) {
@@ -299,23 +300,13 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
     snprintf(resolvedHost, NI_MAXHOST, "%s", target);
   }
 
-  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
-    Log("attackalert: Connect from host: %s/%s to %s port: %d", resolvedHost, target, (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", cd->port);
-  } else {
-    if (cd->protocol == IPPROTO_TCP) {
-      Log("attackalert: %s from host: %s/%s to TCP port: %d", ReportPacketType(tcp), resolvedHost, target, cd->port);
-    } else {
-      Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, cd->port);
-    }
-
-    if (ip->ip_hl > 5)
-      Log("attackalert: Packet from host: %s/%s to %s port: %d has IP options set (detection avoidance technique).", resolvedHost, target, GetProtocolString(cd->protocol), cd->port);
-  }
-
   // If in log-only mode, don't run any of the blocking code
   if ((configData.blockTCP == 0 && (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP)) ||
       (configData.blockUDP == 0 && (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP))) {
-    return TRUE;
+    flagDontBlock = TRUE;
+    goto sentry_exit;
+  } else {
+    flagDontBlock = FALSE;
   }
 
   if (IsBlocked(target, configData.blockedFile) == FALSE) {
@@ -328,7 +319,21 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
     Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
   }
 
-  return TRUE;
+sentry_exit:
+  Log("Scan from: [%s] (%s) protocol: [%s] port: [%d] type: [%s] IP opts: [%s] ignored: [%s] triggered: [%s] noblock: [%s]",
+      target,
+      resolvedHost,
+      (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP) ? "TCP" : "UDP",
+      cd->port,
+      (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) ? "Connect" : (cd->protocol == IPPROTO_TCP) ? ReportPacketType(tcp)
+                                                                                                                                         : "UDP",
+      (ip->ip_hl > 5) ? "set" : "not set",
+      (flagIgnored == TRUE) ? "true" : (flagIgnored == -100) ? "unset"
+                                                             : "false",
+      (flagTriggerCountExceeded == TRUE) ? "true" : (flagTriggerCountExceeded == -100) ? "unset"
+                                                                                       : "false",
+      (flagDontBlock == TRUE) ? "true" : (flagDontBlock == -100) ? "unset"
+                                                                 : "false");
 }
 
 int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp) {
