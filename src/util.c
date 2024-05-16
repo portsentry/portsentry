@@ -29,6 +29,8 @@
 #include <unistd.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "config_data.h"
 #include "connection_data.h"
@@ -36,6 +38,10 @@
 #include "portsentry.h"
 #include "state_machine.h"
 #include "util.h"
+
+#define MAX_BUF_SCAN_EVENT 1024
+
+static void LogScanEvent(const char *target, const char *resolvedHost, struct ConnectionData *cd, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock);
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
@@ -320,20 +326,124 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
   }
 
 sentry_exit:
-  Log("Scan from: [%s] (%s) protocol: [%s] port: [%d] type: [%s] IP opts: [%s] ignored: [%s] triggered: [%s] noblock: [%s]",
-      target,
-      resolvedHost,
-      (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP) ? "TCP" : "UDP",
-      cd->port,
-      (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) ? "Connect" : (cd->protocol == IPPROTO_TCP) ? ReportPacketType(tcp)
-                                                                                                                                         : "UDP",
-      (ip->ip_hl > 5) ? "set" : "not set",
-      (flagIgnored == TRUE) ? "true" : (flagIgnored == -100) ? "unset"
-                                                             : "false",
-      (flagTriggerCountExceeded == TRUE) ? "true" : (flagTriggerCountExceeded == -100) ? "unset"
-                                                                                       : "false",
-      (flagDontBlock == TRUE) ? "true" : (flagDontBlock == -100) ? "unset"
-                                                                 : "false");
+  LogScanEvent(target, resolvedHost, cd, ip, tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock);
+}
+
+int CreateDateTime(char *buf, const int size) {
+  char *p = buf;
+  int ret, current_size = size;
+  struct tm tm, *tmptr;
+  struct timespec ts;
+
+  if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+    Error("Unable to get current clock time");
+    return ERROR;
+  }
+
+  tmptr = localtime_r(&ts.tv_sec, &tm);
+
+  if (tmptr != &tm) {
+    Error("Unable to determine local time");
+    return ERROR;
+  }
+
+  if ((ret = strftime(p, current_size, "%Y-%m-%dT%H:%M:%S.", tmptr)) == 0) {
+    Error("Unable to write datetime format to buffer, insufficient space");
+    return ERROR;
+  }
+
+  current_size -= ret;
+  p += ret;
+
+  if ((ret = snprintf(p, current_size, "%ld", ts.tv_nsec / 1000000)) >= current_size) {
+    Error("Insufficient buffer space to write datetime");
+    return ERROR;
+  }
+
+  current_size -= ret;
+  p += ret;
+
+  if ((ret = strftime(p, current_size, "%z", tmptr)) == 0) {
+    printf("Unable to fit TZ id, insufficient space\n");
+    return ERROR;
+  }
+
+  return TRUE;
+}
+
+static void LogScanEvent(const char *target, const char *resolvedHost, struct ConnectionData *cd, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock) {
+  int ret, bufsize = MAX_BUF_SCAN_EVENT;
+  char buf[MAX_BUF_SCAN_EVENT], *p = buf;
+  char err[ERRNOMAXBUF];
+  FILE *output;
+
+  if (CreateDateTime(p, bufsize) != TRUE) {
+    return;
+  }
+
+  bufsize -= strlen(p);
+  p += strlen(p);
+
+  // FIXME: Should be able to recover from this
+  if (bufsize < 2) {
+    Error("Insufficient buffer size to write scan event");
+    return;
+  }
+
+  *p = ' ';
+  p++;
+  *p = '\0';
+  bufsize--;
+
+  ret = snprintf(p, bufsize, "Scan from: [%s] (%s) protocol: [%s] port: [%d] type: [%s] IP opts: [%s] ignored: [%s] triggered: [%s] noblock: [%s]",
+                 target,
+                 resolvedHost,
+                 (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP) ? "TCP" : "UDP",
+                 cd->port,
+                 (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) ? "Connect" : (cd->protocol == IPPROTO_TCP) ? ReportPacketType(tcp)
+                                                                                                                                                    : "UDP",
+                 (ip->ip_hl > 5) ? "set" : "not set",
+                 (flagIgnored == TRUE) ? "true" : (flagIgnored == -100) ? "unset"
+                                                                        : "false",
+                 (flagTriggerCountExceeded == TRUE) ? "true" : (flagTriggerCountExceeded == -100) ? "unset"
+                                                                                                  : "false",
+                 (flagDontBlock == TRUE) ? "true" : (flagDontBlock == -100) ? "unset"
+                                                                            : "false");
+
+  if (ret >= bufsize) {
+    // FIXME: Rewrite so we recover from this, e.g dynamic alloc from heap
+    Error("Unable to log scan event due to internal buffer too small");
+    return;
+  }
+
+  // Log w/o date
+  Log("%s", p);
+
+  bufsize -= ret;
+  p += ret;
+
+  ret = snprintf(p, bufsize, "\n");
+
+  if (ret >= bufsize) {
+    // FIXME: Rewrite so we recover from this, e.g dynamic alloc from heap
+    Error("Unable to add newline to scan event due to internal buffer too small");
+    return;
+  }
+
+  bufsize -= ret;
+  p += ret;
+
+  if ((output = fopen(configData.historyFile, "a")) == NULL) {
+    Log("adminalert: Unable to open history log file: %s (%s)", configData.historyFile, ErrnoString(err, sizeof(err)));
+    return;
+  }
+
+  if (fwrite(buf, 1, strlen(buf), output) < strlen(buf)) {
+    Error("Unable to write history file");
+    return;
+  }
+
+  fclose(output);
 }
 
 int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp) {

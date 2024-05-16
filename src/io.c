@@ -284,12 +284,7 @@ static int WriteToLogFile(const char *filename, const char *target, const char *
 }
 
 int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, const char *portType) {
-  int blockedStatus = TRUE, historyStatus = TRUE;
-
-  blockedStatus = WriteToLogFile(blockedFilename, target, resolvedHost, port, portType);
-  historyStatus = WriteToLogFile(historyFilename, target, resolvedHost, port, portType);
-
-  return (blockedStatus && historyStatus);
+  return WriteToLogFile(blockedFilename, target, resolvedHost, port, portType);
 }
 
 int BindSocket(int sockfd, int port, int proto) {
