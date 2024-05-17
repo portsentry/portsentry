@@ -270,18 +270,20 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
   int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100;  // -100 => unset
 
   // Note: We need to detrimine contents of resolvedHosr ASAP since it's always needed in the sentry_exit label
+  SafeStrncpy(target, inet_ntoa(client->sin_addr), IPMAXBUF);
+
   if (configData.resolveHost == TRUE) {
     ResolveAddr((struct sockaddr *)client, sizeof(struct sockaddr_in), resolvedHost, NI_MAXHOST);
   } else {
     snprintf(resolvedHost, NI_MAXHOST, "%s", target);
   }
 
+  Log("Well, we have now set resolvedHost: %s", resolvedHost);
+
   if (configData.sentryMode == SENTRY_MODE_TCP && tcpAcceptSocket == NULL) {
     Error("RunSentry: tcpAcceptSocket is NULL in connect mode");
     goto sentry_exit;
   }
-
-  SafeStrncpy(target, inet_ntoa(client->sin_addr), IPMAXBUF);
 
   if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
     Debug("RunSentry connect mode: accepted %s connection from: %s", (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
