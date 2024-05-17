@@ -278,8 +278,6 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
     snprintf(resolvedHost, NI_MAXHOST, "%s", target);
   }
 
-  Log("Well, we have now set resolvedHost: %s", resolvedHost);
-
   if (configData.sentryMode == SENTRY_MODE_TCP && tcpAcceptSocket == NULL) {
     Error("RunSentry: tcpAcceptSocket is NULL in connect mode");
     goto sentry_exit;
