@@ -319,7 +319,7 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
     if ((result = DisposeTarget(target, cd->port, cd->protocol)) != TRUE) {
       Error("attackalert: Error during target dispose %s/%s!", resolvedHost, target);
     } else {
-      WriteBlocked(target, resolvedHost, cd->port, configData.blockedFile, configData.historyFile, GetProtocolString(cd->protocol));
+      WriteBlocked(target, resolvedHost, cd->port, configData.blockedFile, GetProtocolString(cd->protocol));
     }
   } else {
     Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);

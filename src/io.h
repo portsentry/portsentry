@@ -21,7 +21,7 @@
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 
-int WriteBlocked(char *, char *, int, char *, char *, const char *);
+int WriteBlocked(char *, char *, int, char *, const char *);
 void Log(char *, ...);
 void Error(char *, ...);
 void Debug(char *logentry, ...);

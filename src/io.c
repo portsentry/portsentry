@@ -283,7 +283,7 @@ static int WriteToLogFile(const char *filename, const char *target, const char *
   return TRUE;
 }
 
-int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, const char *portType) {
+int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, const char *portType) {
   return WriteToLogFile(blockedFilename, target, resolvedHost, port, portType);
 }
 
