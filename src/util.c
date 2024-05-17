@@ -269,6 +269,13 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
   int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100;  // -100 => unset
 
+  // Note: We need to detrimine contents of resolvedHosr ASAP since it's always needed in the sentry_exit label
+  if (configData.resolveHost == TRUE) {
+    ResolveAddr((struct sockaddr *)client, sizeof(struct sockaddr_in), resolvedHost, NI_MAXHOST);
+  } else {
+    snprintf(resolvedHost, NI_MAXHOST, "%s", target);
+  }
+
   if (configData.sentryMode == SENTRY_MODE_TCP && tcpAcceptSocket == NULL) {
     Error("RunSentry: tcpAcceptSocket is NULL in connect mode");
     goto sentry_exit;
@@ -298,12 +305,6 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
     *tcpAcceptSocket = -1;
   } else if (configData.sentryMode == SENTRY_MODE_UDP) {
     XmitBannerIfConfigured(IPPROTO_UDP, cd->sockfd, client);
-  }
-
-  if (configData.resolveHost == TRUE) {
-    ResolveAddr((struct sockaddr *)client, sizeof(struct sockaddr_in), resolvedHost, NI_MAXHOST);
-  } else {
-    snprintf(resolvedHost, NI_MAXHOST, "%s", target);
   }
 
   // If in log-only mode, don't run any of the blocking code
