@@ -1,0 +1,9 @@
+[portsentry]
+enabled = true
+filter = portsentry 
+maxretry = 0
+bantime	= 31536000
+findtime = 10m
+logpath = /var/run/portsentry.history
+banaction	= iptables
+action		= iptables[name=portsentry, chain=INPUT, blocktype=DROP]
