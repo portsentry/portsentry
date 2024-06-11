@@ -9,6 +9,8 @@ pkgs.mkShellNoCC {
     semgrep
     netcat-gnu
     clang
+    cmake
+    libpcap
   ];
   
   GREETING = "Welcome to the Portsentry dev environment!";
