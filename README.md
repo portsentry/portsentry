@@ -1,3 +1,5 @@
+![Portsentry Logo](https://portsentry.xyz/img/portsentry.png)
+
 # Portsentry
 
 **IMPORTANT! TL;DR: If you pull this code with the intent to use it in prod, then BUILD FROM tag v1.2. Tag v1.2 is the original Portsentry code, as it where when it was orphaned in 2003. The new version is _not_ complete yet. Many linux distributions also provide precomiled binaries in their package managers, consider downloading from your official repo**
