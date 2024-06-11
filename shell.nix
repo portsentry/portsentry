@@ -8,6 +8,7 @@ pkgs.mkShellNoCC {
     codeql
     semgrep
     netcat-gnu
+    clang
   ];
   
   GREETING = "Welcome to the Portsentry dev environment!";
