@@ -1,4 +1,6 @@
-![Portsentry Logo](https://portsentry.xyz/img/portsentry.png)
+<div id="header" align="center">
+  <img src="https://portsentry.xyz/img/portsentry.png" width="200"/>
+</div>
 
 # Portsentry
 
