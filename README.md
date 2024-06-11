@@ -13,9 +13,12 @@
 **Portsentry is a tool to detect and respond to port scans against a target host in real-time.**
 
 ## Quickstart
+Most package managers should have a copy of Portsentry. Check with your OS/distribution.
 
+If you need to compile and install manually, review the [Building](https://github.com/portsentry/portsentry/edit/master/README.md#building) section below.
 
-This repo contains a continuation of Psionic's sentrytools/portsentry code. Portsentry was abandoned in 2003 at version 1.2. This project aim to continue developing new and improved versions of Portsentry. The initial check in (tag v1.2) is the old, original code from 2003. All other commits are the project continuation.
+## What is this?
+This repo contains a continuation of Psionic's Portsentry tool. Portsentry was abandoned in 2003 at version 1.2. This project aim to continue developing new and improved versions of Portsentry. The initial check in (tag v1.2) is the old, original code from 2003. All other commits are the project continuation.
 
 ## What's on the agenda?
 We aim to accomplish 3 things in this project:
@@ -24,7 +27,8 @@ We aim to accomplish 3 things in this project:
 3. Implement new features
 
 ## Building
-Checkout a specific tag to compile stable releases, or use the master branch for the latest, unstable version.
+- Use a tag to build an official release
+- Use the master branch to build the latest version (not recommended for production)
 
 The build.sh script provides a convenient way to build, clean and run tests:
 
@@ -46,7 +50,7 @@ cmake .. -D CMAKE_BUILD_TYPE=Release
 cmake --build . -v
 ```
 
-**Compiling for debugging (mostly for developing)**
+**Compiling with debug symbols**
 ```
 mkdir debug
 cd debug
