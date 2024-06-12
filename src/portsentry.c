@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
   readConfigFile();
 
   if (configData.logFlags & LOGFLAG_DEBUG) {
-    printf("Final Configuration:\n");
+    printf("debug: Final Configuration:\n");
     PrintConfigData(configData);
   }
 

@@ -195,7 +195,7 @@ void ParseCmdline(int argc, char **argv) {
   PostProcessConfig(&cmdlineConfig);
 
   if (cmdlineConfig.logFlags & LOGFLAG_DEBUG) {
-    printf("Command Line Configuration:\n");
+    printf("debug: Command Line Configuration:\n");
     PrintConfigData(cmdlineConfig);
   }
 
