@@ -110,7 +110,7 @@ static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo) {
       continue;
     }
 
-    Verbose("Adding device %s", d->name);
+    Debug("Adding device %s", d->name);
     if (CreateAndAddDevice(lm, d->name) == FALSE) {
       Error("Unable to add device %s, skipping", d->name);
     }
