@@ -29,6 +29,8 @@
 #include <unistd.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "config_data.h"
 #include "connection_data.h"
@@ -36,6 +38,10 @@
 #include "portsentry.h"
 #include "state_machine.h"
 #include "util.h"
+
+#define MAX_BUF_SCAN_EVENT 1024
+
+static void LogScanEvent(const char *target, const char *resolvedHost, struct ConnectionData *cd, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock);
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
@@ -191,12 +197,12 @@ int SetupPort(uint16_t port, int proto) {
   } else if (proto == IPPROTO_UDP) {
     sock = OpenUDPSocket();
   } else {
-    Error("adminalert: invalid protocol %d passed to IsPortInUse on port %d", proto, port);
+    Error("Invalid protocol %d passed to IsPortInUse on port %d", proto, port);
     return -1;
   }
 
   if (sock == ERROR) {
-    Error("adminalert: could not open %s socket: %s", GetProtocolString(proto), ErrnoString(err, sizeof(err)));
+    Error("Could not open %s socket: %s", GetProtocolString(proto), ErrnoString(err, sizeof(err)));
     return -1;
   }
 
@@ -258,31 +264,39 @@ char *ErrnoString(char *buf, const size_t buflen) {
   return p;
 }
 
-int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
+void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
   int result;
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
+  int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100;  // -100 => unset
+
+  // Note: We need to detrimine contents of resolvedHosr ASAP since it's always needed in the sentry_exit label
+  SafeStrncpy(target, inet_ntoa(client->sin_addr), IPMAXBUF);
+
+  if (configData.resolveHost == TRUE) {
+    ResolveAddr((struct sockaddr *)client, sizeof(struct sockaddr_in), resolvedHost, NI_MAXHOST);
+  } else {
+    snprintf(resolvedHost, NI_MAXHOST, "%s", target);
+  }
 
   if (configData.sentryMode == SENTRY_MODE_TCP && tcpAcceptSocket == NULL) {
     Error("RunSentry: tcpAcceptSocket is NULL in connect mode");
-    return FALSE;
+    goto sentry_exit;
   }
-
-  SafeStrncpy(target, inet_ntoa(client->sin_addr), IPMAXBUF);
 
   if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
     Debug("RunSentry connect mode: accepted %s connection from: %s", (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
   }
 
-  if ((result = NeverBlock(target, configData.ignoreFile)) == ERROR) {
+  if ((flagIgnored = NeverBlock(target, configData.ignoreFile)) == ERROR) {
     Error("Unable to open ignore file %s. Continuing without it", configData.ignoreFile);
-    result = FALSE;
-  } else if (result == TRUE) {
+    flagIgnored = FALSE;
+  } else if (flagIgnored == TRUE) {
     Log("attackalert: Host: %s found in ignore file %s, aborting actions", target, configData.ignoreFile);
-    return FALSE;
+    goto sentry_exit;
   }
 
-  if (CheckStateEngine(target) != TRUE) {
-    return FALSE;
+  if ((flagTriggerCountExceeded = CheckStateEngine(target)) != TRUE) {
+    goto sentry_exit;
   }
 
   if (configData.sentryMode == SENTRY_MODE_TCP) {
@@ -293,42 +307,144 @@ int RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struc
     XmitBannerIfConfigured(IPPROTO_UDP, cd->sockfd, client);
   }
 
-  if (configData.resolveHost == TRUE) {
-    ResolveAddr((struct sockaddr *)client, sizeof(struct sockaddr_in), resolvedHost, NI_MAXHOST);
-  } else {
-    snprintf(resolvedHost, NI_MAXHOST, "%s", target);
-  }
-
-  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
-    Log("attackalert: Connect from host: %s/%s to %s port: %d", resolvedHost, target, (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", cd->port);
-  } else {
-    if (cd->protocol == IPPROTO_TCP) {
-      Log("attackalert: %s from host: %s/%s to TCP port: %d", ReportPacketType(tcp), resolvedHost, target, cd->port);
-    } else {
-      Log("attackalert: UDP scan from host: %s/%s to UDP port: %d", resolvedHost, target, cd->port);
-    }
-
-    if (ip->ip_hl > 5)
-      Log("attackalert: Packet from host: %s/%s to %s port: %d has IP options set (detection avoidance technique).", resolvedHost, target, GetProtocolString(cd->protocol), cd->port);
-  }
-
   // If in log-only mode, don't run any of the blocking code
   if ((configData.blockTCP == 0 && (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP)) ||
       (configData.blockUDP == 0 && (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP))) {
-    return TRUE;
+    flagDontBlock = TRUE;
+    goto sentry_exit;
+  } else {
+    flagDontBlock = FALSE;
   }
 
   if (IsBlocked(target, configData.blockedFile) == FALSE) {
     if ((result = DisposeTarget(target, cd->port, cd->protocol)) != TRUE) {
       Error("attackalert: Error during target dispose %s/%s!", resolvedHost, target);
     } else {
-      WriteBlocked(target, resolvedHost, cd->port, configData.blockedFile, configData.historyFile, GetProtocolString(cd->protocol));
+      WriteBlocked(target, resolvedHost, cd->port, configData.blockedFile, GetProtocolString(cd->protocol));
     }
   } else {
     Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
   }
 
+sentry_exit:
+  LogScanEvent(target, resolvedHost, cd, ip, tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock);
+}
+
+int CreateDateTime(char *buf, const int size) {
+  char *p = buf;
+  int ret, current_size = size;
+  struct tm tm, *tmptr;
+  struct timespec ts;
+
+  if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+    Error("Unable to get current clock time");
+    return ERROR;
+  }
+
+  tmptr = localtime_r(&ts.tv_sec, &tm);
+
+  if (tmptr != &tm) {
+    Error("Unable to determine local time");
+    return ERROR;
+  }
+
+  if ((ret = strftime(p, current_size, "%Y-%m-%dT%H:%M:%S.", tmptr)) == 0) {
+    Error("Unable to write datetime format to buffer, insufficient space");
+    return ERROR;
+  }
+
+  current_size -= ret;
+  p += ret;
+
+  if ((ret = snprintf(p, current_size, "%ld", ts.tv_nsec / 1000000)) >= current_size) {
+    Error("Insufficient buffer space to write datetime");
+    return ERROR;
+  }
+
+  current_size -= ret;
+  p += ret;
+
+  if ((ret = strftime(p, current_size, "%z", tmptr)) == 0) {
+    printf("Unable to fit TZ id, insufficient space\n");
+    return ERROR;
+  }
+
   return TRUE;
+}
+
+static void LogScanEvent(const char *target, const char *resolvedHost, struct ConnectionData *cd, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock) {
+  int ret, bufsize = MAX_BUF_SCAN_EVENT;
+  char buf[MAX_BUF_SCAN_EVENT], *p = buf;
+  char err[ERRNOMAXBUF];
+  FILE *output;
+
+  if (CreateDateTime(p, bufsize) != TRUE) {
+    return;
+  }
+
+  bufsize -= strlen(p);
+  p += strlen(p);
+
+  // FIXME: Should be able to recover from this
+  if (bufsize < 2) {
+    Error("Insufficient buffer size to write scan event");
+    return;
+  }
+
+  *p = ' ';
+  p++;
+  *p = '\0';
+  bufsize--;
+
+  ret = snprintf(p, bufsize, "Scan from: [%s] (%s) protocol: [%s] port: [%d] type: [%s] IP opts: [%s] ignored: [%s] triggered: [%s] noblock: [%s]",
+                 target,
+                 resolvedHost,
+                 (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP) ? "TCP" : "UDP",
+                 cd->port,
+                 (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) ? "Connect" : (cd->protocol == IPPROTO_TCP) ? ReportPacketType(tcp)
+                                                                                                                                                    : "UDP",
+                 (ip->ip_hl > 5) ? "set" : "not set",
+                 (flagIgnored == TRUE) ? "true" : (flagIgnored == -100) ? "unset"
+                                                                        : "false",
+                 (flagTriggerCountExceeded == TRUE) ? "true" : (flagTriggerCountExceeded == -100) ? "unset"
+                                                                                                  : "false",
+                 (flagDontBlock == TRUE) ? "true" : (flagDontBlock == -100) ? "unset"
+                                                                            : "false");
+
+  if (ret >= bufsize) {
+    // FIXME: Rewrite so we recover from this, e.g dynamic alloc from heap
+    Error("Unable to log scan event due to internal buffer too small");
+    return;
+  }
+
+  // Log w/o date
+  Log("%s", p);
+
+  bufsize -= ret;
+  p += ret;
+
+  ret = snprintf(p, bufsize, "\n");
+
+  if (ret >= bufsize) {
+    // FIXME: Rewrite so we recover from this, e.g dynamic alloc from heap
+    Error("Unable to add newline to scan event due to internal buffer too small");
+    return;
+  }
+
+  bufsize -= ret;
+  p += ret;
+
+  if ((output = fopen(configData.historyFile, "a")) == NULL) {
+    Log("Unable to open history log file: %s (%s)", configData.historyFile, ErrnoString(err, sizeof(err)));
+    return;
+  }
+
+  if (fwrite(buf, 1, strlen(buf), output) < strlen(buf)) {
+    Error("Unable to write history file");
+    return;
+  }
+
+  fclose(output);
 }
 
 int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp) {
@@ -354,7 +470,7 @@ int SetConvenienceData(struct ConnectionData *connectionData, const int connecti
       if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*tcp)->th_dport), IPPROTO_TCP)) == NULL)
         return FALSE;
     } else {
-      Error("adminalert: Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
+      Error("Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
       Exit(EXIT_FAILURE);
     }
     client->sin_port = (*tcp)->th_dport;
@@ -373,12 +489,12 @@ int SetConvenienceData(struct ConnectionData *connectionData, const int connecti
       if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*udp)->uh_dport), IPPROTO_UDP)) == NULL)
         return FALSE;
     } else {
-      Error("adminalert: Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
+      Error("Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
       Exit(EXIT_FAILURE);
     }
     client->sin_port = (*udp)->uh_dport;
   } else {
-    Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
+    Error("Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
     return FALSE;
   }
 

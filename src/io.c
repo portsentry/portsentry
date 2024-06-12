@@ -152,7 +152,7 @@ int DaemonSeed(void) {
   setsid();
   /* FIXME: This should perhaps he a fatal error, also maybe do better daemonizing */
   if (chdir("/") == -1) {
-    Log("adminalert: Unable to change to root directory during daemonizing (ignoring)");
+    Log("Unable to change to root directory during daemonizing (ignoring)");
   }
   umask(077);
 
@@ -235,7 +235,7 @@ int NeverBlock(char *target, char *filename) {
     /* Convert netmaskBuffer to bits in netmask */
     netmaskBits = atoi(netmaskBuffer);
     if ((netmaskBits < 0) || (netmaskBits > 32)) {
-      Log("adminalert: Invalid netmask in config file: %s  Ignoring entry.", buffer);
+      Log("Invalid netmask in config file: %s  Ignoring entry.", buffer);
       continue;
     }
 
@@ -264,7 +264,7 @@ static int WriteToLogFile(const char *filename, const char *target, const char *
   Debug("WriteToLogFile: Opening: %s ", filename);
 
   if ((output = fopen(filename, "a")) == NULL) {
-    Log("adminalert: Unable to open block log file: %s (%s)", filename, ErrnoString(err, sizeof(err)));
+    Log("Unable to open block log file: %s (%s)", filename, ErrnoString(err, sizeof(err)));
     return FALSE;
   }
 
@@ -283,13 +283,8 @@ static int WriteToLogFile(const char *filename, const char *target, const char *
   return TRUE;
 }
 
-int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, char *historyFilename, const char *portType) {
-  int blockedStatus = TRUE, historyStatus = TRUE;
-
-  blockedStatus = WriteToLogFile(blockedFilename, target, resolvedHost, port, portType);
-  historyStatus = WriteToLogFile(historyFilename, target, resolvedHost, port, portType);
-
-  return (blockedStatus && historyStatus);
+int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, const char *portType) {
+  return WriteToLogFile(blockedFilename, target, resolvedHost, port, portType);
 }
 
 int BindSocket(int sockfd, int port, int proto) {
@@ -385,22 +380,22 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   substStatus =
       SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
-    Log("adminalert: No target variable specified in KILL_ROUTE option. Skipping.");
+    Log("No target variable specified in KILL_ROUTE option. Skipping.");
     return (ERROR);
   } else if (substStatus == ERROR) {
-    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_ROUTE. Skipping.");
+    Log("Error trying to parse $TARGET$ Token for KILL_ROUTE. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(portString, "$PORT$", commandStringTemp,
                   commandStringTemp2) == ERROR) {
-    Log("adminalert: Error trying to parse $PORT$ Token for KILL_ROUTE. Skipping.");
+    Log("Error trying to parse $PORT$ Token for KILL_ROUTE. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(detectionType, "$MODE$", commandStringTemp2,
                   commandStringFinal) == ERROR) {
-    Log("adminalert: Error trying to parse $MODE$ Token for KILL_ROUTE. Skipping.");
+    Log("Error trying to parse $MODE$ Token for KILL_ROUTE. Skipping.");
     return (ERROR);
   }
 
@@ -410,10 +405,10 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   killStatus = system(commandStringFinal);
 
   if (killStatus == 127) {
-    Error("adminalert: There was an error trying to block host (exec fail) %s", target);
+    Error("There was an error trying to block host (exec fail) %s", target);
     return (ERROR);
   } else if (killStatus < 0) {
-    Error("adminalert: There was an error trying to block host (system fail) %s", target);
+    Error("There was an error trying to block host (system fail) %s", target);
     return (ERROR);
   } else {
     Log("attackalert: Host %s has been blocked via dropped route using command: \"%s\"", target, commandStringFinal);
@@ -437,17 +432,17 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
 
   /* Tokens are not required, but we check for an error anyway */
   if (SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp) == ERROR) {
-    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_RUN_CMD. Skipping.");
+    Log("Error trying to parse $TARGET$ Token for KILL_RUN_CMD. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
-    Log("adminalert: Error trying to parse $PORT$ Token for KILL_RUN_CMD. Skipping.");
+    Log("Error trying to parse $PORT$ Token for KILL_RUN_CMD. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
-    Log("adminalert: Error trying to parse $MODE$ Token for KILL_RUN_CMD. Skipping.");
+    Log("Error trying to parse $MODE$ Token for KILL_RUN_CMD. Skipping.");
     return (ERROR);
   }
 
@@ -455,10 +450,10 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   killStatus = system(commandStringFinal);
 
   if (killStatus == 127) {
-    Error("adminalert: There was an error trying to run command (exec fail) %s", target);
+    Error("There was an error trying to run command (exec fail) %s", target);
     return (ERROR);
   } else if (killStatus < 0) {
-    Error("adminalert: There was an error trying to run command (system fail) %s", target);
+    Error("There was an error trying to run command (system fail) %s", target);
     return (ERROR);
   } else {
     /* report success */
@@ -489,27 +484,27 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
   substStatus =
       SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
-    Log("adminalert: No target variable specified in KILL_HOSTS_DENY option. Skipping.");
+    Log("No target variable specified in KILL_HOSTS_DENY option. Skipping.");
     return (ERROR);
   } else if (substStatus == ERROR) {
-    Log("adminalert: Error trying to parse $TARGET$ Token for KILL_HOSTS_DENY. Skipping.");
+    Log("Error trying to parse $TARGET$ Token for KILL_HOSTS_DENY. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
-    Log("adminalert: Error trying to parse $PORT$ Token for KILL_HOSTS_DENY. Skipping.");
+    Log("Error trying to parse $PORT$ Token for KILL_HOSTS_DENY. Skipping.");
     return (ERROR);
   }
 
   if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
-    Log("adminalert: Error trying to parse $MODE$ Token for KILL_HOSTS_DENY. Skipping.");
+    Log("Error trying to parse $MODE$ Token for KILL_HOSTS_DENY. Skipping.");
     return (ERROR);
   }
 
   Debug("KillHostsDeny: result string for block: %s", commandStringFinal);
 
   if ((output = fopen(WRAPPER_HOSTS_DENY, "a")) == NULL) {
-    Log("adminalert: cannot open hosts.deny file: %s for blocking.", WRAPPER_HOSTS_DENY);
+    Log("Cannot open hosts.deny file: %s for blocking.", WRAPPER_HOSTS_DENY);
     Error("securityalert: There was an error trying to block host %s", target);
     return (FALSE);
   } else {
@@ -530,7 +525,7 @@ int IsBlocked(char *target, char *filename) {
   Debug("IsBlocked: Opening block file: %s ", filename);
 
   if ((input = fopen(filename, "r")) == NULL) {
-    Error("adminalert: Cannot open blocked file: %s for reading: %s. Will create.", filename, ErrnoString(err, sizeof(err)));
+    Error("Cannot open blocked file: %s for reading: %s. Will create.", filename, ErrnoString(err, sizeof(err)));
     return (FALSE);
   }
 
@@ -636,14 +631,14 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
     result = write(socket, configData.portBanner, strlen(configData.portBanner));
   } else if (proto == IPPROTO_UDP) {
     if (client == NULL) {
-      Error("adminalert: No client address specified for UDP banner transmission (ignoring)");
+      Error("No client address specified for UDP banner transmission (ignoring)");
       return;
     }
     result = sendto(socket, configData.portBanner, strlen(configData.portBanner), 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
   }
 
   if (result == -1) {
-    Error("adminalert: Could not write banner to socket (ignoring): %s", ErrnoString(err, sizeof(err)));
+    Error("Could not write banner to socket (ignoring): %s", ErrnoString(err, sizeof(err)));
   }
 }
 
@@ -657,10 +652,10 @@ int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct i
   struct in_addr addr;
 
   if ((result = read(socket, packetBuffer, packetBufferSize)) == -1) {
-    Error("adminalert: Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
+    Error("Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
     return ERROR;
   } else if (result < (ssize_t)sizeof(struct ip)) {
-    Error("adminalert: Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
+    Error("Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
     return ERROR;
   }
 
@@ -675,7 +670,7 @@ int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct i
   ipHeaderLength = (*ipPtr)->ip_hl * 4;
 
   if (ipHeaderLength > packetBufferSize) {
-    Error("adminalert: IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);
+    Error("IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);
     return FALSE;
   }
 

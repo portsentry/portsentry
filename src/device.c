@@ -18,7 +18,7 @@ struct Device *CreateDevice(const char *name) {
 
   new = malloc(sizeof(struct Device));
   if (new == NULL) {
-    Error("Unable to allocate memory for device");
+    Error("Unable to allocate memory for device %s", name);
     return NULL;
   }
 

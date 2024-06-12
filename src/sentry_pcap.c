@@ -47,7 +47,7 @@ int PortSentryPcap(void) {
     goto exit;
   }
 
-  Log("adminalert: PortSentry is now active and listening.");
+  Log("PortSentry is now active and listening.");
 
   while (g_isRunning == TRUE) {
     ret = poll(fds, nfds, POLL_TIMEOUT);
@@ -150,7 +150,7 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
     uint32_t nulltype = *packet;
     if (pcap_datalink(device->handle) == DLT_NULL) {
       if (nulltype != 2) {
-        Error("adminalert: Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_NULL dev", device->name, nulltype);
+        Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_NULL dev", device->name, nulltype);
         return FALSE;
       }
 #ifdef __OpenBSD__
@@ -162,7 +162,7 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
        * Confirm this
        */
       if (nulltype != 0) {
-        Error("adminalert: Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_LOOP dev", device->name, nulltype);
+        Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_LOOP dev", device->name, nulltype);
         return FALSE;
       }
 #endif
@@ -186,7 +186,7 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
   }
 #endif
   else {
-    Error("adminalert: Packet on %s have unsupported datalink type set (datalink: %d)", device->name, pcap_datalink(device->handle));
+    Error("Packet on %s have unsupported datalink type set (datalink: %d)", device->name, pcap_datalink(device->handle));
     return FALSE;
   }
 
@@ -198,7 +198,7 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
   } else if (protocol == IPPROTO_UDP) {
     *udp = (struct udphdr *)(((u_char *)*ip) + iplen);  // ip struct is wider than 1 byte so need recast
   } else {
-    Error("adminalert: Packet on %s have unknown protocol %d", (device != NULL) ? device->name : "NOT SET", protocol);
+    Error("Packet on %s have unknown protocol %d", (device != NULL) ? device->name : "NOT SET", protocol);
     if (configData.logFlags & LOGFLAG_DEBUG) {
       PrintPacket(device, *ip, *tcp, *udp, header);
     }
@@ -221,7 +221,7 @@ static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, 
   } else if (protocol == IPPROTO_UDP) {
     client->sin_port = udp->uh_dport;
   } else {
-    Error("adminalert: Unknown protocol %d detected during sockaddr resolution. Attempting to continue.", protocol);
+    Error("Unknown protocol %d detected during sockaddr resolution. Attempting to continue.", protocol);
     return FALSE;
   }
 
@@ -238,7 +238,7 @@ static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip,
   } else if (cd->protocol == IPPROTO_UDP) {
     cd->port = ntohs(udp->uh_dport);
   } else {
-    Error("adminalert: Unknown protocol %d detected while setting connection data", cd->protocol);
+    Error("Unknown protocol %d detected while setting connection data", cd->protocol);
     return FALSE;
   }
   return TRUE;
