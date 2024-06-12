@@ -97,7 +97,6 @@ int PortSentryStealthMode(void) {
         continue;
       }
 
-      // FIXME: Do we need this?
       if (cd->protocol == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
         continue;
       }
