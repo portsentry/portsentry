@@ -15,7 +15,7 @@
 ## Quickstart
 Most package managers should have a copy of Portsentry. Check with your OS/distribution.
 
-If you need to compile and install manually, review the [Building](https://github.com/portsentry/portsentry/edit/master/README.md#building) section below.
+If you need to compile and install manually, review the [Building](https://github.com/portsentry/portsentry#building) section below.
 
 ## What is this?
 This repo contains a continuation of Psionic's Portsentry tool. Portsentry was abandoned in 2003 at version 1.2. This project aim to continue developing new and improved versions of Portsentry. The initial check in (tag v1.2) is the old, original code from 2003. All other commits are the project continuation.
