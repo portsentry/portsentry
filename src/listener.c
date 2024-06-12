@@ -79,7 +79,6 @@ static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name) {
   }
 
   if ((dev = CreateDevice(name)) == NULL) {
-    Error("Unable to allocate memory for device %s", name);
     return FALSE;
   }
 
