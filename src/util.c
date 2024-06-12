@@ -197,12 +197,12 @@ int SetupPort(uint16_t port, int proto) {
   } else if (proto == IPPROTO_UDP) {
     sock = OpenUDPSocket();
   } else {
-    Error("adminalert: invalid protocol %d passed to IsPortInUse on port %d", proto, port);
+    Error("Invalid protocol %d passed to IsPortInUse on port %d", proto, port);
     return -1;
   }
 
   if (sock == ERROR) {
-    Error("adminalert: could not open %s socket: %s", GetProtocolString(proto), ErrnoString(err, sizeof(err)));
+    Error("Could not open %s socket: %s", GetProtocolString(proto), ErrnoString(err, sizeof(err)));
     return -1;
   }
 
@@ -435,7 +435,7 @@ static void LogScanEvent(const char *target, const char *resolvedHost, struct Co
   p += ret;
 
   if ((output = fopen(configData.historyFile, "a")) == NULL) {
-    Log("adminalert: Unable to open history log file: %s (%s)", configData.historyFile, ErrnoString(err, sizeof(err)));
+    Log("Unable to open history log file: %s (%s)", configData.historyFile, ErrnoString(err, sizeof(err)));
     return;
   }
 
@@ -470,7 +470,7 @@ int SetConvenienceData(struct ConnectionData *connectionData, const int connecti
       if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*tcp)->th_dport), IPPROTO_TCP)) == NULL)
         return FALSE;
     } else {
-      Error("adminalert: Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
+      Error("Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
       Exit(EXIT_FAILURE);
     }
     client->sin_port = (*tcp)->th_dport;
@@ -489,12 +489,12 @@ int SetConvenienceData(struct ConnectionData *connectionData, const int connecti
       if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*udp)->uh_dport), IPPROTO_UDP)) == NULL)
         return FALSE;
     } else {
-      Error("adminalert: Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
+      Error("Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
       Exit(EXIT_FAILURE);
     }
     client->sin_port = (*udp)->uh_dport;
   } else {
-    Error("adminalert: Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
+    Error("Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
     return FALSE;
   }
 

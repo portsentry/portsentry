@@ -63,37 +63,37 @@ int main(int argc, char *argv[]) {
 
   if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
     if (PortSentryConnectMode() == ERROR) {
-      Error("adminalert: could not go into PortSentry mode. Shutting down.");
+      Error("Could not go into PortSentry mode. Shutting down.");
       Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP) {
     if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
       if (PortSentryPcap() == ERROR) {
-        Error("adminalert: could not go into PortSentry mode. Shutting down.");
+        Error("Could not go into PortSentry mode. Shutting down.");
         Exit(EXIT_FAILURE);
       }
     } else if (configData.sentryMethod == SENTRY_METHOD_RAW) {
       if (PortSentryStealthMode() == ERROR) {
-        Error("adminalert: could not go into PortSentry mode. Shutting down.");
+        Error("Could not go into PortSentry mode. Shutting down.");
         Exit(EXIT_FAILURE);
       }
     } else {
-      Error("adminalert: invalid sentry method specified. Shutting down.");
+      Error("Invalid sentry method specified. Shutting down.");
       Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_ATCP || configData.sentryMode == SENTRY_MODE_AUDP) {
     if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
       if (PortSentryPcap() == ERROR) {
-        Error("adminalert: could not go into PortSentry mode. Shutting down.");
+        Error("Could not go into PortSentry mode. Shutting down.");
         Exit(EXIT_FAILURE);
       }
     } else if (configData.sentryMethod == SENTRY_METHOD_RAW) {
       if (PortSentryAdvancedStealthMode() == ERROR) {
-        Error("adminalert: could not go into PortSentry mode. Shutting down.");
+        Error("Could not go into PortSentry mode. Shutting down.");
         Exit(EXIT_FAILURE);
       }
     } else {
-      Error("adminalert: invalid sentry method specified. Shutting down.");
+      Error("Invalid sentry method specified. Shutting down.");
       Exit(EXIT_FAILURE);
     }
   }

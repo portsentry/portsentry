@@ -38,19 +38,19 @@ int PortSentryStealthMode(void) {
   assert(configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP);
 
   if ((connectionDataSize = ConstructConnectionData(connectionData, MAXSOCKS)) == 0) {
-    Error("adminalert: Unable to add any ports to the connect sentry. Aborting.");
+    Error("Unable to add any ports to the connect sentry. Aborting.");
     return (ERROR);
   }
 
   if (connectionDataSize == 0) {
-    Error("adminalert: could not bind ANY sockets. Shutting down.");
+    Error("Could not bind ANY sockets. Shutting down.");
     return (ERROR);
   }
 
   nfds = 0;
   if (configData.sentryMode == SENTRY_MODE_STCP) {
     if ((tcpSockfd = OpenRAWTCPSocket()) == ERROR) {
-      Error("adminalert: could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("Could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     }
 
@@ -61,7 +61,7 @@ int PortSentryStealthMode(void) {
 
   if (configData.sentryMode == SENTRY_MODE_SUDP) {
     if ((udpSockfd = OpenRAWUDPSocket()) == ERROR) {
-      Error("adminalert: could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("Could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     }
 
@@ -70,7 +70,7 @@ int PortSentryStealthMode(void) {
     nfds++;
   }
 
-  Log("adminalert: PortSentry is now active and listening.");
+  Log("PortSentry is now active and listening.");
 
   while (g_isRunning == TRUE) {
     result = poll(fds, nfds, -1);
@@ -78,10 +78,10 @@ int PortSentryStealthMode(void) {
       if (errno == EINTR) {
         continue;
       }
-      Error("adminalert: poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     } else if (result == 0) {
-      Error("adminalert: poll() timed out. Aborting.");
+      Error("poll() timed out. Aborting.");
       return (ERROR);
     }
 

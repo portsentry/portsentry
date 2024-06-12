@@ -36,19 +36,19 @@ int PortSentryAdvancedStealthMode(void) {
 
   assert(configData.sentryMode == SENTRY_MODE_ATCP || configData.sentryMode == SENTRY_MODE_AUDP);
 
-  Log("adminalert: Advanced mode will monitor first %d TCP ports and %d UDP ports", configData.tcpAdvancedPort, configData.udpAdvancedPort);
+  Log("Advanced mode will monitor first %d TCP ports and %d UDP ports", configData.tcpAdvancedPort, configData.udpAdvancedPort);
 
   connectionDataSize = ConstructConnectionData(connectionData, MAXSOCKS);
 
   if (configData.sentryMode == SENTRY_MODE_ATCP && configData.tcpAdvancedExcludePortsLength > 0) {
     for (count = 0; count < configData.tcpAdvancedExcludePortsLength; count++) {
       if (FindConnectionData(connectionData, MAXSOCKS, configData.tcpAdvancedExcludePorts[count], IPPROTO_TCP) != NULL) {
-        Log("adminalert: TCP port %d is already added to exclude list.", configData.tcpAdvancedExcludePorts[count]);
+        Log("TCP port %d is already added to exclude list.", configData.tcpAdvancedExcludePorts[count]);
         continue;
       }
 
       if (connectionDataSize >= MAXSOCKS) {
-        Error("adminalert: TCP port count exceeds size of ConnectionData array. Aborting.");
+        Error("TCP port count exceeds size of ConnectionData array. Aborting.");
         return ERROR;
       }
 
@@ -63,12 +63,12 @@ int PortSentryAdvancedStealthMode(void) {
   if (configData.sentryMode == SENTRY_MODE_AUDP && configData.udpAdvancedExcludePortsLength > 0) {
     for (count = 0; count < configData.udpAdvancedExcludePortsLength; count++) {
       if (FindConnectionData(connectionData, MAXSOCKS, configData.udpAdvancedExcludePorts[count], IPPROTO_UDP) != NULL) {
-        Log("adminalert: UDP port %d is already added to exclude list.", configData.udpAdvancedExcludePorts[count]);
+        Log("UDP port %d is already added to exclude list.", configData.udpAdvancedExcludePorts[count]);
         continue;
       }
 
       if (connectionDataSize >= MAXSOCKS) {
-        Error("adminalert: UDP port count exceeds size of ConnectionData array. Aborting.");
+        Error("UDP port count exceeds size of ConnectionData array. Aborting.");
         return ERROR;
       }
 
@@ -81,13 +81,13 @@ int PortSentryAdvancedStealthMode(void) {
   }
 
   for (count = 0; count < connectionDataSize; count++) {
-    Log("adminalert: Advanced Stealth scan detection mode activated. Ignored %s port: %d", GetProtocolString(connectionData[count].protocol), connectionData[count].port);
+    Log("Advanced Stealth scan detection mode activated. Ignored %s port: %d", GetProtocolString(connectionData[count].protocol), connectionData[count].port);
   }
 
   nfds = 0;
   if (configData.sentryMode == SENTRY_MODE_ATCP) {
     if ((tcpSockfd = OpenRAWTCPSocket()) == ERROR) {
-      Error("adminalert: could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("Could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     }
 
@@ -98,7 +98,7 @@ int PortSentryAdvancedStealthMode(void) {
 
   if (configData.sentryMode == SENTRY_MODE_AUDP) {
     if ((udpSockfd = OpenRAWUDPSocket()) == ERROR) {
-      Error("adminalert: could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("Could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     }
 
@@ -107,7 +107,7 @@ int PortSentryAdvancedStealthMode(void) {
     nfds++;
   }
 
-  Log("adminalert: PortSentry is now active and listening.");
+  Log("PortSentry is now active and listening.");
 
   while (g_isRunning == TRUE) {
     result = poll(fds, nfds, -1);
@@ -115,10 +115,10 @@ int PortSentryAdvancedStealthMode(void) {
       if (errno == EINTR) {
         continue;
       }
-      Error("adminalert: poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      Error("poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
     } else if (result == 0) {
-      Error("adminalert: poll() timed out. Aborting.");
+      Error("poll() timed out. Aborting.");
       return (ERROR);
     }
 
