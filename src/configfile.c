@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Marcus Hufvudsson <mh@protohuf.com>
+//
+// SPDX-License-Identifier: CPL-1.0
+
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>

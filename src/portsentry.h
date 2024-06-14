@@ -1,21 +1,9 @@
+// SPDX-FileCopyrightText: 2024 Marcus Hufvudsson <mh@protohuf.com>
+// SPDX-FileContributor: Craig Rowland
+//
+// SPDX-License-Identifier: CPL-1.0
+
 #pragma once
-/************************************************************************/
-/*                                                                      */
-/* PortSentry                                                           */
-/*                                                                      */
-/* This software is Copyright(c) 1997-2003 Craig Rowland                */
-/*                                                                      */
-/* This software is covered under the Common Public License v1.0        */
-/* See the enclosed LICENSE file for more information.                  */
-/*                                                                      */
-/* Created: 10-12-1997                                                  */
-/* Modified: 05-23-2003                                                 */
-/*                                                                      */
-/* Send all changes/modifications/bugfixes to:                          */
-/* craigrowland at users dot sourceforge dot net                        */
-/*                                                                      */
-/* $Id: portsentry.h,v 1.32 2003/05/23 17:50:20 crowland Exp crowland $ */
-/************************************************************************/
 #include <sys/param.h>
 
 #define TCPPACKETLEN 80
