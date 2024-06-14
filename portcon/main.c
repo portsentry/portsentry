@@ -1,13 +1,6 @@
-/************************************************************************/
-/*                                                                      */
-/* Portcon                                                              */
-/*                                                                      */
-/* This software is Copyright(c) 2023 Marcus Hufvudsson                 */
-/*                                                                      */
-/* This software is covered under the Common Public License v1.0        */
-/* See the enclosed LICENSE file for more information.                  */
-/*                                                                      */
-/************************************************************************/
+// SPDX-FileCopyrightText: 2024 Marcus Hufvudsson <mh@protohuf.com>
+//
+// SPDX-License-Identifier: CPL-1.0
 
 /* This is a simple program used in the system testing framework (see the system_test directory) */
 
