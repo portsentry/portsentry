@@ -26,7 +26,7 @@ CC = cc
 #CC = gcc 
 
 # Normal systems flags
-CFLAGS = -O -Wall
+CFLAGS = -O -Wall -DNODAEMON
 
 # Debug mode for portsentry
 #CFLAGS = -Wall -g -DNODAEMON -DDEBUG
