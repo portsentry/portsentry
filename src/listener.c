@@ -562,6 +562,32 @@ struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
   return fds;
 }
 
+struct pollfd *RemovePollFd(struct pollfd *fds, int *nfds, const int fd) {
+  int i, j;
+  struct pollfd *newFds = NULL;
+
+  if ((newFds = malloc(sizeof(struct pollfd) * (*nfds - 1))) == NULL) {
+    Error("Unable to allocate memory for pollfd");
+    return NULL;
+  }
+
+  for (i = 0, j = 0; i < *nfds; i++) {
+    if (fds[i].fd == fd) {
+      continue;
+    }
+
+    newFds[j].fd = fds[i].fd;
+    newFds[j].events = fds[i].events;
+    newFds[j].revents = fds[i].revents;
+    j++;
+  }
+
+  free(fds);
+  *nfds -= 1;
+
+  return newFds;
+}
+
 struct Device *GetDeviceByFd(const struct ListenerModule *lm, const int fd) {
   for (struct Device *current = lm->root; current != NULL; current = current->next) {
     if (current->fd == fd) {

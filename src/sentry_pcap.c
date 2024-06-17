@@ -82,6 +82,21 @@ int PortSentryPcap(void) {
             Error("Got PCAP_ERROR_BREAK, ignoring");
           }
         } while (ret > 0);
+      } else if (fds[i].revents & POLLERR) {
+        if ((current = GetDeviceByFd(lm, fds[i].fd)) == NULL) {
+          Error("Unable to find device by fd %d", fds[i].fd);
+          goto exit;
+        }
+
+        Error("Got POLLERR on %s (fd: %d), removing interface from sentry", current->name, fds[i].fd);
+        if (RemoveDevice(lm, current) == FALSE) {
+          Error("Unable to remove device %s from sentry", current->name);
+          goto exit;
+        }
+        if ((fds = RemovePollFd(fds, &nfds, fds[i].fd)) == NULL) {
+          Error("Unable to remove fd %d from pollfd", fds[i].fd);
+          goto exit;
+        }
       }
     }
   }
