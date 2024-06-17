@@ -1,0 +1,20 @@
+services:
+  portsentry:
+    container_name: portsentry
+    image: portsentry/portsentry:stable
+    restart: unless-stopped
+    network_mode: host
+#    volumes:
+# Add a custom config file
+#      - type: bind
+#        source: <path-to>/portsentry.conf
+#        target: /etc/portsentry/portsentry.conf
+#        read_only: true
+# Add a custom ignore file
+#      - type: bind
+#        source: <path-to>/portsentry.ignore
+#        target: /etc/portsentry/portsentry.ignore
+# If you want access to portsentrys runtime-generated files (history and block log)
+#      - type: bind
+#        source: <path-to-log-dir>
+#        target: /var/run/portsentry
