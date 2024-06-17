@@ -6,12 +6,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "stealth_sentry.h"
-#include "advanced_sentry.h"
+#include "sentry_stealth.h"
+#include "sentry_advanced.h"
 #include "cmdline.h"
 #include "config_data.h"
 #include "configfile.h"
-#include "connect_sentry.h"
+#include "sentry_connect.h"
 #include "io.h"
 #include "portsentry.h"
 #include "sentry_pcap.h"
