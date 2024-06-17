@@ -353,7 +353,7 @@ int CreateDateTime(char *buf, const int size) {
   p += ret;
 
   if ((ret = strftime(p, current_size, "%z", tmptr)) == 0) {
-    printf("Unable to fit TZ id, insufficient space\n");
+    Error("Unable to fit TZ id, insufficient space\n");
     return ERROR;
   }
 
@@ -391,7 +391,7 @@ static void LogScanEvent(const char *target, const char *resolvedHost, struct Co
                  cd->port,
                  (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) ? "Connect" : (cd->protocol == IPPROTO_TCP) ? ReportPacketType(tcp)
                                                                                                                                                     : "UDP",
-                 (ip->ip_hl > 5) ? "set" : "not set",
+                 (ip != NULL) ? (ip->ip_hl > 5) ? "set" : "not set" : "unknown",
                  (flagIgnored == TRUE) ? "true" : (flagIgnored == -100) ? "unset"
                                                                         : "false",
                  (flagTriggerCountExceeded == TRUE) ? "true" : (flagTriggerCountExceeded == -100) ? "unset"
