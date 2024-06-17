@@ -6,15 +6,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "../src/advanced_sentry.h"
+#include "../src/sentry_advanced.h"
 #include "../src/cmdline.h"
 #include "../src/config_data.h"
 #include "../src/configfile.h"
-#include "../src/connect_sentry.h"
+#include "../src/sentry_connect.h"
 #include "../src/io.h"
 #include "../src/portsentry.h"
 #include "../src/state_machine.h"
-#include "../src/stealth_sentry.h"
+#include "../src/sentry_stealth.h"
 #include "../src/util.h"
 
 int main(int argc, char *argv[]) {

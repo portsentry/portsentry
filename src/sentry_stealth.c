@@ -22,7 +22,7 @@
 #include "io.h"
 #include "portsentry.h"
 #include "state_machine.h"
-#include "stealth_sentry.h"
+#include "sentry_stealth.h"
 #include "util.h"
 
 extern uint8_t g_isRunning;

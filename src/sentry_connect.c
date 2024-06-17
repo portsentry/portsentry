@@ -16,7 +16,7 @@
 #include <errno.h>
 
 #include "config_data.h"
-#include "connect_sentry.h"
+#include "sentry_connect.h"
 #include "connection_data.h"
 #include "io.h"
 #include "portsentry.h"
