@@ -7,6 +7,8 @@ PORTSENTRY_SCRIPT=$5
 PORTSENTRY_STDOUT=$6
 PORTSENTRY_STDERR=$7
 
+set -e
+
 log() {
   echo "$SCRIPT_NAME: $@"
 }
@@ -86,7 +88,7 @@ findInFile() {
   return 1
 }
 
-confirmBlockTriggered() {
+setProtoVars() {
   proto=$1
 
   if [ "$1" = "tcp" ] || [ "$1" = "udp" ] ; then
@@ -101,22 +103,37 @@ confirmBlockTriggered() {
   else
     err "confirmBlockTriggered: invalid protocol $1"
   fi
+}
 
+confirmStdoutScanMessage() {
+  setProtoVars $1
   verbose "expect attackalert block message"
   if ! findInFile "^Scan from: \[127\.0\.0\.1\]" $PORTSENTRY_STDOUT; then
     err "Expected attackalert message not found"
   fi
+}
 
+confirmBlockFileMessage() {
+  setProtoVars $1
   verbose "expect blocked $proto_l port"
   if ! findInFile "Host: 127\.0\.0\.1/127\.0\.0\.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked.$proto; then
     err "Expected blocked $proto_u port not found"
   fi
+}
 
+confirmHistoryFileMessage() {
+  setProtoVars $1
   verbose "expect history entry"
   if ! findInFile ".*Scan from: \[127\.0\.0\.1\] (127\.0\.0\.1) protocol: \[$proto_u\] port: \[11\]" $TEST_DIR/portsentry.history; then
     err "Expected history entry not found"
   fi
+}
 
+confirmBlockTriggered() {
+  setProtoVars $1
+  confirmStdoutScanMessage $1
+  confirmBlockFileMessage $1
+  confirmHistoryFileMessage $1
 }
 
 confirmAlreadyBlocked() {
