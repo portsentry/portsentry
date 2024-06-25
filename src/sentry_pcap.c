@@ -276,26 +276,26 @@ static void PrintPacket(const struct Device *device, const struct ip *ip, const 
   hl = ip->ip_hl;
 
   if (device != NULL) {
-    fprintf(stderr, "%s: ", device->name);
+    printf("%s: ", device->name);
   }
 
   if (header != NULL) {
-    fprintf(stderr, "%d [%d] ", header->caplen, header->len);
+    printf("%d [%d] ", header->caplen, header->len);
   }
 
-  fprintf(stderr, "ihl: %d IP len: %d proto: %s (%d) ver: %d saddr: %s daddr: %s ", hl, iplen,
-          protocol == IPPROTO_TCP   ? "tcp"
-          : protocol == IPPROTO_UDP ? "udp"
-                                    : "other",
-          protocol,
-          ipVersion, saddr, daddr);
+  printf("ihl: %d IP len: %d proto: %s (%d) ver: %d saddr: %s daddr: %s ", hl, iplen,
+         protocol == IPPROTO_TCP   ? "tcp"
+         : protocol == IPPROTO_UDP ? "udp"
+                                   : "other",
+         protocol,
+         ipVersion, saddr, daddr);
 
   if (protocol == IPPROTO_TCP) {
-    fprintf(stderr, "sport: %d dport: %d", ntohs(tcp->th_sport), ntohs(tcp->th_dport));
+    printf("sport: %d dport: %d", ntohs(tcp->th_sport), ntohs(tcp->th_dport));
   } else if (protocol == IPPROTO_UDP) {
-    fprintf(stderr, "sport: %d dport: %d", ntohs(udp->uh_sport), ntohs(udp->uh_dport));
+    printf("sport: %d dport: %d", ntohs(udp->uh_sport), ntohs(udp->uh_dport));
   }
-  fprintf(stderr, "\n");
+  printf("\n");
 }
 
 struct ip *GetIphdrByOffset(const u_char *packet, const int offset) {
