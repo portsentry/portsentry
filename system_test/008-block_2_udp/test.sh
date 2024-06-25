@@ -11,10 +11,8 @@ chmod +x $TEST_DIR/extcmd.sh
 
 runNmap 11 U
 
-verbose "expect attackalert connect message"
-if ! findInFile "^attackalert: Connect from host: 127\.0\.0\.1/127\.0\.0\.1 to UDP port: 11" $PORTSENTRY_STDOUT; then
-  err "Expected attackalert connect message not found"
-fi
+confirmStdoutScanMessage udp
+confirmHistoryFileMessage udp
 
 verbose "expect external command run message"
 if ! findInFile "^attackalert: External command run for host: 127.0.0.1 using command" $PORTSENTRY_STDOUT; then

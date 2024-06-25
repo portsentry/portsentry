@@ -31,9 +31,9 @@ if ! findInFile "^127\.0\.0\.1 11" $TEST_DIR/extcmd.stdout ; then
   err "Expected extcmd.sh output not found"
 fi
 
-verbose "expect correct connect, route kill and external command message ordering"
-if ! cat $PORTSENTRY_STDOUT | tr -d '\n' | grep -q "attackalert: Connect from host: 127.0.0.1/127.0.0.1 to TCP port: 11.*attackalert: External command run for host: 127.0.0.1 using command.*attackalert: Host 127.0.0.1 has been blocked via dropped route using command"; then
-  err "Expected correct connect, route kill and external command run messages not found"
+verbose "expect correct route kill, external and scan command message ordering"
+if ! cat $PORTSENTRY_STDOUT | tr -d '\n' | grep -q "attackalert: External command run for host: 127.0.0.1 using command.*attackalert: Host 127.0.0.1 has been blocked via dropped route using command.*Scan from: \[127\.0\.0\.1\] (127\.0\.0\.1) protocol: \[TCP\] port: \[11\]"; then
+  err "Expected correct route kill, external and scan command run messages not found"
 fi
 
 ok
