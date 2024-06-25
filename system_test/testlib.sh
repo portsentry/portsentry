@@ -103,17 +103,17 @@ confirmBlockTriggered() {
   fi
 
   verbose "expect attackalert block message"
-  if ! findInFile "^attackalert: Host 127.0.0.1 has been blocked" $PORTSENTRY_STDOUT; then
+  if ! findInFile "^Scan from: \[127\.0\.0\.1\]" $PORTSENTRY_STDOUT; then
     err "Expected attackalert message not found"
   fi
 
   verbose "expect blocked $proto_l port"
-  if ! findInFile "Host: 127.0.0.1/127.0.0.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked.$proto; then
+  if ! findInFile "Host: 127\.0\.0\.1/127\.0\.0\.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked.$proto; then
     err "Expected blocked $proto_u port not found"
   fi
 
   verbose "expect history entry"
-  if ! findInFile ".*127\.0\.0\.1/127\.0\.0\.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.history; then
+  if ! findInFile ".*Scan from: \[127\.0\.0\.1\] (127\.0\.0\.1) protocol: \[$proto_u\] port: \[11\]" $TEST_DIR/portsentry.history; then
     err "Expected history entry not found"
   fi
 
