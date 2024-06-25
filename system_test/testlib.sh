@@ -145,28 +145,28 @@ confirmAlreadyBlocked() {
 
 confirmSynScan() {
   verbose "expect syn scan block message"
-  if ! findInFile "^attackalert: TCP SYN/Normal scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+  if ! findInFile "Scan from: \[127\.0\.0\.1\] (127\.0\.0\.1) protocol: \[TCP\] port: \[11\] type: \[TCP SYN/Normal scan\]" $PORTSENTRY_STDOUT; then
     err "Expected syn scan block message not found"
   fi
 }
 
 confirmNullScan() {
   verbose "expect null scan block message"
-  if ! findInFile "^attackalert: TCP NULL scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+  if ! findInFile "Scan from: \[127\.0\.0\.1\] (127\.0\.0\.1) protocol: \[TCP\] port: \[11\] type: \[TCP NULL scan\]" $PORTSENTRY_STDOUT; then
     err "Expected null scan block message not found"
   fi
 }
 
 confirmXmasScan() {
   verbose "expect xmas scan block message"
-  if ! findInFile "^attackalert: TCP XMAS scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+  if ! findInFile "Scan from: \[127\.0\.0\.1] (127\.0\.0\.1) protocol: \[TCP\] port: \[11\] type: \[TCP XMAS scan\]" $PORTSENTRY_STDOUT; then
     err "Expected xmas scan block message not found"
   fi
 }
 
 confirmFinScan() {
   verbose "expect fin scan block message"
-  if ! findInFile "^attackalert: TCP FIN scan from host: 127.0.0.1/127.0.0.1 to TCP port: 11" $PORTSENTRY_STDOUT; then
+  if ! findInFile "Scan from: \[127\.0\.0\.1] (127\.0\.0\.1) protocol: \[TCP\] port: \[11\] type: \[TCP FIN scan\]" $PORTSENTRY_STDOUT; then
     err "Expected fin scan block message not found"
   fi
 }
