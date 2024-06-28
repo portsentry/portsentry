@@ -68,21 +68,6 @@ void PrintConfigData(const struct ConfigData cd) {
   }
   printf("\n");
 
-  printf("debug: tcpAdvancedPort: %d\n", cd.tcpAdvancedPort);
-  printf("debug: udpAdvancedPort: %d\n", cd.udpAdvancedPort);
-
-  printf("debug: tcpAdvancedExcludePorts (%d): ", cd.tcpAdvancedExcludePortsLength);
-  for (i = 0; i < cd.tcpAdvancedExcludePortsLength; i++) {
-    printf("%d ", cd.tcpAdvancedExcludePorts[i]);
-  }
-  printf("\n");
-
-  printf("debug: udpAdvancedExcludePorts (%d): ", cd.udpAdvancedExcludePortsLength);
-  for (i = 0; i < cd.udpAdvancedExcludePortsLength; i++) {
-    printf("%d ", cd.udpAdvancedExcludePorts[i]);
-  }
-  printf("\n");
-
   if (cd.portBannerPresent == TRUE) {
     printf("debug: portBanner: %s\n", cd.portBanner);
   }

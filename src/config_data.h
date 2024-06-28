@@ -34,14 +34,6 @@ struct ConfigData {
   uint16_t udpPorts[MAXSOCKS];
   int udpPortsLength;
 
-  uint16_t tcpAdvancedPort;
-  uint16_t udpAdvancedPort;
-
-  uint16_t tcpAdvancedExcludePorts[UINT16_MAX];
-  int tcpAdvancedExcludePortsLength;
-  uint16_t udpAdvancedExcludePorts[UINT16_MAX];
-  int udpAdvancedExcludePortsLength;
-
   char portBanner[MAXBUF];
   uint8_t portBannerPresent;
 
