@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "../src/sentry_advanced.h"
 #include "../src/cmdline.h"
 #include "../src/config_data.h"
 #include "../src/configfile.h"

@@ -7,7 +7,6 @@
 #include <unistd.h>
 
 #include "sentry_stealth.h"
-#include "sentry_advanced.h"
 #include "cmdline.h"
 #include "config_data.h"
 #include "configfile.h"

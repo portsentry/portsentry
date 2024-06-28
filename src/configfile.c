@@ -85,12 +85,6 @@ void readConfigFile(void) {
 
   fclose(config);
 
-  // Set default values if not set in config file
-  if (fileConfig.tcpAdvancedPort == 0)
-    fileConfig.tcpAdvancedPort = ADVANCED_MODE_PORT_TCP;
-  if (fileConfig.udpAdvancedPort == 0)
-    fileConfig.udpAdvancedPort = ADVANCED_MODE_PORT_UDP;
-
   /* Make sure config is valid */
   validateConfig(&fileConfig);
 
@@ -193,26 +187,6 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       fprintf(stderr, "Unable to parse UDP_PORTS directive in config file\n");
       Exit(EXIT_FAILURE);
     }
-  } else if (strncmp(buffer, "ADVANCED_PORTS_TCP", keySize) == 0) {
-    if (StrToUint16_t(ptr, &fileConfig->tcpAdvancedPort) == FALSE) {
-      fprintf(stderr, "Unable to parse ADVANCED_PORTS_TCP\n");
-      Exit(EXIT_FAILURE);
-    }
-  } else if (strncmp(buffer, "ADVANCED_PORTS_UDP", keySize) == 0) {
-    if (StrToUint16_t(ptr, &fileConfig->udpAdvancedPort) == FALSE) {
-      fprintf(stderr, "Unable to parse ADVANCED_PORTS_UDP\n");
-      Exit(EXIT_FAILURE);
-    }
-  } else if (strncmp(buffer, "ADVANCED_EXCLUDE_TCP", keySize) == 0) {
-    if (parsePortsList(ptr, fileConfig->tcpAdvancedExcludePorts, &fileConfig->tcpAdvancedExcludePortsLength, UINT16_MAX) == FALSE) {
-      fprintf(stderr, "Unable to parse ADVANCED_EXCLUDE_TCP\n");
-      Exit(EXIT_FAILURE);
-    }
-  } else if (strncmp(buffer, "ADVANCED_EXCLUDE_UDP", keySize) == 0) {
-    if (parsePortsList(ptr, fileConfig->udpAdvancedExcludePorts, &fileConfig->udpAdvancedExcludePortsLength, UINT16_MAX) == FALSE) {
-      fprintf(stderr, "Unable to parse ADVANCED_EXCLUDE_UDP\n");
-      Exit(EXIT_FAILURE);
-    }
   } else if (strncmp(buffer, "PORT_BANNER", keySize) == 0) {
     if (snprintf(fileConfig->portBanner, MAXBUF, "%s", ptr) >= MAXBUF) {
       fprintf(stderr, "PORT_BANNER value too long\n");
@@ -226,26 +200,12 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
 }
 
 static void validateConfig(struct ConfigData *fileConfig) {
-  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP) {
-    if (fileConfig->tcpPortsLength == 0) {
-      fprintf(stderr, "Selected mode: %s, but no TCP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
-      Exit(EXIT_FAILURE);
-    }
-  } else if (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP) {
-    if (fileConfig->udpPortsLength == 0) {
-      fprintf(stderr, "Selected mode: %s, but no UDP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
-      Exit(EXIT_FAILURE);
-    }
-  } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
-    if (fileConfig->tcpAdvancedPort == 0) {
-      fprintf(stderr, "Selected mode: %s, but no ADVANCED_PORTS_TCP specified in config file\n", GetSentryModeString(configData.sentryMode));
-      Exit(EXIT_FAILURE);
-    }
-  } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
-    if (fileConfig->udpAdvancedPort == 0) {
-      fprintf(stderr, "Selected mode: %s, but no ADVANCED_PORTS_UDP specified in config file\n", GetSentryModeString(configData.sentryMode));
-      Exit(EXIT_FAILURE);
-    }
+  if (configData.sentryMode == SENTRY_MODE_STEALTH && fileConfig->tcpPortsLength == 0 && fileConfig->udpPortsLength == 0) {
+    fprintf(stderr, "Selected mode: %s, but no TCP_PORTS or UDP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
+    Exit(EXIT_FAILURE);
+  } else if (configData.sentryMode == SENTRY_MODE_CONNECT && fileConfig->tcpPortsLength == 0 && fileConfig->udpPortsLength == 0) {
+    fprintf(stderr, "Selected mode: %s, but no TCP_PORTS or UDP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
+    Exit(EXIT_FAILURE);
   }
 
   if (strlen(fileConfig->ignoreFile) == 0) {
@@ -278,9 +238,6 @@ static void validateConfig(struct ConfigData *fileConfig) {
       fileConfig->killRoute
       fileConfig->killHostsDeny
       fileConfig->killRunCmd
-      fileConfig->blockedFile
-      fileConfig->historyFile
-      fileConfig->ignoreFile
     */
 }
 
