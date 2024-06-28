@@ -12,6 +12,12 @@
 # Portsentry
 **Portsentry is a tool to detect and respond to port scans against a target host in real-time.**
 
+Website: https://portsentry.xyz
+
+Github: https://github.com/portsentry/portsentry
+
+Docker Hub: https://hub.docker.com/r/portsentry/portsentry
+
 ## Quickstart
 Most package managers should have a copy of Portsentry. Check with your OS/distribution.
 
