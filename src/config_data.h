@@ -15,16 +15,11 @@
 #define LOGFLAG_OUTPUT_STDOUT 0x4
 #define LOGFLAG_OUTPUT_SYSLOG 0x8
 
-enum SentryMode { SENTRY_MODE_NONE = 0,
-                  SENTRY_MODE_TCP,
-                  SENTRY_MODE_STCP,
-                  SENTRY_MODE_ATCP,
-                  SENTRY_MODE_UDP,
-                  SENTRY_MODE_SUDP,
-                  SENTRY_MODE_AUDP };
+enum SentryMode { SENTRY_MODE_STEALTH = 0,
+                  SENTRY_MODE_CONNECT };
 
 enum SentryMethod { SENTRY_METHOD_PCAP = 0,
-  SENTRY_METHOD_RAW };
+                    SENTRY_METHOD_RAW };
 
 struct ConfigData {
   char killRoute[MAXBUF];
@@ -75,5 +70,6 @@ void ResetConfigData(struct ConfigData *cd);
 void PostProcessConfig(struct ConfigData *cd);
 void PrintConfigData(const struct ConfigData cd);
 char *GetSentryModeString(const enum SentryMode sentryMode);
+char *GetSentryMethodString(const enum SentryMethod sentryMethod);
 void SetConfigData(const struct ConfigData *fileConfig, const struct ConfigData *cmdlineConfig);
 int AddInterface(struct ConfigData *cd, const char *interface);

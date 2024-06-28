@@ -98,17 +98,9 @@ void PrintConfigData(const struct ConfigData cd) {
   printf("debug: resolveHost: %d\n", cd.resolveHost);
   printf("debug: configTriggerCount: %d\n", cd.configTriggerCount);
 
-  printf("debug: sentryMode: %s\n", cd.sentryMode == SENTRY_MODE_NONE ? "none" : cd.sentryMode == SENTRY_MODE_TCP ? "tcp"
-                                                                             : cd.sentryMode == SENTRY_MODE_STCP  ? "stcp"
-                                                                             : cd.sentryMode == SENTRY_MODE_ATCP  ? "atcp"
-                                                                             : cd.sentryMode == SENTRY_MODE_UDP   ? "udp"
-                                                                             : cd.sentryMode == SENTRY_MODE_SUDP  ? "sudp"
-                                                                             : cd.sentryMode == SENTRY_MODE_AUDP  ? "audp"
-                                                                                                                  : "unknown");
+  printf("debug: sentryMode: %s\n", GetSentryModeString(cd.sentryMode));
 
-  printf("debug: sentryMethod: %s\n", cd.sentryMethod == SENTRY_METHOD_PCAP  ? "pcap"
-                                      : cd.sentryMethod == SENTRY_METHOD_RAW ? "raw"
-                                                                             : "unknown");
+  printf("debug: sentryMethod: %s\n", GetSentryMethodString(cd.sentryMethod));
 
   printf("debug: log output stdout: %s\n", (cd.logFlags & LOGFLAG_OUTPUT_STDOUT) != 0 ? "true" : "false");
   printf("debug: log output syslog: %s\n", (cd.logFlags & LOGFLAG_OUTPUT_SYSLOG) != 0 ? "true" : "false");
@@ -120,20 +112,21 @@ void PrintConfigData(const struct ConfigData cd) {
 
 char *GetSentryModeString(const enum SentryMode sentryMode) {
   switch (sentryMode) {
-  case SENTRY_MODE_NONE:
-    return "none";
-  case SENTRY_MODE_TCP:
-    return "tcp";
-  case SENTRY_MODE_STCP:
-    return "stcp";
-  case SENTRY_MODE_ATCP:
-    return "atcp";
-  case SENTRY_MODE_UDP:
-    return "udp";
-  case SENTRY_MODE_SUDP:
-    return "sudp";
-  case SENTRY_MODE_AUDP:
-    return "audp";
+  case SENTRY_MODE_STEALTH:
+    return "stealth";
+  case SENTRY_MODE_CONNECT:
+    return "connect";
+  default:
+    return "unknown";
+  }
+}
+
+char *GetSentryMethodString(const enum SentryMethod sentryMethod) {
+  switch (sentryMethod) {
+  case SENTRY_METHOD_PCAP:
+    return "pcap";
+  case SENTRY_METHOD_RAW:
+    return "raw";
   default:
     return "unknown";
   }

@@ -15,12 +15,8 @@
 #include "portsentry.h"
 #include "util.h"
 
-#define CMDLINE_TCP 0
-#define CMDLINE_STCP 1
-#define CMDLINE_ATCP 2
-#define CMDLINE_UDP 3
-#define CMDLINE_SUDP 4
-#define CMDLINE_AUDP 5
+#define CMDLINE_CONNECT 0
+#define CMDLINE_STEALTH 1
 #define CMDLINE_LOGOUTPUT 'l'
 #define CMDLINE_CONFIGFILE 'c'
 #define CMDLINE_DAEMON 'D'
@@ -31,12 +27,6 @@
 #define CMDLINE_INTERFACE 'i'
 #define CMDLINE_METHOD 'm'
 
-// FIXME: Hack for now since NetBSD doesn't have getopt_long_only
-#define CMDLINE_SHORT_TCP 't'
-#define CMDLINE_SHORT_STEALTH 's'
-#define CMDLINE_SHORT_ADVANCED 'a'
-#define CMDLINE_SHORT_UDP 'u'
-
 static void Usage(void);
 static void Version(void);
 
@@ -45,12 +35,8 @@ void ParseCmdline(int argc, char **argv) {
   uint8_t ifFlagAll = FALSE, ifFlagNlo = FALSE, ifFlagOther = FALSE;
   struct ConfigData cmdlineConfig;
   const struct option long_options[] = {
-      {"tcp", no_argument, 0, CMDLINE_TCP},
-      {"stcp", no_argument, 0, CMDLINE_STCP},
-      {"atcp", no_argument, 0, CMDLINE_ATCP},
-      {"udp", no_argument, 0, CMDLINE_UDP},
-      {"sudp", no_argument, 0, CMDLINE_SUDP},
-      {"audp", no_argument, 0, CMDLINE_AUDP},
+      {"connect", no_argument, 0, CMDLINE_CONNECT},
+      {"stealth", no_argument, 0, CMDLINE_STEALTH},
       {"interface", required_argument, 0, CMDLINE_INTERFACE},
       {"logoutput", required_argument, 0, CMDLINE_LOGOUTPUT},
       {"configfile", required_argument, 0, CMDLINE_CONFIGFILE},
@@ -68,7 +54,7 @@ void ParseCmdline(int argc, char **argv) {
     int option_index = 0;
     opt = getopt_long(argc, argv, "l:c:t:s:a:u:i:m:DdvhV", long_options, &option_index);
 
-    if (opt >= CMDLINE_TCP && opt <= CMDLINE_AUDP && cmdlineConfig.sentryMode != SENTRY_MODE_NONE) {
+    if (opt >= CMDLINE_CONNECT && opt <= CMDLINE_STEALTH && cmdlineConfig.sentryMode != SENTRY_MODE_NONE) {
       fprintf(stderr, "Error: Only one mode can be specified\n");
       Exit(EXIT_FAILURE);
     } else if (opt == -1) {
@@ -76,23 +62,11 @@ void ParseCmdline(int argc, char **argv) {
     }
 
     switch (opt) {
-    case CMDLINE_TCP:
-      cmdlineConfig.sentryMode = SENTRY_MODE_TCP;
+    case CMDLINE_CONNECT:
+      cmdlineConfig.sentryMode = SENTRY_MODE_CONNECT;
       break;
-    case CMDLINE_STCP:
-      cmdlineConfig.sentryMode = SENTRY_MODE_STCP;
-      break;
-    case CMDLINE_ATCP:
-      cmdlineConfig.sentryMode = SENTRY_MODE_ATCP;
-      break;
-    case CMDLINE_UDP:
-      cmdlineConfig.sentryMode = SENTRY_MODE_UDP;
-      break;
-    case CMDLINE_SUDP:
-      cmdlineConfig.sentryMode = SENTRY_MODE_SUDP;
-      break;
-    case CMDLINE_AUDP:
-      cmdlineConfig.sentryMode = SENTRY_MODE_AUDP;
+    case CMDLINE_STEALTH:
+      cmdlineConfig.sentryMode = SENTRY_MODE_STEALTH;
       break;
     case CMDLINE_INTERFACE:
       if (strncmp(optarg, "ALL", 5) == 0) {
@@ -151,42 +125,11 @@ void ParseCmdline(int argc, char **argv) {
     case CMDLINE_VERSION:
       Version();
       break;
-    case CMDLINE_SHORT_TCP:
-      cmdlineConfig.sentryMode = SENTRY_MODE_TCP;
-      break;
-    case CMDLINE_SHORT_STEALTH:
-      if (strncmp(optarg, "tcp", 3) == 0) {
-        cmdlineConfig.sentryMode = SENTRY_MODE_STCP;
-      } else if (strncmp(optarg, "udp", 3) == 0) {
-        cmdlineConfig.sentryMode = SENTRY_MODE_SUDP;
-      } else {
-        fprintf(stderr, "Error: Invalid stealth mode specified\n");
-        Exit(EXIT_FAILURE);
-      }
-      break;
-    case CMDLINE_SHORT_ADVANCED:
-      if (strncmp(optarg, "tcp", 3) == 0) {
-        cmdlineConfig.sentryMode = SENTRY_MODE_ATCP;
-      } else if (strncmp(optarg, "udp", 3) == 0) {
-        cmdlineConfig.sentryMode = SENTRY_MODE_AUDP;
-      } else {
-        fprintf(stderr, "Error: Invalid advanced mode specified\n");
-        Exit(EXIT_FAILURE);
-      }
-      break;
-    case CMDLINE_SHORT_UDP:
-      cmdlineConfig.sentryMode = SENTRY_MODE_UDP;
-      break;
     default:
       printf("Unknown argument, getopt returned character code 0%o\n", opt);
       Exit(EXIT_FAILURE);
       break;
     }
-  }
-
-  if (cmdlineConfig.sentryMode == SENTRY_MODE_NONE) {
-    fprintf(stderr, "Error: No sentry mode specified\n");
-    Exit(EXIT_FAILURE);
   }
 
 #ifdef BSD
@@ -209,13 +152,9 @@ void ParseCmdline(int argc, char **argv) {
 
 static void Usage(void) {
   printf("PortSentry - Port Scan Detector.\n");
-  printf("Usage: portsentry [-tcp -udp -stcp -atcp -sudp -audp] <options>\n\n");
-  printf("--tcp, -tcp\tSet TCP mode\n");
-  printf("--stcp, -stcp\tSet Stealth TCP mode\n");
-  printf("--atcp, -atcp\tSet Advanced TCP mode\n");
-  printf("--udp, -udp\tSet UDP mode\n");
-  printf("--sudp, -sudp\tSet Stealth UDP mode\n");
-  printf("--audp, -audp\tSet Advanced UDP mode\n");
+  printf("Usage: portsentry [--stealth, --connect] <options>\n\n");
+  printf("--stealth\tUse Stealth mode (default)\n");
+  printf("--connect\tUse Connect mode\n");
   printf("--interface, -i <interface> - Set interface to listen on. Use ALL for all interfaces, ALL_NLO for all interfaces except loopback (default: ALL_NLO)\n");
   printf("--logoutput, -l [stdout|syslog] - Set Log output (default to stdout)\n");
   printf("--configfile, -c <path> - Set config file path\n");
