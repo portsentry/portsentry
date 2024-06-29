@@ -79,6 +79,7 @@ findInFile() {
     debug "waiting for string $str in file $file"
     if grep -q "$str" $file; then
       debug "Found string $str in file $file"
+      findInFileCount=$(grep -c "$str" $file)
       return 0
     fi
     sleep 1
@@ -94,20 +95,26 @@ setProtoVars() {
   if [ "$1" = "tcp" ] || [ "$1" = "udp" ] ; then
     proto_l=$1
     proto_u=$(echo $proto_l | tr '[:lower:]' '[:upper:]')
-  elif [ "$1" = "stcp" ] || [ "$1" = "sudp" ] ; then
-    proto_l=$(echo $1 | sed 's/s//')
-    proto_u=$(echo $proto_l | tr '[:lower:]' '[:upper:]')
-  elif [ "$1" = "atcp" ] || [ "$1" = "audp" ] ; then
-    proto_l=$(echo $1 | sed 's/a//')
-    proto_u=$(echo $proto_l | tr '[:lower:]' '[:upper:]')
   else
     err "confirmBlockTriggered: invalid protocol $1"
   fi
 }
 
+confirmOccurrenceStdout() {
+  local count=$1
+  local str=$2
+
+  verbose "expect $count occurances of $str in stdout"
+  findInFile "$str" $PORTSENTRY_STDOUT
+
+  if [ "$findInFileCount" -ne "$count" ]; then
+    err "Expected $count occurances of $str in stdout, found $findInFileCount"
+  fi
+}
+
 confirmStdoutScanMessage() {
   setProtoVars $1
-  verbose "expect attackalert block message"
+  verbose "expect log scan from message"
   if ! findInFile "^Scan from: \[127\.0\.0\.1\]" $PORTSENTRY_STDOUT; then
     err "Expected attackalert message not found"
   fi
@@ -115,15 +122,15 @@ confirmStdoutScanMessage() {
 
 confirmBlockFileMessage() {
   setProtoVars $1
-  verbose "expect blocked $proto_l port"
-  if ! findInFile "Host: 127\.0\.0\.1/127\.0\.0\.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked.$proto; then
+  verbose "expect block file entry"
+  if ! findInFile "Host: 127\.0\.0\.1/127\.0\.0\.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked; then
     err "Expected blocked $proto_u port not found"
   fi
 }
 
 confirmHistoryFileMessage() {
   setProtoVars $1
-  verbose "expect history entry"
+  verbose "expect history file entry"
   if ! findInFile ".*Scan from: \[127\.0\.0\.1\] (127\.0\.0\.1) protocol: \[$proto_u\] port: \[11\]" $TEST_DIR/portsentry.history; then
     err "Expected history entry not found"
   fi
@@ -227,5 +234,5 @@ runNmap() {
   fi
 
   verbose "expect connect to $proto localhost:$port"
-  $NMAP -s$proto -p$port-$port localhost >/dev/null
+  $NMAP --max-retries 0 -s$proto -p$port-$port localhost >/dev/null
 }

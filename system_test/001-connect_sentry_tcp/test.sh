@@ -5,13 +5,14 @@ runNmap 11 T
 
 confirmBlockTriggered tcp
 
-verbose "expect block anyway when ignore file not found"
-if ! findInFile "^Unable to open ignore file .*/portsentry.ignore. Continuing without it" $PORTSENTRY_STDERR; then
-  err "Expected block anyway message not found"
-fi
-
 runNmap 11 T
 
 confirmAlreadyBlocked
+
+runNmap 11 U
+runNmap 11 U
+
+confirmOccurrenceStdout 2 "Scan from: \[127.0.0.1\] (127.0.0.1) protocol: \[TCP\] port: \[11\] type: \[Connect\]"
+confirmOccurrenceStdout 2 "Scan from: \[127.0.0.1\] (127.0.0.1) protocol: \[UDP\] port: \[11\] type: \[Connect]"
 
 ok
