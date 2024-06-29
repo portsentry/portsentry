@@ -158,7 +158,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "BLOCKED_FILE", keySize) == 0) {
-    if (snprintf(fileConfig->blockedFile, PATH_MAX, "%s.%s", ptr, GetSentryModeString(configData.sentryMode)) >= PATH_MAX) {
+    if (snprintf(fileConfig->blockedFile, PATH_MAX, "%s", ptr) >= PATH_MAX) {
       fprintf(stderr, "BLOCKED_FILE path value too long\n");
       Exit(EXIT_FAILURE);
     }
