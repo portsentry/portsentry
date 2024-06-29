@@ -382,10 +382,10 @@ static void LogScanEvent(const char *target, const char *resolvedHost, struct Co
   ret = snprintf(p, bufsize, "Scan from: [%s] (%s) protocol: [%s] port: [%d] type: [%s] IP opts: [%s] ignored: [%s] triggered: [%s] noblock: [%s]",
                  target,
                  resolvedHost,
-                 (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP) ? "TCP" : "UDP",
+                 (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP",
                  cd->port,
-                 (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) ? "Connect" : (cd->protocol == IPPROTO_TCP) ? ReportPacketType(tcp)
-                                                                                                                                                    : "UDP",
+                 (configData.sentryMode == SENTRY_MODE_CONNECT) ? "Connect" : (cd->protocol == IPPROTO_TCP) ? ReportPacketType(tcp)
+                                                                                                            : "UDP",
                  (ip != NULL) ? (ip->ip_hl > 5) ? "set" : "not set" : "unknown",
                  (flagIgnored == TRUE) ? "true" : (flagIgnored == -100) ? "unset"
                                                                         : "false",
