@@ -266,12 +266,7 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
     snprintf(resolvedHost, NI_MAXHOST, "%s", target);
   }
 
-  if (configData.sentryMode == SENTRY_MODE_TCP && tcpAcceptSocket == NULL) {
-    Error("RunSentry: tcpAcceptSocket is NULL in connect mode");
-    goto sentry_exit;
-  }
-
-  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
+  if (configData.sentryMode == SENTRY_MODE_CONNECT) {
     Debug("RunSentry connect mode: accepted %s connection from: %s", (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
   }
 
@@ -287,17 +282,17 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
     goto sentry_exit;
   }
 
-  if (configData.sentryMode == SENTRY_MODE_TCP) {
+  if (configData.sentryMode == SENTRY_MODE_CONNECT && cd->protocol == IPPROTO_TCP) {
     XmitBannerIfConfigured(IPPROTO_TCP, *tcpAcceptSocket, NULL);
     close(*tcpAcceptSocket);
     *tcpAcceptSocket = -1;
-  } else if (configData.sentryMode == SENTRY_MODE_UDP) {
+  } else if (configData.sentryMode == SENTRY_MODE_CONNECT && cd->protocol == IPPROTO_UDP) {
     XmitBannerIfConfigured(IPPROTO_UDP, cd->sockfd, client);
   }
 
   // If in log-only mode, don't run any of the blocking code
-  if ((configData.blockTCP == 0 && (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP)) ||
-      (configData.blockUDP == 0 && (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP))) {
+  if ((configData.blockTCP == 0 && cd->protocol == IPPROTO_TCP) ||
+      (configData.blockUDP == 0 && cd->protocol == IPPROTO_UDP)) {
     flagDontBlock = TRUE;
     goto sentry_exit;
   } else {
