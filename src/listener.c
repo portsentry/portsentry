@@ -291,35 +291,38 @@ static char *AllocAndBuildPcapFilter(struct Device *device) {
 
   filter = ReallocAndAppend(filter, &filterLen, " and (");
 
-  if (configData.sentryMode == SENTRY_MODE_STCP) {
+  if (configData.tcpPortsLength > 0) {
+    if (configData.tcpPortsLength > 0 && configData.udpPortsLength > 0) {
+      filter = ReallocAndAppend(filter, &filterLen, "(");
+    }
+
     for (i = 0; i < configData.tcpPortsLength; i++) {
       if (i > 0) {
         filter = ReallocAndAppend(filter, &filterLen, " or ");
       }
       filter = ReallocAndAppend(filter, &filterLen, "tcp dst port %d", configData.tcpPorts[i]);
     }
-  } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
+
+    if (configData.tcpPortsLength > 0 && configData.udpPortsLength > 0) {
+      filter = ReallocAndAppend(filter, &filterLen, ")");
+    }
+  }
+
+  if (configData.udpPortsLength > 0) {
+    if (configData.tcpPortsLength > 0 && configData.udpPortsLength > 0) {
+      filter = ReallocAndAppend(filter, &filterLen, " or (");
+    }
+
     for (i = 0; i < configData.udpPortsLength; i++) {
       if (i > 0) {
         filter = ReallocAndAppend(filter, &filterLen, " or ");
       }
       filter = ReallocAndAppend(filter, &filterLen, "udp dst port %d", configData.udpPorts[i]);
     }
-  } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
-    filter = ReallocAndAppend(filter, &filterLen, "tcp[2:2] >= 0 and tcp[2:2] <= %d", configData.tcpAdvancedPort);
 
-    for (i = 0; i < configData.tcpAdvancedExcludePortsLength; i++) {
-      filter = ReallocAndAppend(filter, &filterLen, " and not port %d", configData.tcpAdvancedExcludePorts[i]);
+    if (configData.tcpPortsLength > 0 && configData.udpPortsLength > 0) {
+      filter = ReallocAndAppend(filter, &filterLen, ")");
     }
-  } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
-    filter = ReallocAndAppend(filter, &filterLen, "udp[2:2] >= 0 and udp[2:2] <= %d", configData.udpAdvancedPort);
-
-    for (i = 0; i < configData.udpAdvancedExcludePortsLength; i++) {
-      filter = ReallocAndAppend(filter, &filterLen, " and not port %d", configData.udpAdvancedExcludePorts[i]);
-    }
-  } else {
-    Error("Unknown sentry mode %d", configData.sentryMode);
-    return NULL;
   }
 
   filter = ReallocAndAppend(filter, &filterLen, ")");
