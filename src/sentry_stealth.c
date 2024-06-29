@@ -40,7 +40,7 @@ int PortSentryStealthMode(void) {
   struct ConnectionData *cd;
   void *p;
 
-  assert(configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP);
+  assert(configData.sentryMode == SENTRY_MODE_STEALTH);
 
   if ((connectionDataSize = ConstructConnectionData(connectionData, MAXSOCKS)) == 0) {
     Error("Unable to add any ports to the connect sentry. Aborting.");
@@ -53,7 +53,7 @@ int PortSentryStealthMode(void) {
   }
 
   nfds = 0;
-  if (configData.sentryMode == SENTRY_MODE_STCP) {
+  if (configData.tcpPortsLength > 0) {
     if ((tcpSockfd = OpenRAWTCPSocket()) == ERROR) {
       Error("Could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
@@ -64,7 +64,7 @@ int PortSentryStealthMode(void) {
     nfds++;
   }
 
-  if (configData.sentryMode == SENTRY_MODE_SUDP) {
+  if (configData.udpPortsLength > 0) {
     if ((udpSockfd = OpenRAWUDPSocket()) == ERROR) {
       Error("Could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
