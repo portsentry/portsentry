@@ -431,55 +431,20 @@ static void LogScanEvent(const char *target, const char *resolvedHost, struct Co
 }
 
 int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp) {
-  memset(client, 0, sizeof(struct sockaddr_in));
-  *tcp = NULL;
-  *udp = NULL;
-  *cd = NULL;
-
-  client->sin_family = AF_INET;
-  client->sin_addr.s_addr = ip->ip_src.s_addr;
-  if (ip->ip_p == IPPROTO_TCP) {
-    *tcp = (struct tcphdr *)p;
-    if (configData.sentryMode == SENTRY_MODE_ATCP) {
-      if (ntohs((*tcp)->th_dport) > configData.tcpAdvancedPort)
-        return FALSE;
-
-      /* In advanced mode, the connection data list contains ports which should be ignored- So,
-       * finding a match means we should not process. */
-      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*tcp)->th_dport), IPPROTO_TCP)) != NULL)
-        return FALSE;
-    } else if (configData.sentryMode == SENTRY_MODE_STCP) {
-      /* Find the port which should trigger the sentry */
-      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*tcp)->th_dport), IPPROTO_TCP)) == NULL)
-        return FALSE;
-    } else {
-      Error("Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
-      Exit(EXIT_FAILURE);
-    }
-    client->sin_port = (*tcp)->th_dport;
-  } else if (ip->ip_p == IPPROTO_UDP) {
-    *udp = (struct udphdr *)p;
-    if (configData.sentryMode == SENTRY_MODE_AUDP) {
-      if (ntohs((*udp)->uh_dport) > configData.udpAdvancedPort)
-        return FALSE;
-
-      /* In advanced mode, the connection data list contains ports which should be ignored- So,
-       * finding a match means we should not process. */
-      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*udp)->uh_dport), IPPROTO_UDP)) != NULL)
-        return FALSE;
-    } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
-      /* Find the port which should trigger the sentry */
-      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*udp)->uh_dport), IPPROTO_UDP)) == NULL)
-        return FALSE;
-    } else {
-      Error("Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
-      Exit(EXIT_FAILURE);
-    }
-    client->sin_port = (*udp)->uh_dport;
-  } else {
+  if (ip->ip_p != IPPROTO_TCP && ip->ip_p != IPPROTO_UDP) {
     Error("Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
     return FALSE;
   }
+
+  *tcp = (ip->ip_p == IPPROTO_TCP) ? (struct tcphdr *)p : NULL;
+  *udp = (ip->ip_p == IPPROTO_UDP) ? (struct udphdr *)p : NULL;
+  if ((*cd = FindConnectionData(connectionData, connectionDataSize, (*tcp != NULL) ? ntohs((*tcp)->th_dport) : ntohs((*udp)->uh_dport), ip->ip_p)) == NULL)
+    return FALSE;
+
+  memset(client, 0, sizeof(struct sockaddr_in));
+  client->sin_family = AF_INET;
+  client->sin_addr.s_addr = ip->ip_src.s_addr;
+  client->sin_port = (*tcp != NULL) ? (*tcp)->th_dport : (*udp)->uh_dport;
 
   return TRUE;
 }
