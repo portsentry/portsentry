@@ -45,67 +45,33 @@ int ConstructConnectionData(struct ConnectionData *cd, int cdSize) {
   }
 
   cdIdx = 0;
-  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP) {
-    for (i = 0; i < configData.tcpPortsLength; i++) {
-      SetConnectionData(&cd[cdIdx], configData.tcpPorts[i], IPPROTO_TCP, TRUE);
+  for (i = 0; i < configData.tcpPortsLength; i++) {
+    SetConnectionData(&cd[cdIdx], configData.tcpPorts[i], IPPROTO_TCP, TRUE);
 
-      if (cd[cdIdx].portInUse != FALSE) {
-        continue;
-      }
-
-      cdIdx++;
-
-      if (cdIdx >= cdSize) {
-        Error("TCP port count exceeds size of ConnectionData array. Aborting.");
-        return cdIdx;
-      }
+    if (cd[cdIdx].portInUse != FALSE) {
+      continue;
     }
-  } else if (configData.sentryMode == SENTRY_MODE_ATCP) {
-    for (i = 0; i < configData.tcpAdvancedPort; i++) {
-      SetConnectionData(&cd[cdIdx], i, IPPROTO_TCP, TRUE);
 
-      if (cd[cdIdx].portInUse != TRUE) {
-        continue;
-      }
+    cdIdx++;
 
-      cdIdx++;
-
-      if (cdIdx >= cdSize) {
-        Error("TCP port count exceeds size of ConnectionData array. Aborting.");
-        return cdIdx;
-      }
+    if (cdIdx >= cdSize) {
+      Error("TCP port count exceeds size of ConnectionData array. Aborting.");
+      return cdIdx;
     }
   }
 
-  if (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP) {
-    for (i = 0; i < configData.udpPortsLength; i++) {
-      SetConnectionData(&cd[cdIdx], configData.udpPorts[i], IPPROTO_UDP, TRUE);
+  for (i = 0; i < configData.udpPortsLength; i++) {
+    SetConnectionData(&cd[cdIdx], configData.udpPorts[i], IPPROTO_UDP, TRUE);
 
-      if (cd[cdIdx].portInUse != FALSE) {
-        continue;
-      }
-
-      cdIdx++;
-
-      if (cdIdx >= cdSize) {
-        Error("UDP port count exceeds size of ConnectionData array. Aborting.");
-        return cdIdx;
-      }
+    if (cd[cdIdx].portInUse != FALSE) {
+      continue;
     }
-  } else if (configData.sentryMode == SENTRY_MODE_AUDP) {
-    for (i = 0; i < configData.udpAdvancedPort; i++) {
-      SetConnectionData(&cd[cdIdx], i, IPPROTO_UDP, TRUE);
 
-      if (cd[cdIdx].portInUse != TRUE) {
-        continue;
-      }
+    cdIdx++;
 
-      cdIdx++;
-
-      if (cdIdx >= cdSize) {
-        Error("UDP port count exceeds size of ConnectionData array. Aborting.");
-        return cdIdx;
-      }
+    if (cdIdx >= cdSize) {
+      Error("UDP port count exceeds size of ConnectionData array. Aborting.");
+      return cdIdx;
     }
   }
 
