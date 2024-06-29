@@ -32,7 +32,7 @@ static void Version(void);
 
 void ParseCmdline(int argc, char **argv) {
   int opt;
-  uint8_t ifFlagAll = FALSE, ifFlagNlo = FALSE, ifFlagOther = FALSE;
+  uint8_t ifFlagAll = FALSE, ifFlagNlo = FALSE, ifFlagOther = FALSE, flagModeSet = FALSE;
   struct ConfigData cmdlineConfig;
   const struct option long_options[] = {
       {"connect", no_argument, 0, CMDLINE_CONNECT},
@@ -54,8 +54,8 @@ void ParseCmdline(int argc, char **argv) {
     int option_index = 0;
     opt = getopt_long(argc, argv, "l:c:t:s:a:u:i:m:DdvhV", long_options, &option_index);
 
-    if (opt >= CMDLINE_CONNECT && opt <= CMDLINE_STEALTH && cmdlineConfig.sentryMode != SENTRY_MODE_NONE) {
-      fprintf(stderr, "Error: Only one mode can be specified\n");
+    if (opt >= CMDLINE_CONNECT && opt <= CMDLINE_STEALTH && flagModeSet == TRUE) {
+      fprintf(stderr, "Error: Only one mode can be specified, Use only one of --stealth or --connect\n");
       Exit(EXIT_FAILURE);
     } else if (opt == -1) {
       break;
@@ -64,9 +64,11 @@ void ParseCmdline(int argc, char **argv) {
     switch (opt) {
     case CMDLINE_CONNECT:
       cmdlineConfig.sentryMode = SENTRY_MODE_CONNECT;
+      flagModeSet = TRUE;
       break;
     case CMDLINE_STEALTH:
       cmdlineConfig.sentryMode = SENTRY_MODE_STEALTH;
+      flagModeSet = TRUE;
       break;
     case CMDLINE_INTERFACE:
       if (strncmp(optarg, "ALL", 5) == 0) {
