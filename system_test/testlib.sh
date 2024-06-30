@@ -103,13 +103,20 @@ setProtoVars() {
 confirmOccurrenceStdout() {
   local count=$1
   local str=$2
+  local timeout=${3:-5}
 
   verbose "expect $count occurances of $str in stdout"
-  findInFile "$str" $PORTSENTRY_STDOUT
+  while [ $timeout -gt 0 ]; do
+    findInFile "$str" $PORTSENTRY_STDOUT
+    if [ "$findInFileCount" -eq "$count" ]; then
+      return 0
+    fi
+    debug "retrying for $count occurances of $str in stdout"
+    sleep 1
+    timeout=$((timeout - 1))
+  done
 
-  if [ "$findInFileCount" -ne "$count" ]; then
-    err "Expected $count occurances of $str in stdout, found $findInFileCount"
-  fi
+  err "Expected $count occurances of $str in stdout, found $findInFileCount"
 }
 
 confirmStdoutScanMessage() {
