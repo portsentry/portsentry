@@ -18,6 +18,9 @@ chmod +x $TEST_DIR/routesim.sh
 
 runNmap 11 T
 
+waitForFile $TEST_DIR/extcmd.stdout
+sleep 1
+
 verbose "expect routesim.sh output"
 if ! findInFile "^127\.0\.0\.1" $TEST_DIR/routesim.stdout ; then
   err "Expected routesim.sh output not found"
