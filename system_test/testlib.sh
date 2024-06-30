@@ -150,6 +150,20 @@ confirmExternalCommandRunMessage() {
   fi
 }
 
+confirmRouteKillMessage() {
+  verbose "expect route kill message"
+  if ! findInFile "^attackalert: Host 127.0.0.1 has been blocked via dropped route using command" $PORTSENTRY_STDOUT; then
+    err "Expected external command run message not found"
+  fi
+}
+
+confirmHostWrapperMessage() {
+  verbose "expect attackalert hosts deny block message"
+  if ! findInFile "^attackalert: Host 127.0.0.1 has been blocked via wrappers with string" $PORTSENTRY_STDOUT; then
+    err "Expected attackalert message not found"
+  fi
+}
+
 confirmBlockTriggered() {
   setProtoVars $1
   confirmStdoutScanMessage $1
