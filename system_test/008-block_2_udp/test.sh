@@ -14,10 +14,7 @@ runNmap 11 U
 confirmStdoutScanMessage udp
 confirmHistoryFileMessage udp
 
-verbose "expect external command run message"
-if ! findInFile "^attackalert: External command run for host: 127.0.0.1 using command" $PORTSENTRY_STDOUT; then
-  err "Expected external command run message not found"
-fi
+confirmExternalCommandRunMessage
 
 verbose "expect extcmd.sh output"
 if ! findInFile "^127\.0\.0\.1 11" $TEST_DIR/extcmd.stdout ; then
