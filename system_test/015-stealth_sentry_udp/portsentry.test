@@ -1,1 +1,1 @@
--sudp -d -i ALL
+--stealth -m pcap -d -i ALL
