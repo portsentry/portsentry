@@ -45,7 +45,7 @@ ok() {
 }
 
 err() {
-  log "Test failed $@"
+  log "Test failed: $@"
   exit 1
 }
 
@@ -140,6 +140,13 @@ confirmHistoryFileMessage() {
   verbose "expect history file entry"
   if ! findInFile ".*Scan from: \[127\.0\.0\.1\] (127\.0\.0\.1) protocol: \[$proto_u\] port: \[11\]" $TEST_DIR/portsentry.history; then
     err "Expected history entry not found"
+  fi
+}
+
+confirmExternalCommandRunMessage() {
+  verbose "expect external command run message"
+  if ! findInFile "^attackalert: External command run for host: 127.0.0.1 using command" $PORTSENTRY_STDOUT; then
+    err "Expected external command run message not found"
   fi
 }
 
