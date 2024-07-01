@@ -5,6 +5,6 @@ runNmap 11 N
 
 confirmNullScan
 
-confirmBlockTriggered stcp
+confirmBlockTriggered tcp
 
 ok

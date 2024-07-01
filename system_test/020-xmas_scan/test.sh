@@ -5,6 +5,6 @@ runNmap 11 X
 
 confirmXmasScan
 
-confirmBlockTriggered stcp
+confirmBlockTriggered tcp
 
 ok
