@@ -102,7 +102,7 @@ setProtoVars() {
 
 confirmOccurrenceStdout() {
   local count=$1
-  local str=$2
+  local str="$2"
   local timeout=${3:-5}
 
   verbose "expect $count occurances of $str in stdout"
