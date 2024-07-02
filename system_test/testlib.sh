@@ -206,6 +206,13 @@ confirmFinScan() {
   fi
 }
 
+confirmIgnoreFile() {
+  verbose "expect ignore file entry"
+  if ! findInFile "attackalert: Host: 127\.0\.0\.1 found in ignore file [^ ]* aborting actions" $PORTSENTRY_STDOUT; then
+    err "Expected ignore file entry not found"
+  fi
+}
+
 waitForFile() {
   if [ -z "$1" ]; then
     err "waitForFile: no file specified"
