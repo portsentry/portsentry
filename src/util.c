@@ -460,3 +460,24 @@ int ntohstr(char *buf, const int bufSize, const uint32_t addr) {
 
   return TRUE;
 }
+
+int StrToUint16_t(const char *str, uint16_t *val) {
+  char *endptr;
+  long value;
+
+  errno = 0;
+  value = strtol(str, &endptr, 10);
+
+  // Stingy error checking
+  // errno set indicates malformed input
+  // endptr == str indicates no digits found
+  // value > UINT16_MAX indicates value is too large, since ports can only be 0-65535
+  // value <= 0: Don't allow port 0 (or negative ports)
+  if (errno != 0 || endptr == str || *endptr != '\0' || value > UINT16_MAX || value <= 0) {
+    return FALSE;
+  }
+
+  *val = (uint16_t)value;
+
+  return TRUE;
+}

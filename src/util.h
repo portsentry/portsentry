@@ -30,3 +30,4 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
 int CreateDateTime(char *buf, const int size);
 int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp);
 int ntohstr(char *buf, const int bufSize, const uint32_t addr);
+int StrToUint16_t(const char *str, uint16_t *val);
