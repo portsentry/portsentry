@@ -13,6 +13,7 @@
 #include "io.h"
 #include "portsentry.h"
 #include "util.h"
+#include "port.h"
 
 static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
 static void validateConfig(struct ConfigData *fileConfig);
@@ -21,7 +22,7 @@ static char *skipSpaceAndTab(char *buffer);
 static size_t getKeySize(char *buffer);
 static void stripTrailingSpace(char *buffer);
 static ssize_t getSizeToQuote(char *buffer);
-static int parsePortsList(char *str, uint16_t *ports, int *portsLength, const int maxPorts);
+static int parsePortsList(char *str, struct Port *ports, int *portsLength, const int maxPorts);
 
 void readConfigFile(void) {
   struct ConfigData fileConfig;
@@ -314,24 +315,22 @@ static ssize_t getSizeToQuote(char *buffer) {
   return valueSize;
 }
 
-static int parsePortsList(char *str, uint16_t *ports, int *portsLength, const int maxPorts) {
+static int parsePortsList(char *str, struct Port *ports, int *portsLength, const int maxPorts) {
   int count;
-  char *temp, *p = str;
+  char *temp, *saveptr, *p = str;
 
   if (strlen(str) == 0) {
     return FALSE;
   }
 
   for (count = 0; count < maxPorts; count++) {
-    if ((temp = strtok(p, ",")) == NULL) {
+    if ((temp = strtok_r(p, ",", &saveptr)) == NULL) {
       break;
     }
 
     p = NULL;
 
-    if (StrToUint16_t(temp, &ports[count]) == FALSE) {
-      return FALSE;
-    }
+    ParsePort(temp, &ports[count]);
   }
 
   if ((*portsLength = count) == 0) {

@@ -8,6 +8,7 @@
 #include <net/if.h>
 
 #include "portsentry.h"
+#include "port.h"
 
 #define LOGFLAG_NONE 0x00
 #define LOGFLAG_DEBUG 0x1
@@ -29,9 +30,9 @@ struct ConfigData {
   // FIXME: Might be better to allocate this dynamically. Keep static for now
   char interfaces[MAX_INTERFACES][IF_NAMESIZE];
 
-  uint16_t tcpPorts[MAXSOCKS];
+  struct Port tcpPorts[MAXSOCKS];
   int tcpPortsLength;
-  uint16_t udpPorts[MAXSOCKS];
+  struct Port udpPorts[MAXSOCKS];
   int udpPortsLength;
 
   char portBanner[MAXBUF];
