@@ -38,7 +38,7 @@ int IsPortInRange(struct Port *port, uint16_t portNumber) {
   return FALSE;
 }
 
-int IsPortSingle(struct Port *port) {
+int IsPortSingle(const struct Port *port) {
   return port->single != 0;
 }
 

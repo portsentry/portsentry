@@ -10,6 +10,7 @@
 #include "config.h"
 #include "config_data.h"
 #include "io.h"
+#include "port.h"
 #include "portsentry.h"
 #include "util.h"
 
@@ -58,13 +59,21 @@ void PrintConfigData(const struct ConfigData cd) {
 
   printf("debug: tcpPorts (%d): ", cd.tcpPortsLength);
   for (i = 0; i < cd.tcpPortsLength; i++) {
-    printf("%d ", cd.tcpPorts[i]);
+    if (IsPortSingle(&cd.tcpPorts[i])) {
+      printf("%d ", cd.tcpPorts[i].single);
+    } else {
+      printf("%d-%d ", cd.tcpPorts[i].range.start, cd.tcpPorts[i].range.end);
+    }
   }
   printf("\n");
 
   printf("debug: udpPorts (%d): ", cd.udpPortsLength);
   for (i = 0; i < cd.udpPortsLength; i++) {
-    printf("%d ", cd.udpPorts[i]);
+    if (IsPortSingle(&cd.udpPorts[i])) {
+      printf("%d ", cd.udpPorts[i].single);
+    } else {
+      printf("%d-%d ", cd.udpPorts[i].range.start, cd.udpPorts[i].range.end);
+    }
   }
   printf("\n");
 
