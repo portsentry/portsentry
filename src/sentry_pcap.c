@@ -25,7 +25,6 @@
 
 static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp);
 static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
-static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
 static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header);
 struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
 
@@ -112,14 +111,24 @@ exit:
 }
 
 void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
-  struct ConnectionData cd;
   struct sockaddr_in client;
   struct Device *device = (struct Device *)args;
   struct ip *ip;
   struct tcphdr *tcp;
   struct udphdr *udp;
+  int proto, port;
 
   if (PrepPacket(device, header, packet, &ip, &tcp, &udp) == FALSE) {
+    return;
+  }
+
+  proto = ip->ip_p;
+  if (proto == IPPROTO_TCP) {
+    port = ntohs(tcp->th_dport);
+  } else if (proto == IPPROTO_UDP) {
+    port = ntohs(udp->uh_dport);
+  } else {
+    Error("Unknown protocol %d detected during packet handling", proto);
     return;
   }
 
@@ -127,11 +136,7 @@ void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *
     return;
   }
 
-  if (SetPcapConnectionData(&cd, ip, tcp, udp) == FALSE) {
-    return;
-  }
-
-  if (cd.protocol == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
+  if (proto == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
     Debug("Got TCP packet with ACK=%d RST=%d, ignoring, offending packet was:", (tcp->th_flags & TH_ACK) != 0 ? 1 : 0, (tcp->th_flags & TH_RST) != 0 ? 1 : 0);
     if (configData.logFlags & LOGFLAG_DEBUG) {
       PrintPacket(device, ip, tcp, udp, header);
@@ -140,11 +145,11 @@ void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *
   }
 
   // FIXME: In pcap we need to consider the interface
-  if (IsPortInUse(cd.port, cd.protocol) != FALSE) {
+  if (IsPortInUse(port, proto) != FALSE) {
     return;
   }
 
-  RunSentry(&cd, &client, ip, tcp, NULL);
+  RunSentry(proto, port, -1, &client, ip, tcp, NULL);
 }
 
 static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp) {
@@ -244,22 +249,6 @@ static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, 
     return FALSE;
   }
 
-  return TRUE;
-}
-
-static int SetPcapConnectionData(struct ConnectionData *cd, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp) {
-  cd->protocol = ip->ip_p;
-  cd->sockfd = -1;
-  cd->portInUse = FALSE;
-
-  if (cd->protocol == IPPROTO_TCP) {
-    cd->port = ntohs(tcp->th_dport);
-  } else if (cd->protocol == IPPROTO_UDP) {
-    cd->port = ntohs(udp->uh_dport);
-  } else {
-    Error("Unknown protocol %d detected while setting connection data", cd->protocol);
-    return FALSE;
-  }
   return TRUE;
 }
 

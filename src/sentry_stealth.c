@@ -18,7 +18,6 @@
 #include <errno.h>
 
 #include "config_data.h"
-#include "connection_data.h"
 #include "io.h"
 #include "portsentry.h"
 #include "state_machine.h"
@@ -29,31 +28,20 @@ extern uint8_t g_isRunning;
 
 int PortSentryStealthMode(void) {
   int count, nfds, result;
-  int tcpSockfd = -1, udpSockfd = -1, connectionDataSize;
+  int tcpSockfd = -1, udpSockfd = -1;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
+  uint16_t current_port;
   struct sockaddr_in client;
   struct ip *ip = NULL;
   struct tcphdr *tcp = NULL;
   struct udphdr *udp = NULL;
   struct pollfd fds[2];
-  struct ConnectionData connectionData[MAXSOCKS];
-  struct ConnectionData *cd;
   void *p;
 
-  assert(configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP);
-
-  if ((connectionDataSize = ConstructConnectionData(connectionData, MAXSOCKS)) == 0) {
-    Error("Unable to add any ports to the connect sentry. Aborting.");
-    return (ERROR);
-  }
-
-  if (connectionDataSize == 0) {
-    Error("Could not bind ANY sockets. Shutting down.");
-    return (ERROR);
-  }
+  assert(configData.sentryMode == SENTRY_MODE_STEALTH);
 
   nfds = 0;
-  if (configData.sentryMode == SENTRY_MODE_STCP) {
+  if (configData.tcpPortsLength > 0) {
     if ((tcpSockfd = OpenRAWTCPSocket()) == ERROR) {
       Error("Could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
@@ -64,7 +52,7 @@ int PortSentryStealthMode(void) {
     nfds++;
   }
 
-  if (configData.sentryMode == SENTRY_MODE_SUDP) {
+  if (configData.udpPortsLength > 0) {
     if ((udpSockfd = OpenRAWUDPSocket()) == ERROR) {
       Error("Could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
       return (ERROR);
@@ -98,19 +86,28 @@ int PortSentryStealthMode(void) {
       if (PacketRead(fds[count].fd, packetBuffer, IP_MAXPACKET, &ip, &p) != TRUE)
         continue;
 
-      if (SetConvenienceData(connectionData, connectionDataSize, ip, p, &client, &cd, &tcp, &udp) != TRUE) {
+      if (SetConvenienceData(ip, p, &client, &tcp, &udp) != TRUE) {
         continue;
       }
 
-      if (cd->protocol == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
+      if (ip->ip_p == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
         continue;
       }
 
-      if (IsPortInUse(cd->port, cd->protocol) != FALSE) {
+      if (ip->ip_p == IPPROTO_TCP) {
+        current_port = ntohs(tcp->th_dport);
+      } else if (ip->ip_p == IPPROTO_UDP) {
+        current_port = ntohs(udp->uh_dport);
+      } else {
+        Error("Unknown protocol: %d. Aborting.", ip->ip_p);
+        return (ERROR);
+      }
+
+      if (IsPortInUse(current_port, ip->ip_p) != FALSE) {
         continue;
       }
 
-      RunSentry(cd, &client, ip, tcp, NULL);
+      RunSentry(ip->ip_p, current_port, -1, &client, ip, tcp, NULL);
     }
   }
 

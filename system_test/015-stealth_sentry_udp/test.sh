@@ -3,12 +3,7 @@
 
 runNmap 11 U
 
-confirmBlockTriggered sudp
-
-verbose "expect block anyway when ignore file not found"
-if ! findInFile "^Unable to open ignore file .*/portsentry.ignore. Continuing without it" $PORTSENTRY_STDERR; then
-  err "Expected block anyway message not found"
-fi
+confirmBlockTriggered udp
 
 runNmap 11 U
 

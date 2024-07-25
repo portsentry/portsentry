@@ -1,6 +1,7 @@
 #!/bin/sh
 
 TEST_DIR=/tmp/portsentry-test
+SRC_DIR=""
 PORTSENTRY_EXEC=""
 PORTSENTRY_CONF=""
 PORTSENTRY_TEST=""
@@ -30,10 +31,11 @@ init() {
   fi
 
   PORTSENTRY_EXEC=$1
-  PORTSENTRY_CONF=$2/portsentry.conf
-  PORTSENTRY_TEST=$2/portsentry.test
-  PORTSENTRY_SCRIPT=$2/test.sh
-  PORTSENTRY_HOOK_PRE_SETUP=$2/hook_pre_setup.sh
+  SRC_DIR=$2
+  PORTSENTRY_CONF=$SRC_DIR/portsentry.conf
+  PORTSENTRY_TEST=$SRC_DIR/portsentry.test
+  PORTSENTRY_SCRIPT=$SRC_DIR/test.sh
+  PORTSENTRY_HOOK_PRE_SETUP=$SRC_DIR/hook_pre_setup.sh
 
   if [ ! -x $PORTSENTRY_EXEC ]; then
     echo "Error: portsentry executable file: $PORTSENTRY_EXEC not found or not executable"
@@ -71,6 +73,7 @@ setup() {
   cp $PORTSENTRY_TEST $TEST_DIR
   cp $PORTSENTRY_SCRIPT $TEST_DIR
   cp ./testlib.sh $TEST_DIR/testlib.sh
+  cp $SRC_DIR/portsentry.ignore $TEST_DIR/
 
   PORTSENTRY_EXEC=$TEST_DIR/$(basename $PORTSENTRY_EXEC)
   PORTSENTRY_CONF=$TEST_DIR/$(basename $PORTSENTRY_CONF)

@@ -21,7 +21,6 @@
 #include <sys/time.h>
 
 #include "config_data.h"
-#include "connection_data.h"
 #include "io.h"
 #include "portsentry.h"
 #include "state_machine.h"
@@ -29,7 +28,7 @@
 
 #define MAX_BUF_SCAN_EVENT 1024
 
-static void LogScanEvent(const char *target, const char *resolvedHost, struct ConnectionData *cd, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock);
+static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock);
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
@@ -252,7 +251,7 @@ char *ErrnoString(char *buf, const size_t buflen) {
   return p;
 }
 
-void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
+void RunSentry(uint8_t protocol, uint16_t port, int sockfd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
   int result;
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
   int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100;  // -100 => unset
@@ -266,13 +265,8 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
     snprintf(resolvedHost, NI_MAXHOST, "%s", target);
   }
 
-  if (configData.sentryMode == SENTRY_MODE_TCP && tcpAcceptSocket == NULL) {
-    Error("RunSentry: tcpAcceptSocket is NULL in connect mode");
-    goto sentry_exit;
-  }
-
-  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
-    Debug("RunSentry connect mode: accepted %s connection from: %s", (cd->protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
+  if (configData.sentryMode == SENTRY_MODE_CONNECT) {
+    Debug("RunSentry connect mode: accepted %s connection from: %s", (protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
   }
 
   if ((flagIgnored = NeverBlock(target, configData.ignoreFile)) == ERROR) {
@@ -287,17 +281,15 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
     goto sentry_exit;
   }
 
-  if (configData.sentryMode == SENTRY_MODE_TCP) {
+  if (configData.sentryMode == SENTRY_MODE_CONNECT && protocol == IPPROTO_TCP) {
     XmitBannerIfConfigured(IPPROTO_TCP, *tcpAcceptSocket, NULL);
-    close(*tcpAcceptSocket);
-    *tcpAcceptSocket = -1;
-  } else if (configData.sentryMode == SENTRY_MODE_UDP) {
-    XmitBannerIfConfigured(IPPROTO_UDP, cd->sockfd, client);
+  } else if (configData.sentryMode == SENTRY_MODE_CONNECT && protocol == IPPROTO_UDP) {
+    XmitBannerIfConfigured(IPPROTO_UDP, sockfd, client);
   }
 
   // If in log-only mode, don't run any of the blocking code
-  if ((configData.blockTCP == 0 && (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP)) ||
-      (configData.blockUDP == 0 && (configData.sentryMode == SENTRY_MODE_UDP || configData.sentryMode == SENTRY_MODE_SUDP || configData.sentryMode == SENTRY_MODE_AUDP))) {
+  if ((configData.blockTCP == 0 && protocol == IPPROTO_TCP) ||
+      (configData.blockUDP == 0 && protocol == IPPROTO_UDP)) {
     flagDontBlock = TRUE;
     goto sentry_exit;
   } else {
@@ -305,17 +297,21 @@ void RunSentry(struct ConnectionData *cd, const struct sockaddr_in *client, stru
   }
 
   if (IsBlocked(target, configData.blockedFile) == FALSE) {
-    if ((result = DisposeTarget(target, cd->port, cd->protocol)) != TRUE) {
+    if ((result = DisposeTarget(target, port, protocol)) != TRUE) {
       Error("attackalert: Error during target dispose %s/%s!", resolvedHost, target);
     } else {
-      WriteBlocked(target, resolvedHost, cd->port, configData.blockedFile, GetProtocolString(cd->protocol));
+      WriteBlocked(target, resolvedHost, port, configData.blockedFile, GetProtocolString(protocol));
     }
   } else {
     Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
   }
 
 sentry_exit:
-  LogScanEvent(target, resolvedHost, cd, ip, tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock);
+  if (tcpAcceptSocket != NULL && *tcpAcceptSocket != -1) {
+    close(*tcpAcceptSocket);
+    *tcpAcceptSocket = -1;
+  }
+  LogScanEvent(target, resolvedHost, protocol, port, ip, tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock);
 }
 
 int CreateDateTime(char *buf, const int size) {
@@ -360,7 +356,7 @@ int CreateDateTime(char *buf, const int size) {
   return TRUE;
 }
 
-static void LogScanEvent(const char *target, const char *resolvedHost, struct ConnectionData *cd, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock) {
+static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock) {
   int ret, bufsize = MAX_BUF_SCAN_EVENT;
   char buf[MAX_BUF_SCAN_EVENT], *p = buf;
   char err[ERRNOMAXBUF];
@@ -387,10 +383,10 @@ static void LogScanEvent(const char *target, const char *resolvedHost, struct Co
   ret = snprintf(p, bufsize, "Scan from: [%s] (%s) protocol: [%s] port: [%d] type: [%s] IP opts: [%s] ignored: [%s] triggered: [%s] noblock: [%s]",
                  target,
                  resolvedHost,
-                 (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_ATCP) ? "TCP" : "UDP",
-                 cd->port,
-                 (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) ? "Connect" : (cd->protocol == IPPROTO_TCP) ? ReportPacketType(tcp)
-                                                                                                                                                    : "UDP",
+                 (protocol == IPPROTO_TCP) ? "TCP" : "UDP",
+                 port,
+                 (configData.sentryMode == SENTRY_MODE_CONNECT) ? "Connect" : (protocol == IPPROTO_TCP) ? ReportPacketType(tcp)
+                                                                                                        : "UDP",
                  (ip != NULL) ? (ip->ip_hl > 5) ? "set" : "not set" : "unknown",
                  (flagIgnored == TRUE) ? "true" : (flagIgnored == -100) ? "unset"
                                                                         : "false",
@@ -435,56 +431,19 @@ static void LogScanEvent(const char *target, const char *resolvedHost, struct Co
   fclose(output);
 }
 
-int SetConvenienceData(struct ConnectionData *connectionData, const int connectionDataSize, const struct ip *ip, const void *p, struct sockaddr_in *client, struct ConnectionData **cd, struct tcphdr **tcp, struct udphdr **udp) {
-  memset(client, 0, sizeof(struct sockaddr_in));
-  *tcp = NULL;
-  *udp = NULL;
-  *cd = NULL;
-
-  client->sin_family = AF_INET;
-  client->sin_addr.s_addr = ip->ip_src.s_addr;
-  if (ip->ip_p == IPPROTO_TCP) {
-    *tcp = (struct tcphdr *)p;
-    if (configData.sentryMode == SENTRY_MODE_ATCP) {
-      if (ntohs((*tcp)->th_dport) > configData.tcpAdvancedPort)
-        return FALSE;
-
-      /* In advanced mode, the connection data list contains ports which should be ignored- So,
-       * finding a match means we should not process. */
-      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*tcp)->th_dport), IPPROTO_TCP)) != NULL)
-        return FALSE;
-    } else if (configData.sentryMode == SENTRY_MODE_STCP) {
-      /* Find the port which should trigger the sentry */
-      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*tcp)->th_dport), IPPROTO_TCP)) == NULL)
-        return FALSE;
-    } else {
-      Error("Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
-      Exit(EXIT_FAILURE);
-    }
-    client->sin_port = (*tcp)->th_dport;
-  } else if (ip->ip_p == IPPROTO_UDP) {
-    *udp = (struct udphdr *)p;
-    if (configData.sentryMode == SENTRY_MODE_AUDP) {
-      if (ntohs((*udp)->uh_dport) > configData.udpAdvancedPort)
-        return FALSE;
-
-      /* In advanced mode, the connection data list contains ports which should be ignored- So,
-       * finding a match means we should not process. */
-      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*udp)->uh_dport), IPPROTO_UDP)) != NULL)
-        return FALSE;
-    } else if (configData.sentryMode == SENTRY_MODE_SUDP) {
-      /* Find the port which should trigger the sentry */
-      if (((*cd) = FindConnectionData(connectionData, connectionDataSize, ntohs((*udp)->uh_dport), IPPROTO_UDP)) == NULL)
-        return FALSE;
-    } else {
-      Error("Unknown sentry mode %s detected. Aborting.\n", GetSentryModeString(configData.sentryMode));
-      Exit(EXIT_FAILURE);
-    }
-    client->sin_port = (*udp)->uh_dport;
-  } else {
+int SetConvenienceData(const struct ip *ip, const void *p, struct sockaddr_in *client, struct tcphdr **tcp, struct udphdr **udp) {
+  if (ip->ip_p != IPPROTO_TCP && ip->ip_p != IPPROTO_UDP) {
     Error("Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
     return FALSE;
   }
+
+  *tcp = (ip->ip_p == IPPROTO_TCP) ? (struct tcphdr *)p : NULL;
+  *udp = (ip->ip_p == IPPROTO_UDP) ? (struct udphdr *)p : NULL;
+
+  memset(client, 0, sizeof(struct sockaddr_in));
+  client->sin_family = AF_INET;
+  client->sin_addr.s_addr = ip->ip_src.s_addr;
+  client->sin_port = (*tcp != NULL) ? (*tcp)->th_dport : (*udp)->uh_dport;
 
   return TRUE;
 }
@@ -497,6 +456,27 @@ int ntohstr(char *buf, const int bufSize, const uint32_t addr) {
 
   saddr.s_addr = addr;
   snprintf(buf, bufSize, "%s", inet_ntoa(saddr));
+
+  return TRUE;
+}
+
+int StrToUint16_t(const char *str, uint16_t *val) {
+  char *endptr;
+  long value;
+
+  errno = 0;
+  value = strtol(str, &endptr, 10);
+
+  // Stingy error checking
+  // errno set indicates malformed input
+  // endptr == str indicates no digits found
+  // value > UINT16_MAX indicates value is too large, since ports can only be 0-65535
+  // value <= 0: Don't allow port 0 (or negative ports)
+  if (errno != 0 || endptr == str || *endptr != '\0' || value > UINT16_MAX || value <= 0) {
+    return FALSE;
+  }
+
+  *val = (uint16_t)value;
 
   return TRUE;
 }

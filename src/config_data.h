@@ -8,6 +8,7 @@
 #include <net/if.h>
 
 #include "portsentry.h"
+#include "port.h"
 
 #define LOGFLAG_NONE 0x00
 #define LOGFLAG_DEBUG 0x1
@@ -15,16 +16,11 @@
 #define LOGFLAG_OUTPUT_STDOUT 0x4
 #define LOGFLAG_OUTPUT_SYSLOG 0x8
 
-enum SentryMode { SENTRY_MODE_NONE = 0,
-                  SENTRY_MODE_TCP,
-                  SENTRY_MODE_STCP,
-                  SENTRY_MODE_ATCP,
-                  SENTRY_MODE_UDP,
-                  SENTRY_MODE_SUDP,
-                  SENTRY_MODE_AUDP };
+enum SentryMode { SENTRY_MODE_STEALTH = 0,
+                  SENTRY_MODE_CONNECT };
 
 enum SentryMethod { SENTRY_METHOD_PCAP = 0,
-  SENTRY_METHOD_RAW };
+                    SENTRY_METHOD_RAW };
 
 struct ConfigData {
   char killRoute[MAXBUF];
@@ -34,18 +30,10 @@ struct ConfigData {
   // FIXME: Might be better to allocate this dynamically. Keep static for now
   char interfaces[MAX_INTERFACES][IF_NAMESIZE];
 
-  uint16_t tcpPorts[MAXSOCKS];
+  struct Port tcpPorts[MAXSOCKS];
   int tcpPortsLength;
-  uint16_t udpPorts[MAXSOCKS];
+  struct Port udpPorts[MAXSOCKS];
   int udpPortsLength;
-
-  uint16_t tcpAdvancedPort;
-  uint16_t udpAdvancedPort;
-
-  uint16_t tcpAdvancedExcludePorts[UINT16_MAX];
-  int tcpAdvancedExcludePortsLength;
-  uint16_t udpAdvancedExcludePorts[UINT16_MAX];
-  int udpAdvancedExcludePortsLength;
 
   char portBanner[MAXBUF];
   uint8_t portBannerPresent;
@@ -75,5 +63,6 @@ void ResetConfigData(struct ConfigData *cd);
 void PostProcessConfig(struct ConfigData *cd);
 void PrintConfigData(const struct ConfigData cd);
 char *GetSentryModeString(const enum SentryMode sentryMode);
+char *GetSentryMethodString(const enum SentryMethod sentryMethod);
 void SetConfigData(const struct ConfigData *fileConfig, const struct ConfigData *cmdlineConfig);
 int AddInterface(struct ConfigData *cd, const char *interface);

@@ -7,7 +7,6 @@
 #include <unistd.h>
 
 #include "sentry_stealth.h"
-#include "sentry_advanced.h"
 #include "cmdline.h"
 #include "config_data.h"
 #include "configfile.h"
@@ -49,12 +48,12 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (configData.sentryMode == SENTRY_MODE_TCP || configData.sentryMode == SENTRY_MODE_UDP) {
+  if (configData.sentryMode == SENTRY_MODE_CONNECT) {
     if (PortSentryConnectMode() == ERROR) {
       Error("Could not go into PortSentry mode. Shutting down.");
       Exit(EXIT_FAILURE);
     }
-  } else if (configData.sentryMode == SENTRY_MODE_STCP || configData.sentryMode == SENTRY_MODE_SUDP) {
+  } else if (configData.sentryMode == SENTRY_MODE_STEALTH) {
     if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
       if (PortSentryPcap() == ERROR) {
         Error("Could not go into PortSentry mode. Shutting down.");
@@ -69,21 +68,9 @@ int main(int argc, char *argv[]) {
       Error("Invalid sentry method specified. Shutting down.");
       Exit(EXIT_FAILURE);
     }
-  } else if (configData.sentryMode == SENTRY_MODE_ATCP || configData.sentryMode == SENTRY_MODE_AUDP) {
-    if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
-      if (PortSentryPcap() == ERROR) {
-        Error("Could not go into PortSentry mode. Shutting down.");
-        Exit(EXIT_FAILURE);
-      }
-    } else if (configData.sentryMethod == SENTRY_METHOD_RAW) {
-      if (PortSentryAdvancedStealthMode() == ERROR) {
-        Error("Could not go into PortSentry mode. Shutting down.");
-        Exit(EXIT_FAILURE);
-      }
-    } else {
-      Error("Invalid sentry method specified. Shutting down.");
-      Exit(EXIT_FAILURE);
-    }
+  } else {
+    Error("Invalid sentry method specified. Shutting down.");
+    Exit(EXIT_FAILURE);
   }
 
   Exit(EXIT_SUCCESS);
