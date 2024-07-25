@@ -256,7 +256,7 @@ static int WriteToLogFile(const char *filename, const char *target, const char *
     return FALSE;
   }
 
-#ifdef OpenBSD
+#ifdef __OpenBSD__
   fprintf(output, "%lld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
           current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
           tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
