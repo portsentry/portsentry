@@ -269,3 +269,12 @@ to properly monitor 1024 ports (it only did first 1023 before). Thanks Guido.
 05-23-2003 - 1.2 - Removed references to old psionic e-mail and changed license to 
 Common Public License.
 
+06-17-2024
+ - Fixed compiler errors and some makefile defaults
+ - Changed config file to contain mer reasonable defaults
+ - Initial support for docker
+
+06-28-2024
+ - Changed default paths to a more modern structure
+ - Updated docker container to reflect this
+ - Added "official" portsentry docker registry at dockerhub
