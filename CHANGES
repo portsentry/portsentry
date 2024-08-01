@@ -278,3 +278,6 @@ Common Public License.
  - Changed default paths to a more modern structure
  - Updated docker container to reflect this
  - Added "official" portsentry docker registry at dockerhub
+
+01-08-2024
+ - Added fail2ban filter and config for the v1.2 branch
