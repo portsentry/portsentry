@@ -117,46 +117,53 @@ long getLong(char *buffer) {
 }
 
 int DisposeTarget(char *target, int port, int protocol) {
-  int status = TRUE;
-  int blockProto;
+  int status, killRunCmdStatus, killHostsDenyStatus, killRouteStatus;
+  int blockProtoConfig;
 
   if (protocol == IPPROTO_TCP) {
-    blockProto = configData.blockTCP;
+    blockProtoConfig = configData.blockTCP;
   } else if (protocol == IPPROTO_UDP) {
-    blockProto = configData.blockUDP;
+    blockProtoConfig = configData.blockUDP;
   } else {
     Error("DisposeTarget: Unknown protocol: %d", protocol);
-    return (FALSE);
+    return ERROR;
   }
 
-  if (blockProto == 0) {
-    status = TRUE;
-  } else if (blockProto == 1) {
-    Debug("DisposeTarget: disposing of host %s on port %d with option: %d (%s)", target, port, configData.blockTCP, (protocol == IPPROTO_TCP) ? "tcp" : "udp");
+  if (blockProtoConfig == 0) {
+    status = FALSE;  // Not an error, but we'r not blocking
+  } else if (blockProtoConfig == 1) {
+    Debug("DisposeTarget: disposing of host %s on port %d with option: %d (%s)", target, port, blockProtoConfig, (protocol == IPPROTO_TCP) ? "tcp" : "udp");
     Debug("DisposeTarget: killRunCmd: %s", configData.killRunCmd);
     Debug("DisposeTarget: runCmdFirst: %d", configData.runCmdFirst);
     Debug("DisposeTarget: killHostsDeny: %s", configData.killHostsDeny);
     Debug("DisposeTarget: killRoute: %s (%lu)", configData.killRoute, strlen(configData.killRoute));
 
     if (configData.runCmdFirst == TRUE) {
-      status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
+      killRunCmdStatus = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
     }
 
-    // FIXME: status could very well be overwritten with a logically incorrect value
-    status = KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode));
-    status = KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode));
+    killHostsDenyStatus = KillHostsDeny(target, port, configData.killHostsDeny, GetSentryModeString(configData.sentryMode));
+    killRouteStatus = KillRoute(target, port, configData.killRoute, GetSentryModeString(configData.sentryMode));
 
     if (configData.runCmdFirst == FALSE) {
-      status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
+      killRunCmdStatus = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
     }
-  } else if (blockProto == 2) {
+
+    /* It's going to be impossible to determine a cookie cutter course of action which will work for everyone, so,
+     * if there are multiple actions to take, we'll consider the host "blocked" if any of the actions succeed. */
+    if (killRunCmdStatus == TRUE || killHostsDenyStatus == TRUE || killRouteStatus == TRUE) {
+      status = TRUE;
+    } else {
+      status = FALSE;
+    }
+  } else if (blockProtoConfig == 2) {
     status = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
+  } else {
+    Error("DisposeTarget: Unknown blockProto: %d", blockProtoConfig);
+    status = ERROR;
   }
 
-  if (status != TRUE)
-    status = FALSE;
-
-  return (status);
+  return status;
 }
 
 const char *GetProtocolString(int proto) {
@@ -252,7 +259,6 @@ char *ErrnoString(char *buf, const size_t buflen) {
 }
 
 void RunSentry(uint8_t protocol, uint16_t port, int sockfd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
-  int result;
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
   int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100;  // -100 => unset
 
@@ -297,7 +303,7 @@ void RunSentry(uint8_t protocol, uint16_t port, int sockfd, const struct sockadd
   }
 
   if (IsBlocked(target, configData.blockedFile) == FALSE) {
-    if ((result = DisposeTarget(target, port, protocol)) != TRUE) {
+    if (DisposeTarget(target, port, protocol) != TRUE) {
       Error("attackalert: Error during target dispose %s/%s!", resolvedHost, target);
     } else {
       WriteBlocked(target, resolvedHost, port, configData.blockedFile, GetProtocolString(protocol));
