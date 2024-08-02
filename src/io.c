@@ -395,10 +395,10 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   } else if (killStatus < 0) {
     Error("There was an error trying to block host (system fail) %s", target);
     return ERROR;
-  } else {
-    Log("attackalert: Host %s has been blocked via dropped route using command: \"%s\"", target, commandStringFinal);
-    return TRUE;
   }
+
+  Log("attackalert: Host %s has been blocked via dropped route using command: \"%s\"", target, commandStringFinal);
+  return TRUE;
 }
 
 /* This will run a specified command with TARGET as the option if one is given.
@@ -440,11 +440,11 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   } else if (killStatus < 0) {
     Error("There was an error trying to run command (system fail) %s", target);
     return ERROR;
-  } else {
-    /* report success */
-    Log("attackalert: External command run for host: %s using command: \"%s\"", target, commandStringFinal);
-    return TRUE;
   }
+
+  /* report success */
+  Log("attackalert: External command run for host: %s using command: \"%s\"", target, commandStringFinal);
+  return TRUE;
 }
 
 /* this function will drop the host into the TCP wrappers hosts.deny file to deny
@@ -492,12 +492,17 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
     Log("Cannot open hosts.deny file: %s for blocking.", WRAPPER_HOSTS_DENY);
     Error("securityalert: There was an error trying to block host %s", target);
     return ERROR;
-  } else {
-    fprintf(output, "%s\n", commandStringFinal);
-    fclose(output);
-    Log("attackalert: Host %s has been blocked via wrappers with string: \"%s\"", target, commandStringFinal);
-    return TRUE;
   }
+
+  if (fprintf(output, "%s\n", commandStringFinal) != strlen(commandStringFinal)) {
+    Error("There was an error writing to hosts.deny file: %s", WRAPPER_HOSTS_DENY);
+    fclose(output);
+    return ERROR;
+  }
+
+  fclose(output);
+  Log("attackalert: Host %s has been blocked via wrappers with string: \"%s\"", target, commandStringFinal);
+  return TRUE;
 }
 
 /* check if the host is already blocked */
