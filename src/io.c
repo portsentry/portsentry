@@ -494,7 +494,7 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
     return ERROR;
   }
 
-  if (fprintf(output, "%s\n", commandStringFinal) != strlen(commandStringFinal)) {
+  if ((size_t)fprintf(output, "%s\n", commandStringFinal) != strlen(commandStringFinal)) {
     Error("There was an error writing to hosts.deny file: %s", WRAPPER_HOSTS_DENY);
     fclose(output);
     return ERROR;
