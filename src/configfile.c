@@ -233,12 +233,17 @@ static void validateConfig(struct ConfigData *fileConfig) {
     Exit(EXIT_FAILURE);
   }
 
-  /*
-   * TODO: Add validation for the following:
-      fileConfig->killRoute
-      fileConfig->killHostsDeny
-      fileConfig->killRunCmd
-    */
+  if ((fileConfig->blockTCP == 2 || fileConfig->blockUDP == 2) &&
+      strlen(fileConfig->killRunCmd) == 0) {
+    fprintf(stderr, "KILL_RUN_CMD must be specified if BLOCK_TCP or BLOCK_UDP is set to 2\n");
+    Exit(EXIT_FAILURE);
+  }
+
+  if ((fileConfig->blockTCP == 1 || fileConfig->blockUDP == 1) &&
+      (strlen(fileConfig->killHostsDeny) == 0 && strlen(fileConfig->killRoute) == 0)) {
+    fprintf(stderr, "KILL_HOSTS_DENY and/or KILL_ROUTE must be specified if BLOCK_TCP or BLOCK_UDP is set to 1\n");
+    Exit(EXIT_FAILURE);
+  }
 }
 
 static void mergeToConfigData(struct ConfigData *fileConfig) {
