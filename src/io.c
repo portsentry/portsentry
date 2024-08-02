@@ -360,31 +360,28 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   int killStatus = ERROR, substStatus = ERROR;
 
   if (strlen(killString) == 0)
-    return (TRUE);
+    return FALSE;
 
   CleanIpAddr(cleanAddr, target);
   snprintf(portString, MAXBUF, "%d", port);
 
-  substStatus =
-      SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
+  substStatus = SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
     Log("No target variable specified in KILL_ROUTE option. Skipping.");
-    return (ERROR);
+    return ERROR;
   } else if (substStatus == ERROR) {
     Log("Error trying to parse $TARGET$ Token for KILL_ROUTE. Skipping.");
-    return (ERROR);
+    return ERROR;
   }
 
-  if (SubstString(portString, "$PORT$", commandStringTemp,
-                  commandStringTemp2) == ERROR) {
+  if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
     Log("Error trying to parse $PORT$ Token for KILL_ROUTE. Skipping.");
-    return (ERROR);
+    return ERROR;
   }
 
-  if (SubstString(detectionType, "$MODE$", commandStringTemp2,
-                  commandStringFinal) == ERROR) {
+  if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
     Log("Error trying to parse $MODE$ Token for KILL_ROUTE. Skipping.");
-    return (ERROR);
+    return ERROR;
   }
 
   Debug("KillRoute: running route command: %s", commandStringFinal);
@@ -394,14 +391,14 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
 
   if (killStatus == 127) {
     Error("There was an error trying to block host (exec fail) %s", target);
-    return (ERROR);
+    return ERROR;
   } else if (killStatus < 0) {
     Error("There was an error trying to block host (system fail) %s", target);
-    return (ERROR);
-  } else {
-    Log("attackalert: Host %s has been blocked via dropped route using command: \"%s\"", target, commandStringFinal);
-    return (TRUE);
+    return ERROR;
   }
+
+  Log("attackalert: Host %s has been blocked via dropped route using command: \"%s\"", target, commandStringFinal);
+  return TRUE;
 }
 
 /* This will run a specified command with TARGET as the option if one is given.
@@ -413,7 +410,7 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   int killStatus = ERROR;
 
   if (strlen(killString) == 0)
-    return (TRUE);
+    return FALSE;
 
   CleanIpAddr(cleanAddr, target);
   snprintf(portString, MAXBUF, "%d", port);
@@ -421,17 +418,17 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   /* Tokens are not required, but we check for an error anyway */
   if (SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp) == ERROR) {
     Log("Error trying to parse $TARGET$ Token for KILL_RUN_CMD. Skipping.");
-    return (ERROR);
+    return ERROR;
   }
 
   if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
     Log("Error trying to parse $PORT$ Token for KILL_RUN_CMD. Skipping.");
-    return (ERROR);
+    return ERROR;
   }
 
   if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
     Log("Error trying to parse $MODE$ Token for KILL_RUN_CMD. Skipping.");
-    return (ERROR);
+    return ERROR;
   }
 
   /* Kill the bastard and report a status */
@@ -439,15 +436,15 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
 
   if (killStatus == 127) {
     Error("There was an error trying to run command (exec fail) %s", target);
-    return (ERROR);
+    return ERROR;
   } else if (killStatus < 0) {
     Error("There was an error trying to run command (system fail) %s", target);
-    return (ERROR);
-  } else {
-    /* report success */
-    Log("attackalert: External command run for host: %s using command: \"%s\"", target, commandStringFinal);
-    return (TRUE);
+    return ERROR;
   }
+
+  /* report success */
+  Log("attackalert: External command run for host: %s using command: \"%s\"", target, commandStringFinal);
+  return TRUE;
 }
 
 /* this function will drop the host into the TCP wrappers hosts.deny file to deny
@@ -461,7 +458,7 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
   int substStatus = ERROR;
 
   if (strlen(killString) == 0)
-    return (TRUE);
+    return FALSE;
 
   CleanIpAddr(cleanAddr, target);
 
@@ -473,20 +470,20 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
       SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
     Log("No target variable specified in KILL_HOSTS_DENY option. Skipping.");
-    return (ERROR);
+    return ERROR;
   } else if (substStatus == ERROR) {
     Log("Error trying to parse $TARGET$ Token for KILL_HOSTS_DENY. Skipping.");
-    return (ERROR);
+    return ERROR;
   }
 
   if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
     Log("Error trying to parse $PORT$ Token for KILL_HOSTS_DENY. Skipping.");
-    return (ERROR);
+    return ERROR;
   }
 
   if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
     Log("Error trying to parse $MODE$ Token for KILL_HOSTS_DENY. Skipping.");
-    return (ERROR);
+    return ERROR;
   }
 
   Debug("KillHostsDeny: result string for block: %s", commandStringFinal);
@@ -494,13 +491,18 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
   if ((output = fopen(WRAPPER_HOSTS_DENY, "a")) == NULL) {
     Log("Cannot open hosts.deny file: %s for blocking.", WRAPPER_HOSTS_DENY);
     Error("securityalert: There was an error trying to block host %s", target);
-    return (FALSE);
-  } else {
-    fprintf(output, "%s\n", commandStringFinal);
-    fclose(output);
-    Log("attackalert: Host %s has been blocked via wrappers with string: \"%s\"", target, commandStringFinal);
-    return (TRUE);
+    return ERROR;
   }
+
+  if ((size_t)fprintf(output, "%s\n", commandStringFinal) != strlen(commandStringFinal)) {
+    Error("There was an error writing to hosts.deny file: %s", WRAPPER_HOSTS_DENY);
+    fclose(output);
+    return ERROR;
+  }
+
+  fclose(output);
+  Log("attackalert: Host %s has been blocked via wrappers with string: \"%s\"", target, commandStringFinal);
+  return TRUE;
 }
 
 /* check if the host is already blocked */
