@@ -375,7 +375,6 @@ static void LogScanEvent(const char *target, const char *resolvedHost, int proto
   bufsize -= strlen(p);
   p += strlen(p);
 
-  // FIXME: Should be able to recover from this
   if (bufsize < 2) {
     Error("Insufficient buffer size to write scan event");
     return;
@@ -404,7 +403,6 @@ static void LogScanEvent(const char *target, const char *resolvedHost, int proto
                                                                                         : "false");
 
   if (ret >= bufsize) {
-    // FIXME: Rewrite so we recover from this, e.g dynamic alloc from heap
     Error("Unable to log scan event due to internal buffer too small");
     return;
   }
@@ -418,7 +416,6 @@ static void LogScanEvent(const char *target, const char *resolvedHost, int proto
   ret = snprintf(p, bufsize, "\n");
 
   if (ret >= bufsize) {
-    // FIXME: Rewrite so we recover from this, e.g dynamic alloc from heap
     Error("Unable to add newline to scan event due to internal buffer too small");
     return;
   }
