@@ -28,7 +28,7 @@
 
 #define MAX_BUF_SCAN_EVENT 1024
 
-static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock);
+static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock, int flagBlockSuccessful);
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
@@ -260,7 +260,7 @@ char *ErrnoString(char *buf, const size_t buflen) {
 
 void RunSentry(uint8_t protocol, uint16_t port, int sockfd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
   char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
-  int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100;  // -100 => unset
+  int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100, flagBlockSuccessful = -100;  // -100 => unset
 
   // Note: We need to detrimine contents of resolvedHosr ASAP since it's always needed in the sentry_exit label
   SafeStrncpy(target, inet_ntoa(client->sin_addr), IPMAXBUF);
@@ -303,7 +303,7 @@ void RunSentry(uint8_t protocol, uint16_t port, int sockfd, const struct sockadd
   }
 
   if (IsBlocked(target, configData.blockedFile) == FALSE) {
-    if (DisposeTarget(target, port, protocol) != TRUE) {
+    if ((flagBlockSuccessful = DisposeTarget(target, port, protocol)) != TRUE) {
       Error("attackalert: Error during target dispose %s/%s!", resolvedHost, target);
     } else {
       WriteBlocked(target, resolvedHost, port, configData.blockedFile, GetProtocolString(protocol));
@@ -317,7 +317,7 @@ sentry_exit:
     close(*tcpAcceptSocket);
     *tcpAcceptSocket = -1;
   }
-  LogScanEvent(target, resolvedHost, protocol, port, ip, tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock);
+  LogScanEvent(target, resolvedHost, protocol, port, ip, tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock, flagBlockSuccessful);
 }
 
 int CreateDateTime(char *buf, const int size) {
@@ -362,7 +362,7 @@ int CreateDateTime(char *buf, const int size) {
   return TRUE;
 }
 
-static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock) {
+static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock, int flagBlockSuccessful) {
   int ret, bufsize = MAX_BUF_SCAN_EVENT;
   char buf[MAX_BUF_SCAN_EVENT], *p = buf;
   char err[ERRNOMAXBUF];
@@ -386,7 +386,7 @@ static void LogScanEvent(const char *target, const char *resolvedHost, int proto
   *p = '\0';
   bufsize--;
 
-  ret = snprintf(p, bufsize, "Scan from: [%s] (%s) protocol: [%s] port: [%d] type: [%s] IP opts: [%s] ignored: [%s] triggered: [%s] noblock: [%s]",
+  ret = snprintf(p, bufsize, "Scan from: [%s] (%s) protocol: [%s] port: [%d] type: [%s] IP opts: [%s] ignored: [%s] triggered: [%s] noblock: [%s] blocked: [%s]",
                  target,
                  resolvedHost,
                  (protocol == IPPROTO_TCP) ? "TCP" : "UDP",
@@ -399,7 +399,9 @@ static void LogScanEvent(const char *target, const char *resolvedHost, int proto
                  (flagTriggerCountExceeded == TRUE) ? "true" : (flagTriggerCountExceeded == -100) ? "unset"
                                                                                                   : "false",
                  (flagDontBlock == TRUE) ? "true" : (flagDontBlock == -100) ? "unset"
-                                                                            : "false");
+                                                                            : "false",
+                 (flagBlockSuccessful == TRUE) ? "true" : (flagBlockSuccessful == -100) ? "unset"
+                                                                                        : "false");
 
   if (ret >= bufsize) {
     // FIXME: Rewrite so we recover from this, e.g dynamic alloc from heap
