@@ -119,39 +119,6 @@ void Exit(int status) {
   exit(status);
 }
 
-/* The daemonizing code copied from Advanced Programming */
-/* in the UNIX Environment by W. Richard Stevens with minor changes */
-int DaemonSeed(void) {
-  int childpid;
-
-  signal(SIGALRM, SIG_IGN);
-  signal(SIGHUP, SIG_IGN);
-  signal(SIGPIPE, SIG_IGN);
-  signal(SIGTERM, Exit);
-  signal(SIGABRT, Exit);
-  signal(SIGURG, Exit);
-  signal(SIGKILL, Exit);
-
-  if ((childpid = fork()) < 0)
-    return (ERROR);
-  else if (childpid > 0)
-    exit(0);
-
-  setsid();
-  /* FIXME: This should perhaps he a fatal error, also maybe do better daemonizing */
-  if (chdir("/") == -1) {
-    Log("Unable to change to root directory during daemonizing (ignoring)");
-  }
-  umask(077);
-
-  /* close stdout, stdin, stderr */
-  close(0);
-  close(1);
-  close(2);
-
-  return (TRUE);
-}
-
 /* Compares an IP address against a listed address and its netmask*/
 int CompareIPs(char *target, char *ignoreAddr, int ignoreNetmaskBits) {
   unsigned long int ipAddr, targetAddr;
