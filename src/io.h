@@ -15,7 +15,6 @@ void Debug(char *logentry, ...);
 void Verbose(char *logentry, ...);
 void Crash(int errCode, char *logentry, ...);
 void Exit(int);
-int DaemonSeed(void);
 int NeverBlock(char *, char *);
 int CheckConfig(void);
 int OpenTCPSocket(void);

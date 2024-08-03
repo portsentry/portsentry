@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (configData.daemon == TRUE) {
-    if (DaemonSeed() == ERROR) {
+    if (daemon(0, 0) == -1) {
       fprintf(stderr, "Could not go into daemon mode. Shutting down.\n");
       Exit(EXIT_FAILURE);
     }
