@@ -185,7 +185,6 @@ static int RetrieveAddresses(struct ListenerModule *lm) {
           Crash(1, "Unable to retrieve network addresses for device %s: %s", dev->name, ErrnoString(err, ERRNOMAXBUF));
         }
 
-        // FIXME: Verify that we don't filter on link-local addresses?
         if (strncmp(host, "fe80", 4) == 0) {
           continue;
         } else if (strncmp(host, "169.254", 7) == 0) {
