@@ -73,7 +73,7 @@ setup() {
   cp $PORTSENTRY_TEST $TEST_DIR
   cp $PORTSENTRY_SCRIPT $TEST_DIR
   cp ./testlib.sh $TEST_DIR/testlib.sh
-  cp $SRC_DIR/portsentry.ignore $TEST_DIR/
+  [ -f $SRC_DIR/portsentry.ignore ] && cp $SRC_DIR/portsentry.ignore $TEST_DIR/
 
   PORTSENTRY_EXEC=$TEST_DIR/$(basename $PORTSENTRY_EXEC)
   PORTSENTRY_CONF=$TEST_DIR/$(basename $PORTSENTRY_CONF)
