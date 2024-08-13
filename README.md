@@ -5,6 +5,7 @@
 <div id="badges" align="center">
   <img src="https://komarev.com/ghpvc/?username=portsentry&style=flat-square&color=blue" alt=""/>
   <img src="https://github.com/portsentry/portsentry/actions/workflows/github-code-scanning/codeql/badge.svg" alt="" />
+  <img src="https://github.com/portsentry/portsentry/actions/workflows/cmake-single-platform.yml/badge.svg?branch=master" alt="" />
   <img src="https://img.shields.io/github/v/release/portsentry/portsentry" alt="" />
   <img src="https://img.shields.io/github/last-commit/portsentry/portsentry" alt="" />
 </div>
