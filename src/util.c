@@ -138,6 +138,9 @@ int DisposeTarget(char *target, int port, int protocol) {
     Debug("DisposeTarget: killHostsDeny: %s", configData.killHostsDeny);
     Debug("DisposeTarget: killRoute: %s (%lu)", configData.killRoute, strlen(configData.killRoute));
 
+    // Need to init variable to avoid uninitialized variable warning for some compilers
+    killRunCmdStatus = FALSE;
+
     if (configData.runCmdFirst == TRUE) {
       killRunCmdStatus = KillRunCmd(target, port, configData.killRunCmd, GetSentryModeString(configData.sentryMode));
     }
