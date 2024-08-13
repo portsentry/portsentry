@@ -15,8 +15,8 @@
 
 #include "portsentry.h"
 #include "sentry_pcap.h"
-#include "listener.h"
-#include "device.h"
+#include "pcap_listener.h"
+#include "pcap_device.h"
 #include "io.h"
 #include "util.h"
 #include "config_data.h"
