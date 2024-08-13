@@ -50,18 +50,14 @@ Required flag is: **CMAKE_BUILD_TYPE**. It should be set to either **Debug** or 
 
 **Compiling for release**
 ```
-mkdir release
-cd release
-cmake .. -D CMAKE_BUILD_TYPE=Release
-cmake --build . -v
+  cmake -B debug -D CMAKE_BUILD_TYPE=Debug
+  cmake --build debug -v
 ```
 
 **Compiling with debug symbols**
 ```
-mkdir debug
-cd debug
-cmake .. -D CMAKE_BUILD_TYPE=Debug
-cmake --build . -v
+  cmake -B release -D CMAKE_BUILD_TYPE=Release
+  cmake --build release -v
 ```
 
 **Compiling old version (v1.2)**
