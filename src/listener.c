@@ -23,7 +23,7 @@
 #include "config_data.h"
 #include "io.h"
 #include "util.h"
-#include "device.h"
+#include "pcap_device.h"
 
 #define BUFFER_TIMEOUT 2000
 

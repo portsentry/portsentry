@@ -8,7 +8,7 @@
 #include <assert.h>
 
 #include "portsentry.h"
-#include "device.h"
+#include "pcap_device.h"
 #include "util.h"
 #include "io.h"
 
