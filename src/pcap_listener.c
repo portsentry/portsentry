@@ -19,7 +19,7 @@
 
 #include "port.h"
 #include "portsentry.h"
-#include "listener.h"
+#include "pcap_listener.h"
 #include "config_data.h"
 #include "io.h"
 #include "util.h"
