@@ -7,23 +7,11 @@ if [ "$ACTION" = "clean" ]; then
   rm -f portsentry.blocked.* && \
   rm -f portsentry.history
 elif [ "$ACTION" = "debug" ]; then
-  if [ ! -d "debug" ]; then
-    mkdir debug && \
-    cd debug && \
-    cmake .. -D CMAKE_BUILD_TYPE=Debug && \
-    cd ..
-  fi
-  cd debug && \
-  cmake --build . -v
+  cmake -B debug -D CMAKE_BUILD_TYPE=Debug
+  cmake --build debug -v
 elif [ "$ACTION" = "release" ]; then
-  if [ ! -d "release" ]; then
-    mkdir release && \
-    cd release && \
-    cmake .. -D CMAKE_BUILD_TYPE=Release && \
-    cd ..
-  fi
-  cd release && \
-  cmake --build . -v
+  cmake -B release -D CMAKE_BUILD_TYPE=Release
+  cmake --build release -v
 elif [ "$ACTION" = "sast" ]; then
   rm -rf /tmp/portsentry
   rsync -avz ../portsentry /tmp/
