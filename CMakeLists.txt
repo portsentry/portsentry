@@ -1,14 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 project(Portsentry VERSION 2.0)
 
+option(BUILD_FUZZER "Build fuzzer tests" OFF)
+option(USE_PCAP "Build with pcap code and link with libpcap" ON)
+
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
 set(MAXSTATE 50 CACHE STRING "Maximum number of hosts to keep in a \"previous connect\" state engine")
 
 set(STANDARD_COMPILE_OPTS -Wall -Wextra -pedantic -Werror -Wformat-security -Wstack-protector -fstack-protector-strong -fPIE -D_FORTIFY_SOURCE=2)
-set(CORE_SOURCE_FILES src/config_data.c src/configfile.c src/io.c src/util.c src/state_machine.c src/cmdline.c src/sentry_connect.c src/sentry_stealth.c src/pcap_listener.c src/pcap_device.c src/sentry_pcap.c src/sighandler.c src/port.c)
+set(CORE_SOURCE_FILES src/config_data.c src/configfile.c src/io.c src/util.c src/state_machine.c src/cmdline.c src/sentry_connect.c src/sentry_stealth.c src/sighandler.c src/port.c)
 
-option(BUILD_FUZZER "Build fuzzer tests" OFF)
+if (USE_PCAP)
+  set(CORE_SOURCE_FILES ${CORE_SOURCE_FILES} src/pcap_listener.c src/pcap_device.c src/sentry_pcap.c)
+  set(STANDARD_COMPILE_OPTS ${STANDARD_COMPILE_OPTS} -DUSE_PCAP)
+endif()
 
 configure_file(config.h.in config.h)
 
@@ -17,7 +23,9 @@ configure_file(config.h.in config.h)
 add_library(lportsentry STATIC ${CORE_SOURCE_FILES})
 target_compile_options(lportsentry PRIVATE ${STANDARD_COMPILE_OPTS})
 target_include_directories(lportsentry PRIVATE "${PROJECT_BINARY_DIR}")
-target_link_libraries(lportsentry INTERFACE pcap)
+if (USE_PCAP)
+  target_link_libraries(lportsentry INTERFACE pcap)
+endif()
 
 
 # PORTSENTRY - main program
@@ -25,8 +33,10 @@ add_executable(portsentry src/portsentry.c)
 target_compile_options(portsentry PRIVATE ${STANDARD_COMPILE_OPTS})
 target_include_directories(portsentry PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(portsentry PRIVATE -pie)
-target_link_libraries(portsentry PRIVATE pcap PRIVATE lportsentry)
-
+target_link_libraries(portsentry PRIVATE lportsentry)
+if (USE_PCAP)
+  target_link_libraries(portsentry PRIVATE pcap)
+endif()
 
 # INSTALL TARGETS for portsentry program
 install(TARGETS portsentry DESTINATION usr/sbin)
@@ -52,7 +62,10 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug"
   add_executable(fuzz_handle_packet tests/fuzz_handle_packet.c ${CORE_SOURCE_FILES})
   target_compile_options(fuzz_handle_packet PUBLIC -O1 ${FUZZER_OPTS})
   target_include_directories(fuzz_handle_packet PRIVATE "${PROJECT_BINARY_DIR}")
-  target_link_libraries(fuzz_handle_packet PRIVATE ${FUZZER_OPTS} PRIVATE pcap)
+  target_link_libraries(fuzz_handle_packet PRIVATE ${FUZZER_OPTS})
+  if (USE_PCAP)
+    target_link_libraries(fuzz_handle_packet PRIVATE pcap)
+  endif() 
 endif()
 
 # UNIT TEST MOCK EXEC
@@ -60,8 +73,10 @@ add_executable(listener_test tests/listener_test.c)
 target_compile_options(listener_test PRIVATE ${STANDARD_COMPILE_OPTS})
 target_include_directories(listener_test PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(listener_test PRIVATE -pie)
-target_link_libraries(listener_test PRIVATE pcap PRIVATE lportsentry)
-
+target_link_libraries(listener_test PRIVATE lportsentry)
+if (USE_PCAP)
+  target_link_libraries(listener_test PRIVATE pcap)
+endif()
 
 # UNIT TESTS
 enable_testing()

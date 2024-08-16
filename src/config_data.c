@@ -18,6 +18,10 @@ struct ConfigData configData;
 
 void ResetConfigData(struct ConfigData *cd) {
   memset(cd, 0, sizeof(struct ConfigData));
+
+#ifndef USE_PCAP
+  cd->sentryMethod = SENTRY_METHOD_RAW;
+#endif
 }
 
 void PostProcessConfig(struct ConfigData *cd) {

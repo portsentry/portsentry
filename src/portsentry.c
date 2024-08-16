@@ -3,6 +3,7 @@
 //
 // SPDX-License-Identifier: CPL-1.0
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -13,7 +14,9 @@
 #include "sentry_connect.h"
 #include "io.h"
 #include "portsentry.h"
+#ifdef USE_PCAP
 #include "sentry_pcap.h"
+#endif
 #include "sighandler.h"
 #include "config.h"
 
@@ -54,16 +57,18 @@ int main(int argc, char *argv[]) {
       Exit(EXIT_FAILURE);
     }
   } else if (configData.sentryMode == SENTRY_MODE_STEALTH) {
-    if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
-      if (PortSentryPcap() == ERROR) {
-        Error("Could not go into PortSentry mode. Shutting down.");
-        Exit(EXIT_FAILURE);
-      }
-    } else if (configData.sentryMethod == SENTRY_METHOD_RAW) {
+    if (configData.sentryMethod == SENTRY_METHOD_RAW) {
       if (PortSentryStealthMode() == ERROR) {
         Error("Could not go into PortSentry mode. Shutting down.");
         Exit(EXIT_FAILURE);
       }
+#ifdef USE_PCAP
+    } else if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
+      if (PortSentryPcap() == ERROR) {
+        Error("Could not go into PortSentry mode. Shutting down.");
+        Exit(EXIT_FAILURE);
+      }
+#endif
     } else {
       Error("Invalid sentry method specified. Shutting down.");
       Exit(EXIT_FAILURE);
