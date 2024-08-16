@@ -92,6 +92,11 @@ run_portsentry() {
   local switches="$(head -n 1 $PORTSENTRY_TEST)"
   debug "switches: $switches"
 
+  if echo $switches | grep -q "pcap" && ! ldd $PORTSENTRY_EXEC | grep -q "libpcap\.so"; then
+    log "pcap test detected on portsentry binary without pcap support, skipping"
+    exit 0
+  fi
+
   cd $TEST_DIR
   $PORTSENTRY_EXEC -c $PORTSENTRY_CONF $switches > $PORTSENTRY_STDOUT 2>$PORTSENTRY_STDERR &
 
