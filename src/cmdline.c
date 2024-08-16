@@ -37,7 +37,9 @@ void ParseCmdline(int argc, char **argv) {
   const struct option long_options[] = {
       {"connect", no_argument, 0, CMDLINE_CONNECT},
       {"stealth", no_argument, 0, CMDLINE_STEALTH},
+#ifdef USE_PCAP
       {"interface", required_argument, 0, CMDLINE_INTERFACE},
+#endif
       {"logoutput", required_argument, 0, CMDLINE_LOGOUTPUT},
       {"configfile", required_argument, 0, CMDLINE_CONFIGFILE},
       {"daemon", no_argument, 0, CMDLINE_DAEMON},
@@ -103,10 +105,12 @@ void ParseCmdline(int argc, char **argv) {
       SafeStrncpy(cmdlineConfig.configFile, optarg, sizeof(cmdlineConfig.configFile));
       break;
     case CMDLINE_METHOD:
-      if (strncmp(optarg, "pcap", 4) == 0) {
-        cmdlineConfig.sentryMethod = SENTRY_METHOD_PCAP;
-      } else if (strncmp(optarg, "raw", 3) == 0) {
+      if (strncmp(optarg, "raw", 3) == 0) {
         cmdlineConfig.sentryMethod = SENTRY_METHOD_RAW;
+#ifdef USE_PCAP
+      } else if (strncmp(optarg, "pcap", 4) == 0) {
+        cmdlineConfig.sentryMethod = SENTRY_METHOD_PCAP;
+#endif
       } else {
         fprintf(stderr, "Error: Invalid sentry method specified\n");
         Exit(EXIT_FAILURE);
@@ -157,10 +161,12 @@ static void Usage(void) {
   printf("Usage: portsentry [--stealth, --connect] <options>\n\n");
   printf("--stealth\tUse Stealth mode (default)\n");
   printf("--connect\tUse Connect mode\n");
+#ifdef USE_PCAP
   printf("--interface, -i <interface> - Set interface to listen on. Use ALL for all interfaces, ALL_NLO for all interfaces except loopback (default: ALL_NLO)\n");
+#endif
   printf("--logoutput, -l [stdout|syslog] - Set Log output (default to stdout)\n");
   printf("--configfile, -c <path> - Set config file path\n");
-  printf("--method, -m\t[pcap|raw] - Set sentry method. Use libpcap or linux raw sockets (only available on linux) (default: pcap)\n");
+  printf("--method, -m\t[pcap|raw] - Set sentry method to use the stealth mode. Use libpcap or linux raw sockets (only available on linux) (default: pcap)\n");
   printf("--daemon, -D\tRun as a daemon\n");
   printf("--debug, -d\tEnable debugging output\n");
   printf("--verbose, -v\tEnable verbose output\n");
