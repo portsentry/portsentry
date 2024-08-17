@@ -102,7 +102,7 @@ int PortSentryStealthMode(void) {
         current_port = ntohs(udp->uh_dport);
       } else {
         Error("Unknown protocol: %d. Aborting.", ip->ip_p);
-        return (ERROR);
+        goto exit;
       }
 
       if (IsPortInUse(current_port, ip->ip_p) != FALSE) {
