@@ -3,6 +3,7 @@
 //
 // SPDX-License-Identifier: CPL-1.0
 
+#include <stdlib.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <assert.h>
@@ -27,6 +28,7 @@
 extern uint8_t g_isRunning;
 
 int PortSentryStealthMode(void) {
+  int status = EXIT_FAILURE;
   int count, nfds, result;
   int tcpSockfd = -1, udpSockfd = -1;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
@@ -44,7 +46,7 @@ int PortSentryStealthMode(void) {
   if (configData.tcpPortsLength > 0) {
     if ((tcpSockfd = OpenRAWTCPSocket()) == ERROR) {
       Error("Could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
-      return (ERROR);
+      goto exit;
     }
 
     fds[nfds].fd = tcpSockfd;
@@ -55,7 +57,7 @@ int PortSentryStealthMode(void) {
   if (configData.udpPortsLength > 0) {
     if ((udpSockfd = OpenRAWUDPSocket()) == ERROR) {
       Error("Could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
-      return (ERROR);
+      goto exit;
     }
 
     fds[nfds].fd = udpSockfd;
@@ -72,10 +74,10 @@ int PortSentryStealthMode(void) {
         continue;
       }
       Error("poll() failed: %s. Aborting.", ErrnoString(err, sizeof(err)));
-      return (ERROR);
+      goto exit;
     } else if (result == 0) {
       Error("poll() timed out. Aborting.");
-      return (ERROR);
+      goto exit;
     }
 
     for (count = 0; count < nfds; count++) {
@@ -111,11 +113,15 @@ int PortSentryStealthMode(void) {
     }
   }
 
+  status = EXIT_SUCCESS;
+
+exit:
+
   if (tcpSockfd != -1)
     close(tcpSockfd);
 
   if (udpSockfd != -1)
     close(udpSockfd);
 
-  return TRUE;
+  return status;
 }

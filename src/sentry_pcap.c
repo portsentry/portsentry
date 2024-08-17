@@ -31,7 +31,7 @@ struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
 extern uint8_t g_isRunning;
 
 int PortSentryPcap(void) {
-  int status = FALSE, ret, nfds = 0, i;
+  int status = EXIT_FAILURE, ret, nfds = 0, i;
   char err[ERRNOMAXBUF];
   struct ListenerModule *lm = NULL;
   struct pollfd *fds = NULL;
@@ -100,7 +100,7 @@ int PortSentryPcap(void) {
     }
   }
 
-  status = TRUE;
+  status = EXIT_SUCCESS;
 
 exit:
   if (fds)

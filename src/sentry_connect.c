@@ -24,8 +24,6 @@
 #include "state_machine.h"
 #include "util.h"
 
-#define POLL_TIMEOUT 500
-
 extern uint8_t g_isRunning;
 
 struct ConnectionData {
@@ -38,6 +36,7 @@ static int SetConnectionData(struct ConnectionData *cd, const int cdSize, const 
 static int ConstructConnectionData(struct ConnectionData *cd, const int cdSize);
 
 int PortSentryConnectMode(void) {
+  int status = EXIT_FAILURE;
   struct sockaddr_in client;
   socklen_t clientLength;
   int incomingSockfd, result;
@@ -52,12 +51,12 @@ int PortSentryConnectMode(void) {
 
   if ((connectionDataSize = ConstructConnectionData(connectionData, MAXSOCKS)) == 0) {
     Error("Unable to add any ports to the connect sentry. Aborting.");
-    return (ERROR);
+    return EXIT_FAILURE;
   }
 
   if ((fds = (struct pollfd *)malloc(sizeof(struct pollfd) * connectionDataSize)) == NULL) {
     Error("Unable to allocate memory for pollfd");
-    return (ERROR);
+    return EXIT_FAILURE;
   }
 
   for (count = 0; count < connectionDataSize; count++) {
@@ -69,7 +68,7 @@ int PortSentryConnectMode(void) {
   Log("PortSentry is now active and listening.");
 
   while (g_isRunning == TRUE) {
-    result = poll(fds, connectionDataSize, POLL_TIMEOUT);
+    result = poll(fds, connectionDataSize, -1);
 
     if (result == -1) {
       if (errno == EINTR) {
@@ -78,7 +77,8 @@ int PortSentryConnectMode(void) {
       Error("poll() failed %s", ErrnoString(err, sizeof(err)));
       goto exit;
     } else if (result == 0) {
-      continue;
+      Error("poll() timed out. Aborting.");
+      goto exit;
     }
 
     for (count = 0; count < connectionDataSize; count++) {
@@ -105,6 +105,8 @@ int PortSentryConnectMode(void) {
     }
   }
 
+  status = EXIT_SUCCESS;
+
 exit:
   if (fds != NULL) {
     free(fds);
@@ -123,7 +125,7 @@ exit:
     }
   }
 
-  return TRUE;
+  return status;
 }
 
 static int SetConnectionData(struct ConnectionData *cd, const int cdSize, const int cdIdx, const uint16_t port, const int proto) {
