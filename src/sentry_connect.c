@@ -11,11 +11,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
+#include <poll.h>
 
 #include "config_data.h"
 #include "sentry_connect.h"
@@ -23,6 +23,8 @@
 #include "portsentry.h"
 #include "state_machine.h"
 #include "util.h"
+
+#define POLL_TIMEOUT 500
 
 extern uint8_t g_isRunning;
 
@@ -41,8 +43,7 @@ int PortSentryConnectMode(void) {
   int incomingSockfd, result;
   int count = 0;
   char err[ERRNOMAXBUF];
-  fd_set selectFds;
-  int nfds = 0;
+  struct pollfd *fds = NULL;
   struct ConnectionData connectionData[MAXSOCKS];
   int connectionDataSize = 0;
   char tmp;
@@ -54,34 +55,34 @@ int PortSentryConnectMode(void) {
     return (ERROR);
   }
 
+  if ((fds = (struct pollfd *)malloc(sizeof(struct pollfd) * connectionDataSize)) == NULL) {
+    Error("Unable to allocate memory for pollfd");
+    return (ERROR);
+  }
+
   for (count = 0; count < connectionDataSize; count++) {
-    nfds = max(nfds, connectionData[count].sockfd);
+    fds[count].fd = connectionData[count].sockfd;
+    fds[count].events = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
+    fds[count].revents = 0;
   }
 
   Log("PortSentry is now active and listening.");
 
   while (g_isRunning == TRUE) {
-    FD_ZERO(&selectFds);
+    result = poll(fds, connectionDataSize, POLL_TIMEOUT);
 
-    for (count = 0; count < connectionDataSize; count++) {
-      FD_SET(connectionData[count].sockfd, &selectFds);
-    }
-
-    result = select(nfds + 1, &selectFds, NULL, NULL, (struct timeval *)NULL);
-
-    if (result < 0) {
+    if (result == -1) {
       if (errno == EINTR) {
         continue;
       }
-      Error("Select call failed: %s. Shutting down.", ErrnoString(err, sizeof(err)));
-      return (ERROR);
+      Error("poll() failed %s", ErrnoString(err, sizeof(err)));
+      goto exit;
     } else if (result == 0) {
-      Debug("Select timeout");
       continue;
     }
 
     for (count = 0; count < connectionDataSize; count++) {
-      if (FD_ISSET(connectionData[count].sockfd, &selectFds) == 0) {
+      if ((fds[count].revents & POLLIN) == 0) {
         continue;
       }
 
@@ -102,6 +103,12 @@ int PortSentryConnectMode(void) {
 
       RunSentry(connectionData[count].protocol, connectionData[count].port, connectionData[count].sockfd, &client, NULL, NULL, &incomingSockfd);
     }
+  }
+
+exit:
+  if (fds != NULL) {
+    free(fds);
+    fds = NULL;
   }
 
   if (incomingSockfd != -1) {
