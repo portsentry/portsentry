@@ -23,6 +23,7 @@
 uint8_t g_isRunning = TRUE;
 
 int main(int argc, char *argv[]) {
+  int status = 0;
   printf("PortSentry %d.%d\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR);
 
   ParseCmdline(argc, argv);
@@ -52,31 +53,22 @@ int main(int argc, char *argv[]) {
   }
 
   if (configData.sentryMode == SENTRY_MODE_CONNECT) {
-    if (PortSentryConnectMode() == ERROR) {
-      Error("Could not go into PortSentry mode. Shutting down.");
-      Exit(EXIT_FAILURE);
-    }
+    status = PortSentryConnectMode();
   } else if (configData.sentryMode == SENTRY_MODE_STEALTH) {
     if (configData.sentryMethod == SENTRY_METHOD_RAW) {
-      if (PortSentryStealthMode() == ERROR) {
-        Error("Could not go into PortSentry mode. Shutting down.");
-        Exit(EXIT_FAILURE);
-      }
+      status = PortSentryStealthMode();
 #ifdef USE_PCAP
     } else if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
-      if (PortSentryPcap() == ERROR) {
-        Error("Could not go into PortSentry mode. Shutting down.");
-        Exit(EXIT_FAILURE);
-      }
+      status = PortSentryPcap();
 #endif
     } else {
       Error("Invalid sentry method specified. Shutting down.");
       Exit(EXIT_FAILURE);
     }
   } else {
-    Error("Invalid sentry method specified. Shutting down.");
+    Error("Invalid sentry mode specified. Shutting down.");
     Exit(EXIT_FAILURE);
   }
 
-  Exit(EXIT_SUCCESS);
+  Exit(status);
 }
