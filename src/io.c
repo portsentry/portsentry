@@ -116,6 +116,18 @@ void Exit(int status) {
     isSyslogOpen = FALSE;
   }
 
+  if (configData.tcpPorts != NULL) {
+    free(configData.tcpPorts);
+    configData.tcpPorts = NULL;
+    configData.tcpPortsLength = 0;
+  }
+
+  if (configData.udpPorts != NULL) {
+    free(configData.udpPorts);
+    configData.udpPorts = NULL;
+    configData.udpPortsLength = 0;
+  }
+
   exit(status);
 }
 
