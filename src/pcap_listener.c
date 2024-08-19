@@ -392,7 +392,7 @@ struct ListenerModule *AllocListenerModule(void) {
 }
 
 void FreeListenerModule(struct ListenerModule *lm) {
-  struct Device *current;
+  struct Device *current, *next;
 
   if (lm == NULL) {
     return;
@@ -400,8 +400,9 @@ void FreeListenerModule(struct ListenerModule *lm) {
 
   current = lm->root;
   while (current != NULL) {
-    current = current->next;
+    next = current->next;
     FreeDevice(current);
+    current = next;
   }
 
   free(lm);
