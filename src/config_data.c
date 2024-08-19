@@ -150,7 +150,8 @@ int AddInterface(struct ConfigData *cd, const char *interface) {
 
   noInterfaces = GetNoInterfaces(cd);
 
-  cd->interfaces = realloc(cd->interfaces, noInterfaces + 2 * sizeof(char *));
+  cd->interfaces = realloc(cd->interfaces, (noInterfaces + 2) * sizeof(char *));
+  cd->interfaces[noInterfaces + 1] = NULL;
   cd->interfaces[noInterfaces] = malloc(IF_NAMESIZE);
 
   SafeStrncpy(cd->interfaces[noInterfaces], interface, IF_NAMESIZE);
