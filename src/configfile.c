@@ -249,6 +249,16 @@ static void validateConfig(struct ConfigData *fileConfig) {
 static void mergeToConfigData(struct ConfigData *fileConfig) {
   struct ConfigData temp;
 
+  /*
+   * WARNING: Exercise caution when modifying this function. Both configData and fileConfig will hold pointers to to allocated memory.
+   * Make sure copying is done correctly so no heap memory is lost.
+   * As of this note; the ConfigData structure (config_data.h) holds pointers to:
+   *
+   * char **interfaces - array of strings of interfaces to listen to. Set in cmdline (therefore present in configData)
+   * struct Port *tcpPorts - array of Port structs for TCP ports to listen to. Set in config file (therefore present in fileConfig)
+   * struct Port *udpPorts - array of Port structs for UDP ports to listen to. Set in config file (therefore present in fileConfig)
+   */
+
   // backup current configData (at this point,it's assumed the configData holds the cmdline options)
   memcpy(&temp, &configData, sizeof(struct ConfigData));
 
@@ -260,9 +270,9 @@ static void mergeToConfigData(struct ConfigData *fileConfig) {
   configData.sentryMode = temp.sentryMode;
   configData.sentryMethod = temp.sentryMethod;
   configData.logFlags = temp.logFlags;
-  memcpy(configData.configFile, temp.configFile, sizeof(configData.configFile));
   configData.daemon = temp.daemon;
-  memcpy(configData.interfaces, temp.interfaces, sizeof(configData.interfaces));
+  configData.interfaces = temp.interfaces;
+  memcpy(configData.configFile, temp.configFile, sizeof(configData.configFile));
 }
 
 static char *skipSpaceAndTab(char *buffer) {
