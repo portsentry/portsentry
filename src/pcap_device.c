@@ -20,13 +20,10 @@ struct Device *CreateDevice(const char *name) {
     return NULL;
   }
 
-  new = malloc(sizeof(struct Device));
-  if (new == NULL) {
+  if ((new = calloc(1, sizeof(struct Device))) == NULL) {
     Error("Unable to allocate memory for device %s", name);
     return NULL;
   }
-
-  memset(new, 0, sizeof(struct Device));
 
   SafeStrncpy(new->name, name, IF_NAMESIZE);
 
