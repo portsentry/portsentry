@@ -15,8 +15,6 @@
 #define MAXBUF 1024
 /* max size of an IP address plus NULL */
 #define IPMAXBUF 16
-/* max sockets we can open */
-#define MAXSOCKS 64
 
 #define ERRNOMAXBUF 1024
 

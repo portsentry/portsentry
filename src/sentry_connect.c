@@ -32,8 +32,9 @@ struct ConnectionData {
   int sockfd;
 };
 
-static int SetConnectionData(struct ConnectionData *cd, const int cdSize, const int cdIdx, const uint16_t port, const int proto);
-static int ConstructConnectionData(struct ConnectionData *cd, const int cdSize);
+static int SetConnectionData(struct ConnectionData **cd, const int cdIdx, const uint16_t port, const int proto);
+static int ConstructConnectionData(struct ConnectionData **cd);
+static void FreeConnectionData(struct ConnectionData **cd, int *cdSize);
 
 int PortSentryConnectMode(void) {
   int status = EXIT_FAILURE;
@@ -43,13 +44,13 @@ int PortSentryConnectMode(void) {
   int count = 0;
   char err[ERRNOMAXBUF];
   struct pollfd *fds = NULL;
-  struct ConnectionData connectionData[MAXSOCKS];
+  struct ConnectionData *connectionData = NULL;
   int connectionDataSize = 0;
   char tmp;
 
   assert(configData.sentryMode == SENTRY_MODE_CONNECT);
 
-  if ((connectionDataSize = ConstructConnectionData(connectionData, MAXSOCKS)) == 0) {
+  if ((connectionDataSize = ConstructConnectionData(&connectionData)) == 0) {
     Error("Unable to add any ports to the connect sentry. Aborting.");
     return EXIT_FAILURE;
   }
@@ -108,6 +109,8 @@ int PortSentryConnectMode(void) {
   status = EXIT_SUCCESS;
 
 exit:
+  FreeConnectionData(&connectionData, &connectionDataSize);
+
   if (fds != NULL) {
     free(fds);
     fds = NULL;
@@ -128,51 +131,46 @@ exit:
   return status;
 }
 
-static int SetConnectionData(struct ConnectionData *cd, const int cdSize, const int cdIdx, const uint16_t port, const int proto) {
+static int SetConnectionData(struct ConnectionData **cd, const int cdIdx, const uint16_t port, const int proto) {
+  int sockfd;
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
   if (port == 0) {
-    Crash(EXIT_FAILURE, "Invalid port 0, unable to listen. Remove from %s", (proto == IPPROTO_TCP ? "TCP_PORTS" : "UDP_PORTS"));
-    return ERROR;
+    Error("Invalid port 0 defined in %s, unable to listen. Skipping", (proto == IPPROTO_TCP ? "TCP_PORTS" : "UDP_PORTS"));
+    return FALSE;
   }
-
-  if (cdIdx >= cdSize) {
-    Crash(EXIT_FAILURE, "Too many ports specified in %s. Reduce the number of ports to monitor to max %d", (proto == IPPROTO_TCP ? "TCP_PORTS" : "UDP_PORTS"), MAXSOCKS);
-    return ERROR;
-  }
-
-  memset(&cd[cdIdx], 0, sizeof(struct ConnectionData));
-
-  cd[cdIdx].sockfd = -1;
-  cd[cdIdx].port = port;
-  cd[cdIdx].protocol = proto;
 
   Log("Going into listen mode on %s port: %d", (proto == IPPROTO_TCP ? "TCP" : "UDP"), port);
 
-  if ((cd[cdIdx].sockfd = SetupPort(port, proto)) < 0) {
+  if ((sockfd = SetupPort(port, proto)) < 0) {
     Error("Could not bind %s socket on port %d. Attempting to continue", GetProtocolString(proto), port);
     return FALSE;
   }
 
+  if ((*cd = realloc(*cd, sizeof(struct ConnectionData) * (cdIdx + 1))) == NULL) {
+    Crash(EXIT_FAILURE, "Unable to allocate memory for connection data");
+  }
+
+  memset(&(*cd)[cdIdx], 0, sizeof(struct ConnectionData));
+
+  (*cd)[cdIdx].port = port;
+  (*cd)[cdIdx].protocol = proto;
+  (*cd)[cdIdx].sockfd = sockfd;
+
   return TRUE;
 }
 
-int ConstructConnectionData(struct ConnectionData *cd, const int cdSize) {
+int ConstructConnectionData(struct ConnectionData **cd) {
   int i, j, cdIdx = 0;
-
-  if (cdSize <= 0) {
-    Error("ConstructConnectionData() called with invalid size. Aborting.");
-    return 0;
-  }
 
   for (i = 0; i < configData.tcpPortsLength; i++) {
     if (IsPortSingle(&configData.tcpPorts[i])) {
-      if (SetConnectionData(cd, cdSize, cdIdx, configData.tcpPorts[i].single, IPPROTO_TCP) == TRUE) {
+      if (SetConnectionData(cd, cdIdx, configData.tcpPorts[i].single, IPPROTO_TCP) == TRUE) {
         cdIdx++;
       }
     } else {
       for (j = configData.tcpPorts[i].range.start; j <= configData.tcpPorts[i].range.end; j++) {
-        if (SetConnectionData(cd, cdSize, cdIdx, j, IPPROTO_TCP) == TRUE) {
+        if (SetConnectionData(cd, cdIdx, j, IPPROTO_TCP) == TRUE) {
           cdIdx++;
         }
       }
@@ -181,12 +179,12 @@ int ConstructConnectionData(struct ConnectionData *cd, const int cdSize) {
 
   for (i = 0; i < configData.udpPortsLength; i++) {
     if (IsPortSingle(&configData.udpPorts[i])) {
-      if (SetConnectionData(cd, cdSize, cdIdx, configData.udpPorts[i].single, IPPROTO_UDP) == TRUE) {
+      if (SetConnectionData(cd, cdIdx, configData.udpPorts[i].single, IPPROTO_UDP) == TRUE) {
         cdIdx++;
       }
     } else {
       for (j = configData.udpPorts[i].range.start; j <= configData.udpPorts[i].range.end; j++) {
-        if (SetConnectionData(cd, cdSize, cdIdx, j, IPPROTO_UDP) == TRUE) {
+        if (SetConnectionData(cd, cdIdx, j, IPPROTO_UDP) == TRUE) {
           cdIdx++;
         }
       }
@@ -194,4 +192,13 @@ int ConstructConnectionData(struct ConnectionData *cd, const int cdSize) {
   }
 
   return cdIdx;
+}
+
+void FreeConnectionData(struct ConnectionData **cd, int *cdSize) {
+  if (*cd != NULL) {
+    free(*cd);
+    *cd = NULL;
+  }
+
+  *cdSize = 0;
 }
