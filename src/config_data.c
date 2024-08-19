@@ -16,6 +16,8 @@
 
 struct ConfigData configData;
 
+static int IsInterfacePresent(const struct ConfigData *cd, const char *interface);
+
 void ResetConfigData(struct ConfigData *cd) {
   memset(cd, 0, sizeof(struct ConfigData));
 
@@ -43,8 +45,8 @@ void PostProcessConfig(struct ConfigData *cd) {
     SafeStrncpy(cd->configFile, CONFIG_FILE, sizeof(cd->configFile));
   }
 
-  if (strlen(cd->interfaces[0]) == 0) {
-    SafeStrncpy(cd->interfaces[0], "ALL_NLO", IF_NAMESIZE);
+  if (GetNoInterfaces(cd) == 0) {
+    AddInterface(cd, "ALL_NLO");
   }
 }
 
@@ -55,10 +57,14 @@ void PrintConfigData(const struct ConfigData cd) {
   printf("debug: killHostsDeny: %s\n", cd.killHostsDeny);
   printf("debug: killRunCmd: %s\n", cd.killRunCmd);
 
-  i = 0;
-  while (strlen(cd.interfaces[i]) > 0) {
-    printf("debug: interface: %s\n", cd.interfaces[i]);
-    i++;
+  if (GetNoInterfaces(&cd) > 0) {
+    i = 0;
+    while (cd.interfaces[i] != NULL) {
+      printf("debug: interface: %s\n", cd.interfaces[i]);
+      i++;
+    }
+  } else {
+    printf("debug: [no interfaces set]\n");
   }
 
   printf("debug: tcpPorts (%d): ", cd.tcpPortsLength);
@@ -131,20 +137,72 @@ char *GetSentryMethodString(const enum SentryMethod sentryMethod) {
 }
 
 int AddInterface(struct ConfigData *cd, const char *interface) {
-  int i;
+  int noInterfaces;
 
   if (strlen(interface) > (IF_NAMESIZE - 1)) {
     fprintf(stderr, "Error: Interface name %s too long\n", interface);
     Exit(EXIT_FAILURE);
   }
 
-  for (i = 0; i < MAX_INTERFACES; i++) {
-    if (strlen(cd->interfaces[i]) > 0) {
-      if (strncmp(cd->interfaces[i], interface, strlen(cd->interfaces[i])) == 0) {
-        return TRUE;
-      }
-    } else {
-      SafeStrncpy(cd->interfaces[i], interface, sizeof(cd->interfaces[i]));
+  if (IsInterfacePresent(cd, interface) == TRUE) {
+    return TRUE;
+  }
+
+  noInterfaces = GetNoInterfaces(cd);
+
+  cd->interfaces = realloc(cd->interfaces, noInterfaces + 2 * sizeof(char *));
+  cd->interfaces[noInterfaces] = malloc(IF_NAMESIZE);
+
+  SafeStrncpy(cd->interfaces[noInterfaces], interface, IF_NAMESIZE);
+
+  return TRUE;
+}
+
+void FreeInterfaces(struct ConfigData *cd) {
+  int i;
+
+  if (cd->interfaces == NULL) {
+    return;
+  }
+
+  i = 0;
+  while (cd->interfaces[i] != NULL) {
+    free(cd->interfaces[i]);
+    i++;
+  }
+
+  free(cd->interfaces);
+  cd->interfaces = NULL;
+}
+
+int GetNoInterfaces(const struct ConfigData *cd) {
+  int i = 0;
+
+  if (cd->interfaces == NULL) {
+    return 0;
+  }
+
+  while (cd->interfaces[i] != NULL) {
+    i++;
+  }
+
+  return i;
+}
+
+static int IsInterfacePresent(const struct ConfigData *cd, const char *interface) {
+  int i = 0;
+
+  if (cd->interfaces == NULL) {
+    return FALSE;
+  }
+
+  while (cd->interfaces[i] != NULL) {
+    if (strlen(cd->interfaces[i]) != strlen(interface)) {
+      i++;
+      continue;
+    }
+
+    if (strncmp(cd->interfaces[i], interface, strlen(cd->interfaces[i])) == 0) {
       return TRUE;
     }
   }

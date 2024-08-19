@@ -129,7 +129,7 @@ static int PrepDevices(struct ListenerModule *lm) {
   int i;
 
   assert(lm != NULL);
-  assert(strlen(configData.interfaces[0]) > 0);
+  assert(GetNoInterfaces(&configData) > 0);
 
   if (strncmp(configData.interfaces[0], "ALL_NLO", (IF_NAMESIZE - 1)) == 0) {
     if (AutoPrepDevices(lm, FALSE) == FALSE) {
@@ -141,7 +141,7 @@ static int PrepDevices(struct ListenerModule *lm) {
     }
   } else {
     i = 0;
-    while (strlen(configData.interfaces[i]) > 0) {
+    while (configData.interfaces[i] != NULL) {
       if (CreateAndAddDevice(lm, configData.interfaces[i]) == FALSE) {
         Error("Unable to add device %s, skipping", configData.interfaces[i]);
       }

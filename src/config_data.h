@@ -27,8 +27,7 @@ struct ConfigData {
   char killHostsDeny[MAXBUF];
   char killRunCmd[MAXBUF];
 
-  // FIXME: Might be better to allocate this dynamically. Keep static for now
-  char interfaces[MAX_INTERFACES][IF_NAMESIZE];
+  char **interfaces;
 
   struct Port *tcpPorts;
   int tcpPortsLength;
@@ -66,3 +65,5 @@ char *GetSentryModeString(const enum SentryMode sentryMode);
 char *GetSentryMethodString(const enum SentryMethod sentryMethod);
 void SetConfigData(const struct ConfigData *fileConfig, const struct ConfigData *cmdlineConfig);
 int AddInterface(struct ConfigData *cd, const char *interface);
+void FreeInterfaces(struct ConfigData *cd);
+int GetNoInterfaces(const struct ConfigData *cd);
