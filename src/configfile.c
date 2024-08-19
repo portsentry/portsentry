@@ -22,7 +22,7 @@ static char *skipSpaceAndTab(char *buffer);
 static size_t getKeySize(char *buffer);
 static void stripTrailingSpace(char *buffer);
 static ssize_t getSizeToQuote(char *buffer);
-static int parsePortsList(char *str, struct Port *ports, int *portsLength, const int maxPorts);
+static int parsePortsList(char *str, struct Port **ports, int *portsLength);
 
 void readConfigFile(void) {
   struct ConfigData fileConfig;
@@ -178,12 +178,12 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "TCP_PORTS", keySize) == 0) {
-    if (parsePortsList(ptr, fileConfig->tcpPorts, &fileConfig->tcpPortsLength, MAXSOCKS) == FALSE) {
+    if (parsePortsList(ptr, &fileConfig->tcpPorts, &fileConfig->tcpPortsLength) == FALSE) {
       fprintf(stderr, "Unable to parse TCP_PORTS directive in config file\n");
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "UDP_PORTS", keySize) == 0) {
-    if (parsePortsList(ptr, fileConfig->udpPorts, &fileConfig->udpPortsLength, MAXSOCKS) == FALSE) {
+    if (parsePortsList(ptr, &fileConfig->udpPorts, &fileConfig->udpPortsLength) == FALSE) {
       fprintf(stderr, "Unable to parse UDP_PORTS directive in config file\n");
       Exit(EXIT_FAILURE);
     }
@@ -320,22 +320,30 @@ static ssize_t getSizeToQuote(char *buffer) {
   return valueSize;
 }
 
-static int parsePortsList(char *str, struct Port *ports, int *portsLength, const int maxPorts) {
-  int count;
+static int parsePortsList(char *str, struct Port **ports, int *portsLength) {
+  int count = 0;
   char *temp, *saveptr, *p = str;
 
   if (strlen(str) == 0) {
     return FALSE;
   }
 
-  for (count = 0; count < maxPorts; count++) {
-    if ((temp = strtok_r(p, ",", &saveptr)) == NULL) {
-      break;
+  if (*ports != NULL) {
+    free(*ports);
+    *ports = NULL;
+    *portsLength = 0;
+  }
+
+  while ((temp = strtok_r(p, ",", &saveptr)) != NULL) {
+    if ((*ports = realloc(*ports, (count + 1) * sizeof(struct Port))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory for ports\n");
+      Exit(EXIT_FAILURE);
     }
 
-    p = NULL;
+    ParsePort(temp, &(*ports)[count]);
 
-    ParsePort(temp, &ports[count]);
+    p = NULL;
+    count++;
   }
 
   if ((*portsLength = count) == 0) {

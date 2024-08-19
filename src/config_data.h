@@ -30,9 +30,9 @@ struct ConfigData {
   // FIXME: Might be better to allocate this dynamically. Keep static for now
   char interfaces[MAX_INTERFACES][IF_NAMESIZE];
 
-  struct Port tcpPorts[MAXSOCKS];
+  struct Port *tcpPorts;
   int tcpPortsLength;
-  struct Port udpPorts[MAXSOCKS];
+  struct Port *udpPorts;
   int udpPortsLength;
 
   char portBanner[MAXBUF];
