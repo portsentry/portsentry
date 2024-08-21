@@ -333,7 +333,7 @@ int OpenRAWUDPSocket(void) {
 /* This will use a system() call to change the route of the target host to */
 /* a dead IP address on your LOCAL SUBNET. */
 int KillRoute(char *target, int port, char *killString, char *detectionType) {
-  char cleanAddr[MAXBUF], commandStringTemp[MAXBUF];
+  char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
   int killStatus = ERROR, substStatus = ERROR;
@@ -341,10 +341,9 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   if (strlen(killString) == 0)
     return FALSE;
 
-  CleanIpAddr(cleanAddr, target);
   snprintf(portString, MAXBUF, "%d", port);
 
-  substStatus = SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
+  substStatus = SubstString(target, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
     Log("No target variable specified in KILL_ROUTE option. Skipping.");
     return ERROR;
@@ -383,7 +382,7 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
 /* This will run a specified command with TARGET as the option if one is given.
  */
 int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
-  char cleanAddr[MAXBUF], commandStringTemp[MAXBUF];
+  char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
   int killStatus = ERROR;
@@ -391,11 +390,10 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   if (strlen(killString) == 0)
     return FALSE;
 
-  CleanIpAddr(cleanAddr, target);
   snprintf(portString, MAXBUF, "%d", port);
 
   /* Tokens are not required, but we check for an error anyway */
-  if (SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp) == ERROR) {
+  if (SubstString(target, "$TARGET$", killString, commandStringTemp) == ERROR) {
     Log("Error trying to parse $TARGET$ Token for KILL_RUN_CMD. Skipping.");
     return ERROR;
   }
@@ -431,7 +429,7 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
  * as TCP. You may find though that host.deny will be a more permanent home.. */
 int KillHostsDeny(char *target, int port, char *killString, char *detectionType) {
   FILE *output;
-  char cleanAddr[MAXBUF], commandStringTemp[MAXBUF];
+  char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
   int substStatus = ERROR;
@@ -439,14 +437,12 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
   if (strlen(killString) == 0)
     return FALSE;
 
-  CleanIpAddr(cleanAddr, target);
-
   snprintf(portString, MAXBUF, "%d", port);
 
   Debug("KillHostsDeny: parsing string for block: %s", killString);
 
   substStatus =
-      SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
+      SubstString(target, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
     Log("No target variable specified in KILL_HOSTS_DENY option. Skipping.");
     return ERROR;
