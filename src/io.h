@@ -29,5 +29,5 @@ int IsBlocked(char *, char *);
 int SubstString(const char *, const char *, const char *, char *);
 int CompareIPs(const char *target, const char *ignoreAddr, const int ignoreNetmaskBits);
 int testFileAccess(char *, char *);
-void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr_in *client);
+void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr *saddr, const socklen_t saddrLen);
 int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct ip **ipPtr, void **transportPtr);

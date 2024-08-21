@@ -581,7 +581,7 @@ int testFileAccess(char *filename, char *mode) {
   }
 }
 
-void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr_in *client) {
+void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr *saddr, const socklen_t saddrLen) {
   ssize_t result = 0;
   char err[ERRNOMAXBUF];
 
@@ -595,11 +595,11 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
   if (proto == IPPROTO_TCP) {
     result = write(socket, configData.portBanner, strlen(configData.portBanner));
   } else if (proto == IPPROTO_UDP) {
-    if (client == NULL) {
+    if (saddr == NULL) {
       Error("No client address specified for UDP banner transmission (ignoring)");
       return;
     }
-    result = sendto(socket, configData.portBanner, strlen(configData.portBanner), 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
+    result = sendto(socket, configData.portBanner, strlen(configData.portBanner), 0, (struct sockaddr *)saddr, saddrLen);
   }
 
   if (result == -1) {
