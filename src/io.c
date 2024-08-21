@@ -132,7 +132,7 @@ void Exit(int status) {
 }
 
 /* Compares an IP address against a listed address and its netmask*/
-int CompareIPs(char *target, char *ignoreAddr, int ignoreNetmaskBits) {
+int CompareIPs(const char *target, const char *ignoreAddr, const int ignoreNetmaskBits) {
   unsigned long int ipAddr, targetAddr;
   uint32_t netmaskAddr;
 
@@ -157,7 +157,7 @@ int CompareIPs(char *target, char *ignoreAddr, int ignoreNetmaskBits) {
 }
 
 /* check hosts that should never be blocked */
-int NeverBlock(char *target, char *filename) {
+int NeverBlock(const char *target, const char *filename) {
   FILE *input;
   char buffer[MAXBUF], tempBuffer[MAXBUF], netmaskBuffer[MAXBUF];
   char *slashPos;
