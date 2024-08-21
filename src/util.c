@@ -46,52 +46,9 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
   return (dest);
 }
 
-/************************************************************************/
-/* Generic safety function to process an IP address and remove anything */
-/* that is:                                                             */
-/* 1) Not a number.                                                     */
-/* 2) Not a period.                                                     */
-/* 3) Greater than IPMAXBUF (15)                                        */
-/************************************************************************/
-char *CleanIpAddr(char *cleanAddr, const char *dirtyAddr) {
-  int count = 0, maxdot = 0, maxoctet = 0;
-
-  Debug("cleanAddr: Cleaning Ip address: %s", dirtyAddr);
-
-  memset(cleanAddr, '\0', IPMAXBUF);
-  /* dirtyAddr must be valid */
-  if (dirtyAddr == NULL)
-    return (cleanAddr);
-
-  for (count = 0; count < IPMAXBUF - 1; count++) {
-    if (isdigit(dirtyAddr[count])) {
-      if (++maxoctet > 3) {
-        cleanAddr[count] = '\0';
-        break;
-      }
-      cleanAddr[count] = dirtyAddr[count];
-    } else if (dirtyAddr[count] == '.') {
-      if (++maxdot > 3) {
-        cleanAddr[count] = '\0';
-        break;
-      }
-      maxoctet = 0;
-      cleanAddr[count] = dirtyAddr[count];
-    } else {
-      cleanAddr[count] = '\0';
-      break;
-    }
-  }
-
-  Debug("cleanAddr: Cleaned IpAddress: %s Dirty IpAddress: %s", cleanAddr, dirtyAddr);
-
-  return (cleanAddr);
-}
-
-void ResolveAddr(const struct sockaddr *saddr, const socklen_t saddrLen, char *resolvedHost, const int resolvedHostSize) {
-  assert(saddr != NULL && saddrLen > 0);
-
-  if (getnameinfo(saddr, saddrLen, resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
+void ResolveAddr(struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize) {
+  if (getnameinfo(GetClientSockaddrFromPacketInfo(pi), GetClientSockaddrLenFromPacketInfo(pi), resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
+    Error("Unable to resolve address for %s", GetTargetOfPacketInfo(pi));
     snprintf(resolvedHost, resolvedHostSize, "<unknown>");
   }
 
