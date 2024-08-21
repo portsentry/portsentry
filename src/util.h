@@ -12,6 +12,7 @@
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 
+#include "packet_info.h"
 
 char *SafeStrncpy(char *, const char *, size_t);
 void ResolveAddr(struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize);
@@ -22,7 +23,7 @@ int SetupPort(uint16_t port, int proto);
 int IsPortInUse(uint16_t port, int proto);
 char *ReportPacketType(struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
-void RunSentry(uint8_t protocol, uint16_t port, int sockfd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket);
+void RunSentry(struct PacketInfo *pi);
 int CreateDateTime(char *buf, const int size);
 int SetConvenienceData(const struct ip *ip, const void *p, struct sockaddr_in *client, struct tcphdr **tcp, struct udphdr **udp);
 int ntohstr(char *buf, const int bufSize, const uint32_t addr);
