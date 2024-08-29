@@ -3,6 +3,7 @@
 //
 // SPDX-License-Identifier: CPL-1.0
 
+#include <stdarg.h>
 #include <arpa/inet.h>
 #include <assert.h>
 #include <ctype.h>
@@ -30,6 +31,7 @@
 #define MAX_BUF_SCAN_EVENT 1024
 
 static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock, int flagBlockSuccessful);
+static char *Realloc(char *filter, int newLen);
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
@@ -448,4 +450,48 @@ int StrToUint16_t(const char *str, uint16_t *val) {
   *val = (uint16_t)value;
 
   return TRUE;
+}
+
+static char *Realloc(char *filter, int newLen) {
+  char *newFilter = NULL;
+
+  if ((newFilter = realloc(filter, newLen)) == NULL) {
+    Error("Unable to reallocate %d bytes of memory for pcap filter", newLen);
+    Exit(EXIT_FAILURE);
+  }
+
+  return newFilter;
+}
+
+char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
+  int neededBufferLen;
+  char *p;
+  va_list args;
+
+  // Calculate the length of the buffer needed (excluding the null terminator)
+  va_start(args, append);
+  neededBufferLen = vsnprintf(NULL, 0, append, args);
+  va_end(args);
+
+  // First time we're called, make sure we alloc room for the null terminator since *snprintf auto adds it and force truncate if it doesn't fit
+  if (filter == NULL)
+    neededBufferLen += 1;
+
+  filter = Realloc(filter, *filterLen + neededBufferLen);
+
+  // First time we're called, start at the beginning of the buffer. Otherwise, go to end of buffer - the null terminator
+  if (*filterLen == 0)
+    p = filter;
+  else
+    p = filter + *filterLen - 1;
+
+  // store the new length of the buffer
+  *filterLen += neededBufferLen;
+
+  // Append the new string to the buffer, *snprintf will add the null terminator
+  va_start(args, append);
+  vsnprintf(p, (p == filter) ? neededBufferLen : neededBufferLen + 1, append, args);
+  va_end(args);
+
+  return filter;
 }
