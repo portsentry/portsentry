@@ -296,35 +296,12 @@ int OpenTCPSocket(void) {
   return (sockfd);
 }
 
-/* Open a UDP Socket */
 int OpenUDPSocket(void) {
   int sockfd;
 
   Debug("openUDPSocket opening UDP socket");
 
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    return (ERROR);
-  else
-    return (sockfd);
-}
-
-int OpenRAWTCPSocket(void) {
-  int sockfd;
-
-  Debug("OpenRAWTCPSocket: opening RAW TCP socket");
-
-  if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP)) < 0)
-    return (ERROR);
-  else
-    return (sockfd);
-}
-
-int OpenRAWUDPSocket(void) {
-  int sockfd;
-
-  Debug("OpenRAWUDPSocket: opening RAW UDP socket");
-
-  if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP)) < 0)
     return (ERROR);
   else
     return (sockfd);
@@ -610,13 +587,11 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
 /* Read packet IP and transport headers and set ipPtr/transportPtr to their correct location
  * transportPtr is either a struct tcphdr * or struct udphdr *
  */
-int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct ip **ipPtr, void **transportPtr) {
+int PacketRead(int socket, char *buffer, int bufferLen) {
   char err[ERRNOMAXBUF];
-  size_t ipHeaderLength;
   ssize_t result;
-  struct in_addr addr;
 
-  if ((result = read(socket, packetBuffer, packetBufferSize)) == -1) {
+  if ((result = read(socket, buffer, bufferLen)) == -1) {
     Error("Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
     return ERROR;
   } else if (result < (ssize_t)sizeof(struct ip)) {
@@ -624,21 +599,5 @@ int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct i
     return ERROR;
   }
 
-  *ipPtr = (struct ip *)packetBuffer;
-
-  if (((*ipPtr)->ip_hl < 5) || ((*ipPtr)->ip_hl > 15)) {
-    addr.s_addr = (u_int)(*ipPtr)->ip_src.s_addr;
-    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", (*ipPtr)->ip_hl, inet_ntoa(addr));
-    return (FALSE);
-  }
-
-  ipHeaderLength = (*ipPtr)->ip_hl * 4;
-
-  if (ipHeaderLength > packetBufferSize) {
-    Error("IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);
-    return FALSE;
-  }
-
-  *transportPtr = (void *)(packetBuffer + ipHeaderLength);
   return TRUE;
 }
