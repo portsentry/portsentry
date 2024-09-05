@@ -12,8 +12,6 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 #include <poll.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
@@ -21,31 +19,38 @@
 #include "config_data.h"
 #include "io.h"
 #include "portsentry.h"
-#include "state_machine.h"
 #include "sentry_stealth.h"
 #include "util.h"
 
 extern uint8_t g_isRunning;
+
+static int OpenRAWTCPSocket(void);
+static int OpenRAWUDPSocket(void);
+static int OpenRAWTCPSocket6(void);
+static int OpenRAWUDPSocket6(void);
+static int PacketRead(int socket, char *buffer, int bufferLen);
 
 int PortSentryStealthMode(void) {
   int status = EXIT_FAILURE;
   int count, nfds, result;
   int tcpSockfd = -1, udpSockfd = -1;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
-  uint16_t current_port;
-  struct sockaddr_in client;
-  struct ip *ip = NULL;
-  struct tcphdr *tcp = NULL;
-  struct udphdr *udp = NULL;
-  struct pollfd fds[2];
-  void *p;
+  struct pollfd fds[4];
+  struct PacketInfo pi;
 
   assert(configData.sentryMode == SENTRY_MODE_STEALTH);
 
   nfds = 0;
   if (configData.tcpPortsLength > 0) {
     if ((tcpSockfd = OpenRAWTCPSocket()) == ERROR) {
-      Error("Could not open RAW TCP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      goto exit;
+    }
+
+    fds[nfds].fd = tcpSockfd;
+    fds[nfds].events = POLLIN;
+    nfds++;
+
+    if ((tcpSockfd = OpenRAWTCPSocket6()) == ERROR) {
       goto exit;
     }
 
@@ -56,7 +61,14 @@ int PortSentryStealthMode(void) {
 
   if (configData.udpPortsLength > 0) {
     if ((udpSockfd = OpenRAWUDPSocket()) == ERROR) {
-      Error("Could not open RAW UDP socket: %s. Aborting.", ErrnoString(err, sizeof(err)));
+      goto exit;
+    }
+
+    fds[nfds].fd = udpSockfd;
+    fds[nfds].events = POLLIN;
+    nfds++;
+
+    if ((udpSockfd = OpenRAWUDPSocket6()) == ERROR) {
       goto exit;
     }
 
@@ -85,31 +97,37 @@ int PortSentryStealthMode(void) {
         continue;
       }
 
-      if (PacketRead(fds[count].fd, packetBuffer, IP_MAXPACKET, &ip, &p) != TRUE)
+      if (PacketRead(fds[count].fd, packetBuffer, IP_MAXPACKET) != TRUE)
         continue;
 
-      if (SetConvenienceData(ip, p, &client, &tcp, &udp) != TRUE) {
+      ClearPacketInfo(&pi);
+      pi.packet = (unsigned char *)packetBuffer;
+      pi.packetLength = IP_MAXPACKET;
+      if (SetPacketInfo(&pi) != TRUE) {
         continue;
       }
 
-      if (ip->ip_p == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
-        continue;
-      }
-
-      if (ip->ip_p == IPPROTO_TCP) {
-        current_port = ntohs(tcp->th_dport);
-      } else if (ip->ip_p == IPPROTO_UDP) {
-        current_port = ntohs(udp->uh_dport);
+      if (pi.protocol == IPPROTO_TCP) {
+        if (((pi.tcp->th_flags & TH_ACK) != 0) || ((pi.tcp->th_flags & TH_RST) != 0)) {
+          continue;
+        }
+        if (IsPortPresent(configData.tcpPorts, configData.tcpPortsLength, pi.port) == FALSE) {
+          continue;
+        }
+      } else if (pi.protocol == IPPROTO_UDP) {
+        if (IsPortPresent(configData.udpPorts, configData.udpPortsLength, pi.port) == FALSE) {
+          continue;
+        }
       } else {
-        Error("Unknown protocol: %d. Aborting.", ip->ip_p);
-        goto exit;
-      }
-
-      if (IsPortInUse(current_port, ip->ip_p) != FALSE) {
+        Error("Unknown protocol %d. Skipping", pi.protocol);
         continue;
       }
 
-      RunSentry(ip->ip_p, current_port, -1, &client, ip, tcp, NULL);
+      if (IsPortInUse(pi.port, pi.protocol) != FALSE) {
+        continue;
+      }
+
+      RunSentry(&pi);
     }
   }
 
@@ -124,4 +142,75 @@ exit:
     close(udpSockfd);
 
   return status;
+}
+
+static int OpenRAWTCPSocket(void) {
+  int sockfd;
+  char err[ERRNOMAXBUF];
+
+  Debug("OpenRAWTCPSocket: opening RAW TCP socket");
+
+  if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP)) < 0) {
+    Error("Unable to create socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  return sockfd;
+}
+
+static int OpenRAWUDPSocket(void) {
+  int sockfd;
+  char err[ERRNOMAXBUF];
+
+  Debug("OpenRAWUDPSocket: opening RAW UDP socket");
+
+  if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP)) < 0) {
+    Error("Unable to create socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  return sockfd;
+}
+
+static int OpenRAWTCPSocket6(void) {
+  int sockfd;
+  char err[ERRNOMAXBUF];
+
+  Debug("OpenRAWTCPSocket: opening RAW IPv6 TCP socket");
+
+  if ((sockfd = socket(AF_INET6, SOCK_RAW, IPPROTO_TCP)) < 0) {
+    Error("Unable to create socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  return sockfd;
+}
+
+static int OpenRAWUDPSocket6(void) {
+  int sockfd;
+  char err[ERRNOMAXBUF];
+
+  Debug("OpenRAWUDPSocket: opening RAW IPv6 UDP socket");
+
+  if ((sockfd = socket(AF_INET6, SOCK_RAW, IPPROTO_UDP)) < 0) {
+    Error("Unable to create socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  return sockfd;
+}
+
+static int PacketRead(int socket, char *buffer, int bufferLen) {
+  char err[ERRNOMAXBUF];
+  ssize_t result;
+
+  if ((result = read(socket, buffer, bufferLen)) == -1) {
+    Error("Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
+    return ERROR;
+  } else if (result < (ssize_t)sizeof(struct ip)) {
+    Error("Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
+    return ERROR;
+  }
+
+  return TRUE;
 }

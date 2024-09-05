@@ -583,21 +583,3 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
     Error("Could not write banner to socket (ignoring): %s", ErrnoString(err, sizeof(err)));
   }
 }
-
-/* Read packet IP and transport headers and set ipPtr/transportPtr to their correct location
- * transportPtr is either a struct tcphdr * or struct udphdr *
- */
-int PacketRead(int socket, char *buffer, int bufferLen) {
-  char err[ERRNOMAXBUF];
-  ssize_t result;
-
-  if ((result = read(socket, buffer, bufferLen)) == -1) {
-    Error("Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
-    return ERROR;
-  } else if (result < (ssize_t)sizeof(struct ip)) {
-    Error("Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
-    return ERROR;
-  }
-
-  return TRUE;
-}
