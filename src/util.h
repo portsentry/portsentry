@@ -25,7 +25,6 @@ char *ReportPacketType(struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
 void RunSentry(struct PacketInfo *pi);
 int CreateDateTime(char *buf, const int size);
-int SetConvenienceData(const struct ip *ip, const void *p, struct sockaddr_in *client, struct tcphdr **tcp, struct udphdr **udp);
 int ntohstr(char *buf, const int bufSize, const uint32_t addr);
 int StrToUint16_t(const char *str, uint16_t *val);
 char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);

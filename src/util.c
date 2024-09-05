@@ -50,8 +50,8 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
 }
 
 void ResolveAddr(struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize) {
-  if (getnameinfo(GetClientSockaddrFromPacketInfo(pi), GetClientSockaddrLenFromPacketInfo(pi), resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
-    Error("Unable to resolve address for %s", GetTargetOfPacketInfo(pi));
+  if (getnameinfo(GetSourceSockaddrFromPacketInfo(pi), GetSourceSockaddrLenFromPacketInfo(pi), resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
+    Error("Unable to resolve address for %s", pi->saddr);
     snprintf(resolvedHost, resolvedHostSize, "<unknown>");
   }
 
@@ -225,38 +225,32 @@ void RunSentry(struct PacketInfo *pi) {
   char resolvedHost[NI_MAXHOST];
   int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100, flagBlockSuccessful = -100;  // -100 => unset
 
-  // We need to assertain the target IP address textual representation ASAP since sentry_exit requires it
-  if (ResolveTargetOfPacketInfo(pi) == ERROR) {
-    Error("Unable to determine target IP address");
-    return;
-  }
-
   if (configData.resolveHost == TRUE) {
     ResolveAddr(pi, resolvedHost, NI_MAXHOST);
   } else {
-    snprintf(resolvedHost, NI_MAXHOST, "%s", GetTargetOfPacketInfo(pi));
+    snprintf(resolvedHost, NI_MAXHOST, "%s", pi->saddr);
   }
 
   if (configData.sentryMode == SENTRY_MODE_CONNECT) {
-    Debug("RunSentry connect mode: accepted %s connection from: %s", GetProtocolString(pi->protocol), GetTargetOfPacketInfo(pi));
+    Debug("RunSentry connect mode: accepted %s connection from: %s", GetProtocolString(pi->protocol), pi->saddr);
   }
 
-  if ((flagIgnored = NeverBlock(GetTargetOfPacketInfo(pi), configData.ignoreFile)) == ERROR) {
+  if ((flagIgnored = NeverBlock(pi->saddr, configData.ignoreFile)) == ERROR) {
     Error("Unable to open ignore file %s. Continuing without it", configData.ignoreFile);
     flagIgnored = FALSE;
   } else if (flagIgnored == TRUE) {
-    Log("attackalert: Host: %s found in ignore file %s, aborting actions", GetTargetOfPacketInfo(pi), configData.ignoreFile);
+    Log("attackalert: Host: %s found in ignore file %s, aborting actions", pi->saddr, configData.ignoreFile);
     goto sentry_exit;
   }
 
-  if ((flagTriggerCountExceeded = CheckStateEngine(GetTargetOfPacketInfo(pi))) != TRUE) {
+  if ((flagTriggerCountExceeded = CheckStateEngine(pi->saddr)) != TRUE) {
     goto sentry_exit;
   }
 
   if (configData.sentryMode == SENTRY_MODE_CONNECT && pi->protocol == IPPROTO_TCP) {
     XmitBannerIfConfigured(IPPROTO_TCP, pi->tcpAcceptSocket, NULL, 0);
   } else if (configData.sentryMode == SENTRY_MODE_CONNECT && pi->protocol == IPPROTO_UDP) {
-    XmitBannerIfConfigured(IPPROTO_UDP, pi->listenSocket, GetClientSockaddrFromPacketInfo(pi), GetClientSockaddrLenFromPacketInfo(pi));
+    XmitBannerIfConfigured(IPPROTO_UDP, pi->listenSocket, GetSourceSockaddrFromPacketInfo(pi), GetSourceSockaddrLenFromPacketInfo(pi));
   }
 
   // If in log-only mode, don't run any of the blocking code
@@ -268,14 +262,14 @@ void RunSentry(struct PacketInfo *pi) {
     flagDontBlock = FALSE;
   }
 
-  if (IsBlocked(GetTargetOfPacketInfo(pi), configData.blockedFile) == FALSE) {
-    if ((flagBlockSuccessful = DisposeTarget(GetTargetOfPacketInfo(pi), pi->port, pi->protocol)) != TRUE) {
-      Error("attackalert: Error during target dispose %s/%s!", resolvedHost, GetTargetOfPacketInfo(pi));
+  if (IsBlocked(pi->saddr, configData.blockedFile) == FALSE) {
+    if ((flagBlockSuccessful = DisposeTarget(pi->saddr, pi->port, pi->protocol)) != TRUE) {
+      Error("attackalert: Error during target dispose %s/%s!", resolvedHost, pi->saddr);
     } else {
-      WriteBlocked(GetTargetOfPacketInfo(pi), resolvedHost, pi->port, configData.blockedFile, GetProtocolString(pi->protocol));
+      WriteBlocked(pi->saddr, resolvedHost, pi->port, configData.blockedFile, GetProtocolString(pi->protocol));
     }
   } else {
-    Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, GetTargetOfPacketInfo(pi));
+    Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, pi->saddr);
   }
 
 sentry_exit:
@@ -283,7 +277,7 @@ sentry_exit:
     close(pi->tcpAcceptSocket);
     pi->tcpAcceptSocket = -1;
   }
-  LogScanEvent(GetTargetOfPacketInfo(pi), resolvedHost, pi->protocol, pi->port, pi->ip, pi->tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock, flagBlockSuccessful);
+  LogScanEvent(pi->saddr, resolvedHost, pi->protocol, pi->port, pi->ip, pi->tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock, flagBlockSuccessful);
 }
 
 int CreateDateTime(char *buf, const int size) {
@@ -400,23 +394,6 @@ static void LogScanEvent(const char *target, const char *resolvedHost, int proto
   }
 
   fclose(output);
-}
-
-int SetConvenienceData(const struct ip *ip, const void *p, struct sockaddr_in *client, struct tcphdr **tcp, struct udphdr **udp) {
-  if (ip->ip_p != IPPROTO_TCP && ip->ip_p != IPPROTO_UDP) {
-    Error("Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
-    return FALSE;
-  }
-
-  *tcp = (ip->ip_p == IPPROTO_TCP) ? (struct tcphdr *)p : NULL;
-  *udp = (ip->ip_p == IPPROTO_UDP) ? (struct udphdr *)p : NULL;
-
-  memset(client, 0, sizeof(struct sockaddr_in));
-  client->sin_family = AF_INET;
-  client->sin_addr.s_addr = ip->ip_src.s_addr;
-  client->sin_port = (*tcp != NULL) ? (*tcp)->th_dport : (*udp)->uh_dport;
-
-  return TRUE;
 }
 
 int ntohstr(char *buf, const int bufSize, const uint32_t addr) {
