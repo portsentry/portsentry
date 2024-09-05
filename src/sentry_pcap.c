@@ -25,9 +25,7 @@
 
 #define POLL_TIMEOUT 500
 
-static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct ip6_hdr **ip6, struct tcphdr **tcp, struct udphdr **udp);
-static int SetSockaddrByPacket(struct sockaddr_in *client, struct sockaddr_in6 *client6, const struct ip *ip, const struct ip6_hdr *ip6, const struct tcphdr *tcp, const struct udphdr *udp);
-static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header);
+static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet);
 struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
 
 extern uint8_t g_isRunning;
@@ -114,21 +112,16 @@ exit:
 
 void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
   struct Device *device = (struct Device *)args;
-  struct ip *ip;
-  struct ip6_hdr *ip6;
-  struct tcphdr *tcp;
-  struct udphdr *udp;
   struct PacketInfo pi;
 
-  if (PrepPacket(&pi, device, header, packet, &ip, &ip6, &tcp, &udp) == FALSE) {
+  if (PrepPacket(&pi, device, packet) == FALSE) {
     return;
   }
 
-  if (pi.protocol == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
-    Debug("Got TCP packet with ACK=%d RST=%d, ignoring, offending packet was:", (tcp->th_flags & TH_ACK) != 0 ? 1 : 0, (tcp->th_flags & TH_RST) != 0 ? 1 : 0);
-    if (configData.logFlags & LOGFLAG_DEBUG) {
-      PrintPacket(device, ip, tcp, udp, header);
-    }
+  if (pi.protocol == IPPROTO_TCP && (((pi.tcp->th_flags & TH_ACK) != 0) || ((pi.tcp->th_flags & TH_RST) != 0))) {
+    char *buf = GetPacketInfoString(&pi, device->name, header->caplen, header->len);
+    Debug("Got TCP packet with ACK=%d RST=%d, ignoring, offending packet was: %s", (pi.tcp->th_flags & TH_ACK) != 0 ? 1 : 0, (pi.tcp->th_flags & TH_RST) != 0 ? 1 : 0, buf);
+    free(buf);
     return;
   }
 
@@ -140,14 +133,8 @@ void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *
   RunSentry(&pi);
 }
 
-static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct ip6_hdr **ip6, struct tcphdr **tcp, struct udphdr **udp) {
-  int iplen, ipOffset = ERROR, nextHeader;
-  uint8_t protocol;
-  struct ip6_ext *ip6ext;
-  *ip = NULL;
-  *ip6 = NULL;
-  *tcp = NULL;
-  *udp = NULL;
+static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet) {
+  int ipOffset = ERROR;
 
   if (device == NULL) {
     ipOffset = 0;
@@ -209,149 +196,7 @@ static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const 
     return FALSE;
   }
 
-  char ipVersion = ((*(char *)(packet + ipOffset)) >> 4) & 0x0f;
-  if (ipVersion == 4) {
-    Debug("Packet is ipv4");
-    *ip = (struct ip *)(packet + ipOffset);
-    iplen = (*ip)->ip_hl * 4;
-    protocol = (*ip)->ip_p;
-  } else if (ipVersion == 6) {
-    Debug("Packet is ipv6");
-    *ip6 = (struct ip6_hdr *)(packet + ipOffset);
-    nextHeader = (*ip6)->ip6_nxt;
-    iplen = sizeof(struct ip6_hdr);
-
-    /*
-     * RFC8200
-     * 0 	IPv6 Hop-by-Hop Option 	[RFC8200]
-     * 43 	Routing Header for IPv6 	[RFC8200][RFC5095]
-     * 44 	Fragment Header for IPv6 	[RFC8200]
-     * 50 	Encapsulating Security Payload 	[RFC4303]
-     * 51 	Authentication Header 	[RFC4302]
-     * 59 	IPv6-NoNxt 	No Next Header for IPv6 		[RFC8200]
-     * 60 	Destination Options for IPv6 	[RFC8200]
-     * 135 	Mobility Header 	[RFC6275]
-     * 139 	Host Identity Protocol 	[RFC7401]
-     * 140 	Shim6 Protocol 	[RFC5533]
-     * 253 	Use for experimentation and testing 	[RFC3692][RFC4727]
-     * 254 	Use for experimentation and testing 	[RFC3692][RFC4727]
-     */
-
-    while (nextHeader == 0 || nextHeader == 43 || nextHeader == 44 || nextHeader == 50 ||
-           nextHeader == 51 || nextHeader == 59 || nextHeader == 60 || nextHeader == 135 ||
-           nextHeader == 139 || nextHeader == 140 || nextHeader == 253 || nextHeader == 254) {
-      Debug("Processing IPv6 extension header %d", nextHeader);
-      if (nextHeader == 59) {
-        Error("IPv6-NoNxt detected, ignoring packet");
-        return FALSE;
-      } else if (nextHeader == 44) {
-        Error("Fragment Header for IPv6 detected, ignoring packet");
-        return FALSE;
-      } else if (nextHeader == 253 || nextHeader == 254) {
-        Error("RFC3692 Experimental/testing header detected, ignoring packet");
-        return FALSE;
-      }
-
-      ip6ext = (struct ip6_ext *)(packet + ipOffset + iplen);
-      nextHeader = ip6ext->ip6e_nxt;
-      iplen += ip6ext->ip6e_len;
-    }
-
-    protocol = nextHeader;
-  } else {
-    Error("Packet on %s have unknown IP version %d", device->name, ipVersion);
-    return FALSE;
-  }
-
-  if (protocol == IPPROTO_TCP) {
-    *tcp = (struct tcphdr *)(packet + ipOffset + iplen);
-  } else if (protocol == IPPROTO_UDP) {
-    *udp = (struct udphdr *)(packet + ipOffset + iplen);
-  } else {
-    Error("Packet on %s have unknown protocol %d", (device != NULL) ? device->name : "NOT SET", protocol);
-    if (configData.logFlags & LOGFLAG_DEBUG) {
-      PrintPacket(device, *ip, *tcp, *udp, header);
-    }
-    return FALSE;
-  }
-
   ClearPacketInfo(pi);
-  pi->version = ipVersion;
-  pi->protocol = protocol;
-  pi->port = (protocol == IPPROTO_TCP) ? ntohs((*tcp)->th_dport) : ntohs((*udp)->uh_dport);
-  pi->packet = (unsigned char *)packet;
-  pi->ip = (*ip != NULL) ? *ip : NULL;
-  pi->ip6 = (*ip6 != NULL) ? *ip6 : NULL;
-  pi->tcp = (*tcp != NULL) ? *tcp : NULL;
-  pi->udp = (*udp != NULL) ? *udp : NULL;
-
-  return SetSockaddrByPacket(&pi->client, &pi->client6, pi->ip, pi->ip6, pi->tcp, pi->udp);
-}
-
-static int SetSockaddrByPacket(struct sockaddr_in *client, struct sockaddr_in6 *client6, const struct ip *ip, const struct ip6_hdr *ip6, const struct tcphdr *tcp, const struct udphdr *udp) {
-  if (ip != NULL) {
-    memset(client, 0, sizeof(struct sockaddr_in));
-    client->sin_addr.s_addr = ip->ip_src.s_addr;
-    client->sin_family = AF_INET;
-    if (tcp != NULL) {
-      client->sin_port = tcp->th_dport;
-    } else if (udp != NULL) {
-      client->sin_port = udp->uh_dport;
-    } else {
-      Error("No protocol header set during sockaddr resolution. Attempting to continue.");
-      return FALSE;
-    }
-  } else if (ip6 != NULL) {
-    memset(client6, 0, sizeof(struct sockaddr_in6));
-    memcpy(&client6->sin6_addr, &ip6->ip6_src, sizeof(struct in6_addr));
-    client6->sin6_family = AF_INET6;
-    if (tcp != NULL) {
-      client6->sin6_port = tcp->th_dport;
-    } else if (udp != NULL) {
-      client6->sin6_port = udp->uh_dport;
-    } else {
-      Error("No protocol header set during sockaddr resolution. Attempting to continue.");
-      return FALSE;
-    }
-  } else {
-    Error("No IP header set during sockaddr resolution. Attempting to continue.");
-    return FALSE;
-  }
-
-  return TRUE;
-}
-
-static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header) {
-  int iplen;
-  uint8_t protocol, ipVersion, hl;
-  char saddr[16], daddr[16];
-
-  ntohstr(saddr, sizeof(saddr), ip->ip_src.s_addr);
-  ntohstr(daddr, sizeof(daddr), ip->ip_dst.s_addr);
-  iplen = ip->ip_hl * 4;
-  protocol = ip->ip_p;
-  ipVersion = ip->ip_v;
-  hl = ip->ip_hl;
-
-  if (device != NULL) {
-    printf("%s: ", device->name);
-  }
-
-  if (header != NULL) {
-    printf("%d [%d] ", header->caplen, header->len);
-  }
-
-  printf("ihl: %d IP len: %d proto: %s (%d) ver: %d saddr: %s daddr: %s ", hl, iplen,
-         protocol == IPPROTO_TCP   ? "tcp"
-         : protocol == IPPROTO_UDP ? "udp"
-                                   : "other",
-         protocol,
-         ipVersion, saddr, daddr);
-
-  if (protocol == IPPROTO_TCP) {
-    printf("sport: %d dport: %d", ntohs(tcp->th_sport), ntohs(tcp->th_dport));
-  } else if (protocol == IPPROTO_UDP) {
-    printf("sport: %d dport: %d", ntohs(udp->uh_sport), ntohs(udp->uh_dport));
-  }
-  printf("\n");
+  pi->packet = (unsigned char *)packet + ipOffset;
+  return SetPacketInfo(pi);
 }
