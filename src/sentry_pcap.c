@@ -113,15 +113,13 @@ exit:
 void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
   struct Device *device = (struct Device *)args;
   struct PacketInfo pi;
+  (void)header;
 
   if (PrepPacket(&pi, device, packet) == FALSE) {
     return;
   }
 
   if (pi.protocol == IPPROTO_TCP && (((pi.tcp->th_flags & TH_ACK) != 0) || ((pi.tcp->th_flags & TH_RST) != 0))) {
-    char *buf = GetPacketInfoString(&pi, device->name, header->caplen, header->len);
-    Debug("Got TCP packet with ACK=%d RST=%d, ignoring, offending packet was: %s", (pi.tcp->th_flags & TH_ACK) != 0 ? 1 : 0, (pi.tcp->th_flags & TH_RST) != 0 ? 1 : 0, buf);
-    free(buf);
     return;
   }
 
