@@ -256,14 +256,14 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
 
 int BindSocket(int sockfd, int port, int proto) {
   char err[ERRNOMAXBUF];
-  struct sockaddr_in server;
+  struct sockaddr_in6 server;
 
   Debug("BindSocket: Binding to port: %d", port);
 
-  bzero((char *)&server, sizeof(server));
-  server.sin_family = AF_INET;
-  server.sin_addr.s_addr = htonl(INADDR_ANY);
-  server.sin_port = htons(port);
+  bzero(&server, sizeof(server));
+  server.sin6_family = AF_INET6;
+  server.sin6_addr = in6addr_any;
+  server.sin6_port = htons(port);
 
   if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) == -1) {
     Debug("BindSocket: Binding failed: %s", ErrnoString(err, sizeof(err)));
@@ -287,7 +287,7 @@ int OpenTCPSocket(void) {
 
   Debug("OpenTCPSocket: opening TCP socket");
 
-  if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+  if ((sockfd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP)) < 0)
     return (ERROR);
 
   if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
@@ -301,7 +301,7 @@ int OpenUDPSocket(void) {
 
   Debug("openUDPSocket opening UDP socket");
 
-  if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+  if ((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     return (ERROR);
   else
     return (sockfd);
