@@ -81,7 +81,7 @@ int SetPacketInfo(struct PacketInfo *pi) {
 
     protocol = nextHeader;
   } else {
-    Error("Packet have unknown IP version %d", ipVersion);
+    Debug("Packet have unknown IP version %d", ipVersion);
     return FALSE;
   }
 
@@ -90,7 +90,7 @@ int SetPacketInfo(struct PacketInfo *pi) {
   } else if (protocol == IPPROTO_UDP) {
     udp = (struct udphdr *)(pi->packet + iplen);
   } else {
-    Error("Packet have unknown protocol %d", protocol);
+    // Debug("Unknown protocol %d", protocol);
     return FALSE;
   }
 
@@ -182,18 +182,18 @@ char *GetPacketInfoString(const struct PacketInfo *pi, const char *deviceName, c
   char *buf = NULL;
 
   if (deviceName != NULL) {
-    buf = ReallocAndAppend(buf, &buflen, "Device: %s\n", deviceName);
+    buf = ReallocAndAppend(buf, &buflen, "Device: %s ", deviceName);
   }
 
   if (hdrCapLen >= 0 || hdrLen >= 0) {
-    buf = ReallocAndAppend(buf, &buflen, " Packet: %d [%d]\n", hdrCapLen, hdrLen);
+    buf = ReallocAndAppend(buf, &buflen, "Packet: %d [%d] ", hdrCapLen, hdrLen);
   }
 
   if (pi->ip != NULL) {
-    buf = ReallocAndAppend(buf, &buflen, " ihl: %d IP len: %d", pi->ip->ip_hl, pi->ip->ip_len);
+    buf = ReallocAndAppend(buf, &buflen, "ihl: %d IP len: %d ", pi->ip->ip_hl, pi->ip->ip_len);
   }
 
-  buf = ReallocAndAppend(buf, &buflen, " proto: %s (%d) ver: %d saddr: %s %d daddr: %s %d",
+  buf = ReallocAndAppend(buf, &buflen, "proto: %s (%d) ver: %d saddr: %s %d daddr: %s %d",
                          pi->protocol == IPPROTO_TCP   ? "tcp"
                          : pi->protocol == IPPROTO_UDP ? "udp"
                                                        : "other",
@@ -202,6 +202,10 @@ char *GetPacketInfoString(const struct PacketInfo *pi, const char *deviceName, c
                          (pi->tcp) ? ntohs(pi->tcp->th_sport) : ntohs(pi->udp->uh_sport),
                          pi->daddr,
                          (pi->tcp) ? ntohs(pi->tcp->th_dport) : ntohs(pi->udp->uh_dport));
+
+  if (pi->protocol == IPPROTO_TCP) {
+    buf = ReallocAndAppend(buf, &buflen, " seq: %u ack: %u", ntohl(pi->tcp->th_seq), ntohl(pi->tcp->th_ack));
+  }
 
   return buf;
 }
