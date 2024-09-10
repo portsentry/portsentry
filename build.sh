@@ -34,6 +34,13 @@ elif [ "$ACTION" = "cdt" ]; then
     cat debug/Testing/Temporary/LastTest.log
     exit 1
   fi
+elif [ "$ACTION" = "autobuild" ]; then
+  while [ 1 ]; do
+    inotifywait -e modify src/[a-zA-Z]*.c
+    ./build.sh debug && \
+    ./build.sh sast
+    sleep 5
+  done
 elif [ "$ACTION" = "test-debug" ]; then
   cd debug && \
   ctest
