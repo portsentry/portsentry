@@ -474,7 +474,7 @@ int IsBlocked(char *target, char *filename) {
   while (fgets(buffer, MAXBUF, input) != NULL) {
     if ((ipOffset = strstr(buffer, target)) != NULL) {
       for (count = 0; count < strlen(ipOffset); count++) {
-        if ((isdigit(ipOffset[count])) || (ipOffset[count] == '.')) {
+        if ((isdigit(ipOffset[count])) || (ipOffset[count] == '.') || (ipOffset[count] == ':')) {
           tempBuffer[count] = ipOffset[count];
         } else {
           tempBuffer[count] = '\0';
