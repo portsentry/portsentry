@@ -21,8 +21,8 @@
 #include "sentry_connect.h"
 #include "io.h"
 #include "portsentry.h"
-#include "state_machine.h"
 #include "util.h"
+#include "packet_info.h"
 
 extern uint8_t g_isRunning;
 
@@ -38,13 +38,14 @@ static void FreeConnectionData(struct ConnectionData **cd, int *cdSize);
 
 int PortSentryConnectMode(void) {
   int status = EXIT_FAILURE;
-  struct sockaddr_in client;
+  struct sockaddr_in6 client;
   socklen_t clientLength;
-  int incomingSockfd, result;
+  int incomingSockfd = -1, result;
   int count = 0;
   char err[ERRNOMAXBUF];
   struct pollfd *fds = NULL;
   struct ConnectionData *connectionData = NULL;
+  struct PacketInfo pi;
   int connectionDataSize = 0;
   char tmp;
 
@@ -102,7 +103,16 @@ int PortSentryConnectMode(void) {
         }
       }
 
-      RunSentry(connectionData[count].protocol, connectionData[count].port, connectionData[count].sockfd, &client, NULL, NULL, &incomingSockfd);
+      ClearPacketInfo(&pi);
+      pi.protocol = connectionData[count].protocol;
+      pi.port = connectionData[count].port;
+      pi.version = 6;
+      pi.listenSocket = connectionData[count].sockfd;
+      pi.tcpAcceptSocket = incomingSockfd;
+      SetSockaddr6(&pi.sa6_saddr, client.sin6_addr, client.sin6_port, pi.saddr, sizeof(pi.saddr));
+      pi.sa6_daddr.sin6_port = connectionData[count].port;
+
+      RunSentry(&pi);
     }
   }
 
