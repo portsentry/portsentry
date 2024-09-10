@@ -31,8 +31,8 @@ struct PacketInfo {
 
 void ClearPacketInfo(struct PacketInfo *pi);
 int SetPacketInfo(struct PacketInfo *pi);
-int SetSockaddr(struct sockaddr_in *sa, const in_addr_t addr, uint16_t port, char *buf, size_t buflen);
-int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr addr6, uint16_t port, char *buf, size_t buflen);
+int SetSockaddr(struct sockaddr_in *sa, const in_addr_t addr, const uint16_t port, char *buf, size_t buflen);
+int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr addr6, const uint16_t port, char *buf, size_t buflen);
 struct sockaddr *GetSourceSockaddrFromPacketInfo(const struct PacketInfo *pi);
 socklen_t GetSourceSockaddrLenFromPacketInfo(const struct PacketInfo *pi);
 char *GetPacketInfoString(const struct PacketInfo *pi, const char *deviceName, const int hdrCapLen, const int hdrLen);

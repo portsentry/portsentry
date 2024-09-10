@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: CPL-1.0
 
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -12,8 +13,9 @@
 #include "portsentry.h"
 #include "packet_info.h"
 #include "io.h"
-#include "config_data.h"
 #include "util.h"
+
+#define IPV4_MAPPED_IPV6_PREFIX "::ffff:"
 
 void ClearPacketInfo(struct PacketInfo *pi) {
   memset(pi, 0, sizeof(struct PacketInfo));
@@ -121,7 +123,7 @@ int SetPacketInfo(struct PacketInfo *pi) {
   return TRUE;
 }
 
-int SetSockaddr(struct sockaddr_in *sa, const in_addr_t addr, uint16_t port, char *buf, size_t buflen) {
+int SetSockaddr(struct sockaddr_in *sa, const in_addr_t addr, const uint16_t port, char *buf, size_t buflen) {
   char err[ERRNOMAXBUF];
 
   memset(sa, 0, sizeof(struct sockaddr_in));
@@ -139,7 +141,7 @@ int SetSockaddr(struct sockaddr_in *sa, const in_addr_t addr, uint16_t port, cha
   return TRUE;
 }
 
-int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr addr6, uint16_t port, char *buf, size_t buflen) {
+int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr addr6, const uint16_t port, char *buf, size_t buflen) {
   char err[ERRNOMAXBUF];
 
   memset(sa6, 0, sizeof(struct sockaddr_in6));
@@ -152,6 +154,12 @@ int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr addr6, uint16_t
       Error("Unable to resolve IPv6 address: %s", ErrnoString(err, sizeof(err)));
       return ERROR;
     }
+  }
+
+  if (strncmp(buf, IPV4_MAPPED_IPV6_PREFIX, strlen(IPV4_MAPPED_IPV6_PREFIX)) == 0) {
+    char ipv4_addr[INET_ADDRSTRLEN];
+    snprintf(ipv4_addr, sizeof(ipv4_addr), "%s", buf + strlen(IPV4_MAPPED_IPV6_PREFIX));
+    snprintf(buf, buflen, "%s", ipv4_addr);
   }
 
   return TRUE;
