@@ -7,7 +7,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#ifdef __linux__
 #include "sentry_stealth.h"
+#endif
 #include "cmdline.h"
 #include "config_data.h"
 #include "configfile.h"
@@ -55,20 +57,25 @@ int main(int argc, char *argv[]) {
   if (configData.sentryMode == SENTRY_MODE_CONNECT) {
     status = PortSentryConnectMode();
   } else if (configData.sentryMode == SENTRY_MODE_STEALTH) {
+#ifdef __linux__
     if (configData.sentryMethod == SENTRY_METHOD_RAW) {
       status = PortSentryStealthMode();
-#ifdef USE_PCAP
-    } else if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
-      status = PortSentryPcap();
-#endif
-    } else {
-      Error("Invalid sentry method specified. Shutting down.");
-      Exit(EXIT_FAILURE);
+      goto exit;
     }
+#endif
+#ifdef USE_PCAP
+    if (configData.sentryMethod == SENTRY_METHOD_PCAP) {
+      status = PortSentryPcap();
+      goto exit;
+    }
+#endif
+    Error("Invalid sentry method specified. Shutting down.");
+    Exit(EXIT_FAILURE);
   } else {
     Error("Invalid sentry mode specified. Shutting down.");
     Exit(EXIT_FAILURE);
   }
 
+exit:
   Exit(status);
 }
