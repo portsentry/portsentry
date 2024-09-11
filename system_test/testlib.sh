@@ -178,9 +178,9 @@ confirmHostWrapperMessage() {
 
 confirmBlockTriggered() {
   setProtoVars $1
-  confirmStdoutScanMessage $1 6
-  confirmBlockFileMessage $1 6
-  confirmHistoryFileMessage $1 6
+  confirmStdoutScanMessage $1 $2
+  confirmBlockFileMessage $1 $2
+  confirmHistoryFileMessage $1 $2
 }
 
 confirmAlreadyBlocked() {
