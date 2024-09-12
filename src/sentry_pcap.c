@@ -140,35 +140,30 @@ static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const 
     ipOffset = sizeof(struct ether_header);
   } else if (pcap_datalink(device->handle) == DLT_RAW) {
     ipOffset = 0;
-  } else if (
-      pcap_datalink(device->handle) == DLT_NULL
-#ifdef __OpenBSD__
-      || pcap_datalink(device->handle) == DLT_LOOP
-#endif
-  ) {
+  } else if (pcap_datalink(device->handle) == DLT_NULL) {
     uint32_t nulltype = *packet;
-    if (pcap_datalink(device->handle) == DLT_NULL) {
-      if (nulltype != 2 && nulltype != 24 && nulltype != 28 && nulltype != 30) {
-        Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_NULL dev", device->name, nulltype);
-        return FALSE;
-      }
-#ifdef __OpenBSD__
-    } else if (pcap_datalink(device->handle) == DLT_LOOP) {
-      /*
-       * FIXME: On OpenBSD 7.4 the nulltype is 0 on the loopback interface receiving IPv4 packets.
-       * According to libpcap documentation it's supposed to be a network byte-order AF_ value.
-       * If this holds true for OpenBSD's then packets are for some reason classified as AF_UNSPEC.
-       * Confirm this
-       */
-      if (nulltype != 0) {
-        Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_LOOP dev", device->name, nulltype);
-        return FALSE;
-      }
-#endif
+    if (nulltype != 2 && nulltype != 24 && nulltype != 28 && nulltype != 30) {
+      Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_NULL dev", device->name, nulltype);
+      return FALSE;
     }
-
     ipOffset = 4;
   }
+#ifdef __OpenBSD__
+  else if (pcap_datalink(device->handle) == DLT_LOOP) {
+    /*
+     * FIXME: On OpenBSD 7.4 the nulltype is 0 on the loopback interface receiving IPv4 packets.
+     * According to libpcap documentation it's supposed to be a network byte-order AF_ value.
+     * If this holds true for OpenBSD's then packets are for some reason classified as AF_UNSPEC.
+     * Confirm this
+     */
+    uint32_t nulltype = *packet;
+    if (nulltype != 0) {
+      Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_LOOP dev", device->name, nulltype);
+      return FALSE;
+    }
+    ipOffset = 4;
+  }
+#endif
 #ifdef __linux__
   else if (pcap_datalink(device->handle) == DLT_LINUX_SLL) {
     if (ntohs(*(uint16_t *)packet) != 0) {
