@@ -150,7 +150,7 @@ static int SetConnectionData(struct ConnectionData **cd, const int cdIdx, const 
     return FALSE;
   }
 
-  Log("Going into listen mode on %s port: %d", (proto == IPPROTO_TCP ? "TCP" : "UDP"), port);
+  Log("Listen on %s port: %d", (proto == IPPROTO_TCP ? "TCP" : "UDP"), port);
 
   if ((sockfd = SetupPort(port, proto)) < 0) {
     Error("Could not bind %s socket on port %d. Attempting to continue", GetProtocolString(proto), port);
