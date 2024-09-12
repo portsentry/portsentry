@@ -150,9 +150,13 @@ int SetupPort(uint16_t port, int proto) {
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
   if (proto == IPPROTO_TCP) {
-    sock = OpenTCPSocket();
+    if ((sock = OpenTCPSocket()) == ERROR) {
+      return -1;
+    }
   } else if (proto == IPPROTO_UDP) {
-    sock = OpenUDPSocket();
+    if ((sock = OpenUDPSocket()) == ERROR) {
+      return -1;
+    }
   } else {
     Error("Invalid protocol %d passed to IsPortInUse on port %d", proto, port);
     return -1;
