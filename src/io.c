@@ -280,31 +280,72 @@ int BindSocket(int sockfd, int port, int proto) {
   return (TRUE);
 }
 
-/* Open a TCP Socket */
 int OpenTCPSocket(void) {
   int sockfd;
-  const int enable = 1;
+  int enable;
+  socklen_t optlen;
+  char err[ERRNOMAXBUF];
 
-  Debug("OpenTCPSocket: opening TCP socket");
-
-  if ((sockfd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP)) < 0)
-    return (ERROR);
-
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+  if ((sockfd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+    Error("Could not open TCP socket: %s", ErrnoString(err, sizeof(err)));
     return ERROR;
+  }
 
-  return (sockfd);
+  enable = 1;
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+    Error("Could not set SO_REUSEADDR on TCP socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  enable = 0;
+  if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &enable, sizeof(enable)) < 0) {
+    Error("Could not set IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  optlen = sizeof(enable);
+  if (getsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &enable, &optlen) < 0) {
+    Error("Could not get IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  if (enable != 0) {
+    Error("Could not set IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  return sockfd;
 }
 
 int OpenUDPSocket(void) {
   int sockfd;
+  int enable;
+  socklen_t optlen;
+  char err[ERRNOMAXBUF];
 
-  Debug("openUDPSocket opening UDP socket");
+  if ((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+    Error("Could not open UDP socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
 
-  if ((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-    return (ERROR);
-  else
-    return (sockfd);
+  enable = 0;
+  if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &enable, sizeof(enable)) < 0) {
+    Error("Could not set IPV6_V6ONLY on UDP socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  optlen = sizeof(enable);
+  if (getsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &enable, &optlen) < 0) {
+    Error("Could not get IPV6_V6ONLY on UDP socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  if (enable != 0) {
+    Error("Could not set IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  return sockfd;
 }
 
 /* This will use a system() call to change the route of the target host to */
