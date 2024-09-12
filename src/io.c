@@ -280,75 +280,54 @@ int BindSocket(int sockfd, int port, int proto) {
   return (TRUE);
 }
 
-int OpenTCPSocket(void) {
+int OpenSocket(const int family, const int type, const int protocol, const uint8_t tcpReuseAddr, const uint8_t setV6OnlyOff) {
   int sockfd;
-  int enable;
+  int optval;
   socklen_t optlen;
   char err[ERRNOMAXBUF];
 
-  if ((sockfd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-    Error("Could not open TCP socket: %s", ErrnoString(err, sizeof(err)));
+  assert(family == AF_INET || family == AF_INET6);
+  assert(type == SOCK_STREAM || type == SOCK_DGRAM);
+  assert(protocol == IPPROTO_TCP || protocol == IPPROTO_UDP);
+
+  if ((sockfd = socket(family, type, protocol)) < 0) {
+    Error("Could not open socket family: %d type: %d protocol: %d: %s", family, type, protocol, ErrnoString(err, sizeof(err)));
     return ERROR;
   }
 
-  enable = 1;
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
-    Error("Could not set SO_REUSEADDR on TCP socket: %s", ErrnoString(err, sizeof(err)));
-    return ERROR;
+  if (type == SOCK_STREAM && tcpReuseAddr == TRUE) {
+    optval = 1;
+    optlen = sizeof(optval);
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, optlen) < 0) {
+      Error("Could not set SO_REUSEADDR on TCP socket: %s", ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
   }
 
-  /* OpenBSD doesn't support setting IPV6_V6ONLY */
 #ifndef __OpenBSD__
-  enable = 0;
-  if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &enable, sizeof(enable)) < 0) {
-    Error("Could not set IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
-    return ERROR;
-  }
+  if (setV6OnlyOff == TRUE) {
+    optval = 0;
+    optlen = sizeof(optval);
+    if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &optval, optlen) < 0) {
+      Error("Could not set IPV6_V6ONLY on socket: %s", ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
 
-  optlen = sizeof(enable);
-  if (getsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &enable, &optlen) < 0) {
-    Error("Could not get IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
-    return ERROR;
-  }
+    optlen = sizeof(optval);
+    if (getsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &optval, &optlen) < 0) {
+      Error("Could not get IPV6_V6ONLY on socket: %s", ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
 
-  if (enable != 0) {
-    Error("Could not set IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
-    return ERROR;
+    if (optval != 0) {
+      Error("Could not set IPV6_V6ONLY on socket: %s", ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
   }
+#else
+  (void)setV6OnlyOff;
 #endif
-  return sockfd;
-}
 
-int OpenUDPSocket(void) {
-  int sockfd;
-  int enable;
-  socklen_t optlen;
-  char err[ERRNOMAXBUF];
-
-  if ((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
-    Error("Could not open UDP socket: %s", ErrnoString(err, sizeof(err)));
-    return ERROR;
-  }
-
-  /* OpenBSD doesn't support setting IPV6_V6ONLY */
-#ifndef __OpenBSD__
-  enable = 0;
-  if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &enable, sizeof(enable)) < 0) {
-    Error("Could not set IPV6_V6ONLY on UDP socket: %s", ErrnoString(err, sizeof(err)));
-    return ERROR;
-  }
-
-  optlen = sizeof(enable);
-  if (getsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &enable, &optlen) < 0) {
-    Error("Could not get IPV6_V6ONLY on UDP socket: %s", ErrnoString(err, sizeof(err)));
-    return ERROR;
-  }
-
-  if (enable != 0) {
-    Error("Could not set IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
-    return ERROR;
-  }
-#endif
   return sockfd;
 }
 

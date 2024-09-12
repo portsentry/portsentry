@@ -144,26 +144,11 @@ const char *GetProtocolString(int proto) {
 }
 
 int SetupPort(uint16_t port, int proto) {
-  char err[ERRNOMAXBUF];
   int sock;
 
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
-  if (proto == IPPROTO_TCP) {
-    if ((sock = OpenTCPSocket()) == ERROR) {
-      return -1;
-    }
-  } else if (proto == IPPROTO_UDP) {
-    if ((sock = OpenUDPSocket()) == ERROR) {
-      return -1;
-    }
-  } else {
-    Error("Invalid protocol %d passed to IsPortInUse on port %d", proto, port);
-    return -1;
-  }
-
-  if (sock == ERROR) {
-    Error("Could not open %s socket: %s", GetProtocolString(proto), ErrnoString(err, sizeof(err)));
+  if ((sock = OpenSocket(AF_INET6, (proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM, proto, TRUE, TRUE)) == ERROR) {
     return -1;
   }
 
