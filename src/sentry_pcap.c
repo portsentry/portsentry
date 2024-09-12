@@ -148,7 +148,7 @@ static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const 
   ) {
     uint32_t nulltype = *packet;
     if (pcap_datalink(device->handle) == DLT_NULL) {
-      if (nulltype != 2) {
+      if (nulltype != 2 && nulltype != 24 && nulltype != 28 && nulltype != 30) {
         Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_NULL dev", device->name, nulltype);
         return FALSE;
       }
