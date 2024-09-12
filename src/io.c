@@ -297,6 +297,8 @@ int OpenTCPSocket(void) {
     return ERROR;
   }
 
+  /* OpenBSD doesn't support setting IPV6_V6ONLY */
+#ifndef __OpenBSD__
   enable = 0;
   if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &enable, sizeof(enable)) < 0) {
     Error("Could not set IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
@@ -313,7 +315,7 @@ int OpenTCPSocket(void) {
     Error("Could not set IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
     return ERROR;
   }
-
+#endif
   return sockfd;
 }
 
@@ -328,6 +330,8 @@ int OpenUDPSocket(void) {
     return ERROR;
   }
 
+  /* OpenBSD doesn't support setting IPV6_V6ONLY */
+#ifndef __OpenBSD__
   enable = 0;
   if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &enable, sizeof(enable)) < 0) {
     Error("Could not set IPV6_V6ONLY on UDP socket: %s", ErrnoString(err, sizeof(err)));
@@ -344,7 +348,7 @@ int OpenUDPSocket(void) {
     Error("Could not set IPV6_V6ONLY on TCP socket: %s", ErrnoString(err, sizeof(err)));
     return ERROR;
   }
-
+#endif
   return sockfd;
 }
 
