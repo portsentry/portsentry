@@ -102,3 +102,18 @@ int ParsePort(const char *portString, struct Port *port) {
 
   return TRUE;
 }
+
+int GetNoPorts(const struct Port *port, const int portLength) {
+  int i;
+  int noPorts = 0;
+
+  for (i = 0; i < portLength; i++) {
+    if (IsPortSingle(&port[i])) {
+      noPorts++;
+    } else {
+      noPorts += port[i].range.end - port[i].range.start + 1;
+    }
+  }
+
+  return noPorts;
+}

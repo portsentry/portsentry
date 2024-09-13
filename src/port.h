@@ -22,3 +22,4 @@ int IsPortPresent(const struct Port *port, const int portLength, const uint16_t 
 int IsPortInRange(const struct Port *port, const uint16_t portNumber);
 int IsPortSingle(const struct Port *port);
 int ParsePort(const char *portString, struct Port *port);
+int GetNoPorts(const struct Port *port, const int portLength);
