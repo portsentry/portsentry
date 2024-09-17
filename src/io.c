@@ -180,7 +180,7 @@ int NeverBlock(const char *target, const char *filename) {
 
     for (count = 0; count < strlen(buffer); count++) {
       /* Parse out digits, colons, and slashes. Everything else rejected */
-      if ((isdigit(buffer[count])) || (buffer[count] == '.') ||
+      if ((isdigit((int)buffer[count])) || (buffer[count] == '.') ||
           (buffer[count] == ':') || (buffer[count] == '/')) {
         tempBuffer[dest++] = buffer[count];
       } else {
@@ -498,7 +498,7 @@ int IsBlocked(char *target, char *filename) {
   while (fgets(buffer, MAXBUF, input) != NULL) {
     if ((ipOffset = strstr(buffer, target)) != NULL) {
       for (count = 0; count < strlen(ipOffset); count++) {
-        if ((isdigit(ipOffset[count])) || (ipOffset[count] == '.') || (ipOffset[count] == ':')) {
+        if ((isdigit((int)ipOffset[count])) || (ipOffset[count] == '.') || (ipOffset[count] == ':')) {
           tempBuffer[count] = ipOffset[count];
         } else {
           tempBuffer[count] = '\0';

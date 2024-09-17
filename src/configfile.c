@@ -289,7 +289,7 @@ static size_t getKeySize(char *buffer) {
   char *ptr = buffer;
   size_t keySize = 0;
 
-  while (isupper(*ptr) || *ptr == '_') {
+  while (isupper((int)*ptr) || *ptr == '_') {
     ptr++;
     keySize++;
   }
@@ -304,7 +304,7 @@ static void stripTrailingSpace(char *buffer) {
     return;
   }
 
-  while (isspace(*ptr)) {
+  while (isspace((int)*ptr)) {
     *ptr = '\0';
 
     if (ptr == buffer) {
