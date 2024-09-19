@@ -254,30 +254,39 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   return WriteToLogFile(blockedFilename, target, resolvedHost, port, portType);
 }
 
-int BindSocket(int sockfd, int port, int proto) {
+int BindSocket(int sockfd, int family, int port, int proto) {
   char err[ERRNOMAXBUF];
-  struct sockaddr_in6 server;
+  struct sockaddr_in6 sin6;
+  struct sockaddr_in sin4;
 
-  Debug("BindSocket: Binding to port: %d", port);
-
-  bzero(&server, sizeof(server));
-  server.sin6_family = AF_INET6;
-  server.sin6_addr = in6addr_any;
-  server.sin6_port = htons(port);
-
-  if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) == -1) {
-    Debug("BindSocket: Binding failed: %s", ErrnoString(err, sizeof(err)));
-    return (ERROR);
+  if (family == AF_INET6) {
+    bzero(&sin6, sizeof(sin6));
+    sin6.sin6_family = AF_INET6;
+    sin6.sin6_addr = in6addr_any;
+    sin6.sin6_port = htons(port);
+    if (bind(sockfd, (struct sockaddr *)&sin6, sizeof(sin6)) == -1) {
+      Error("Binding %s %s %d failed: %s", GetFamilyString(family), GetProtocolString(proto), port, ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
+  } else {
+    bzero(&sin4, sizeof(sin4));
+    sin4.sin_family = AF_INET;
+    sin4.sin_addr.s_addr = htonl(INADDR_ANY);
+    sin4.sin_port = htons(port);
+    if (bind(sockfd, (struct sockaddr *)&sin4, sizeof(sin4)) == -1) {
+      Error("Binding %s %s %d failed: %s", GetFamilyString(family), GetProtocolString(proto), port, ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
   }
 
   if (proto == IPPROTO_TCP) {
     if (listen(sockfd, 5) == -1) {
-      Debug("BindSocket: Listen failed: %s", ErrnoString(err, sizeof(err)));
-      return (ERROR);
+      Error("Listen failed: %s %d %s", GetFamilyString(family), port, ErrnoString(err, sizeof(err)));
+      return ERROR;
     }
   }
 
-  return (TRUE);
+  return TRUE;
 }
 
 int OpenSocket(const int family, const int type, const int protocol, const uint8_t tcpReuseAddr, const uint8_t setV6OnlyOff) {

@@ -19,7 +19,9 @@ void ResolveAddr(struct PacketInfo *pi, char *resolvedHost, const int resolvedHo
 long getLong(char *buffer);
 int DisposeTarget(char *, int, int);
 const char *GetProtocolString(int proto);
-int SetupPort(uint16_t port, int proto);
+const char *GetFamilyString(int family);
+const char *GetSocketTypeString(int type);
+int SetupPort(int family, uint16_t port, int proto);
 int IsPortInUse(uint16_t port, int proto);
 char *ReportPacketType(struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);

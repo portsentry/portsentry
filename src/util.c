@@ -143,17 +143,44 @@ const char *GetProtocolString(int proto) {
   }
 }
 
-int SetupPort(uint16_t port, int proto) {
+const char *GetFamilyString(int family) {
+  switch (family) {
+  case AF_INET:
+    return ("AF_INET");
+    break;
+  case AF_INET6:
+    return ("AF_INET6");
+    break;
+  default:
+    return ("UNKNOWN");
+    break;
+  }
+}
+
+const char *GetSocketTypeString(int type) {
+  switch (type) {
+  case SOCK_STREAM:
+    return ("SOCK_STREAM");
+    break;
+  case SOCK_DGRAM:
+    return ("SOCK_DGRAM");
+    break;
+  default:
+    return ("UNKNOWN");
+    break;
+  }
+}
+
+int SetupPort(int family, uint16_t port, int proto) {
   int sock;
 
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
-  if ((sock = OpenSocket(AF_INET6, (proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM, proto, TRUE, TRUE)) == ERROR) {
+  if ((sock = OpenSocket(family, (proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM, proto, TRUE, TRUE)) == ERROR) {
     return -1;
   }
 
-  if (BindSocket(sock, port, proto) == ERROR) {
-    Debug("SetupPort: %s port %d failed, in use", GetProtocolString(proto), port);
+  if (BindSocket(sock, family, port, proto) == ERROR) {
     close(sock);
     return -2;
   }
@@ -164,7 +191,7 @@ int SetupPort(uint16_t port, int proto) {
 int IsPortInUse(uint16_t port, int proto) {
   int sock;
 
-  sock = SetupPort(port, proto);
+  sock = SetupPort(AF_INET6, port, proto);
 
   if (sock == -1) {
     return ERROR;
