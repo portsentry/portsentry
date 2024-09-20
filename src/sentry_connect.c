@@ -97,7 +97,6 @@ int PortSentryConnectMode(void) {
 
       incomingSockfd = -1;
 
-      Debug("Incoming connection on port: %d treating as family %d (%s)", connectionData[count].port, connectionData[count].family, GetFamilyString(connectionData[count].family));
       if (connectionData[count].family == AF_INET) {
         clientLength = sizeof(client4);
       } else {
@@ -134,11 +133,9 @@ int PortSentryConnectMode(void) {
       pi.listenSocket = connectionData[count].sockfd;
       pi.tcpAcceptSocket = incomingSockfd;
       if (pi.version == 4) {
-        Debug("Incoming IPv4 connection from %s:%d", inet_ntoa(client4.sin_addr), ntohs(client4.sin_port));
         SetSockaddr(&pi.sa_saddr, client4.sin_addr.s_addr, client4.sin_port, pi.saddr, sizeof(pi.saddr));
         pi.sa_daddr.sin_port = connectionData[count].port;
       } else {
-        Debug("Incoming IPv6 connection from %s:%d", inet_ntop(AF_INET6, &client6.sin6_addr, pi.saddr, sizeof(pi.saddr)), ntohs(client6.sin6_port));
         SetSockaddr6(&pi.sa6_saddr, client6.sin6_addr, client6.sin6_port, pi.saddr, sizeof(pi.saddr));
         pi.sa6_daddr.sin6_port = connectionData[count].port;
       }
