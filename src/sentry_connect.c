@@ -41,7 +41,8 @@ static int PrepareNoFds(void);
 
 int PortSentryConnectMode(void) {
   int status = EXIT_FAILURE;
-  struct sockaddr_in6 client;
+  struct sockaddr_in client4;
+  struct sockaddr_in6 client6;
   socklen_t clientLength;
   int incomingSockfd = -1, result;
   int count = 0;
@@ -95,16 +96,33 @@ int PortSentryConnectMode(void) {
       }
 
       incomingSockfd = -1;
-      clientLength = sizeof(client);
+
+      Debug("Incoming connection on port: %d treating as family %d (%s)", connectionData[count].port, connectionData[count].family, GetFamilyString(connectionData[count].family));
+      if (connectionData[count].family == AF_INET) {
+        clientLength = sizeof(client4);
+      } else {
+        clientLength = sizeof(client6);
+      }
 
       if (connectionData[count].protocol == IPPROTO_TCP) {
-        if ((incomingSockfd = accept(connectionData[count].sockfd, (struct sockaddr *)&client, &clientLength)) == -1) {
+        if (connectionData[count].family == AF_INET) {
+          incomingSockfd = accept(connectionData[count].sockfd, (struct sockaddr *)&client4, &clientLength);
+        } else {
+          incomingSockfd = accept(connectionData[count].sockfd, (struct sockaddr *)&client6, &clientLength);
+        }
+
+        if (incomingSockfd == -1) {
           Log("attackalert: Possible stealth scan from unknown host to TCP port: %d (accept failed %d: %s)", connectionData[count].port, errno, ErrnoString(err, sizeof(err)));
           continue;
         }
       } else if (connectionData[count].protocol == IPPROTO_UDP) {
-        if (recvfrom(connectionData[count].sockfd, &tmp, 1, 0, (struct sockaddr *)&client, &clientLength) == -1) {
-          Error("Could not accept incoming data on UDP port: %d: %s", connectionData[count].port, ErrnoString(err, sizeof(err)));
+        if (connectionData[count].family == AF_INET) {
+          result = recvfrom(connectionData[count].sockfd, &tmp, 1, 0, (struct sockaddr *)&client4, &clientLength);
+        } else {
+          result = recvfrom(connectionData[count].sockfd, &tmp, 1, 0, (struct sockaddr *)&client6, &clientLength);
+        }
+        if (result == -1) {
+          Error("Could not receive incoming data on UDP port: %d: %s", connectionData[count].port, ErrnoString(err, sizeof(err)));
           continue;
         }
       }
@@ -112,11 +130,18 @@ int PortSentryConnectMode(void) {
       ClearPacketInfo(&pi);
       pi.protocol = connectionData[count].protocol;
       pi.port = connectionData[count].port;
-      pi.version = 6;
+      pi.version = (connectionData[count].family == AF_INET) ? 4 : 6;
       pi.listenSocket = connectionData[count].sockfd;
       pi.tcpAcceptSocket = incomingSockfd;
-      SetSockaddr6(&pi.sa6_saddr, client.sin6_addr, client.sin6_port, pi.saddr, sizeof(pi.saddr));
-      pi.sa6_daddr.sin6_port = connectionData[count].port;
+      if (pi.version == 4) {
+        Debug("Incoming IPv4 connection from %s:%d", inet_ntoa(client4.sin_addr), ntohs(client4.sin_port));
+        SetSockaddr(&pi.sa_saddr, client4.sin_addr.s_addr, client4.sin_port, pi.saddr, sizeof(pi.saddr));
+        pi.sa_daddr.sin_port = connectionData[count].port;
+      } else {
+        Debug("Incoming IPv6 connection from %s:%d", inet_ntop(AF_INET6, &client6.sin6_addr, pi.saddr, sizeof(pi.saddr)), ntohs(client6.sin6_port));
+        SetSockaddr6(&pi.sa6_saddr, client6.sin6_addr, client6.sin6_port, pi.saddr, sizeof(pi.saddr));
+        pi.sa6_daddr.sin6_port = connectionData[count].port;
+      }
 
       RunSentry(&pi);
     }
