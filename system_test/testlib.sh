@@ -294,5 +294,6 @@ runNmap() {
   fi
 
   verbose "expect connect to $proto localhost:$port"
+  debug "runNmap: $NMAP $opts --max-retries 0 -s$proto -p$port-$port $host"
   $NMAP $opts --max-retries 0 -s$proto -p$port-$port $host >/dev/null
 }
