@@ -176,7 +176,7 @@ int SetupPort(int family, uint16_t port, int proto) {
 
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
-  if ((sock = OpenSocket(family, (proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM, proto, TRUE, TRUE)) == ERROR) {
+  if ((sock = OpenSocket(family, (proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM, proto, TRUE)) == ERROR) {
     return -1;
   }
 
@@ -188,10 +188,10 @@ int SetupPort(int family, uint16_t port, int proto) {
   return sock;
 }
 
-int IsPortInUse(uint16_t port, int proto) {
+int IsPortInUse(struct PacketInfo *pi) {
   int sock;
 
-  sock = SetupPort(AF_INET6, port, proto);
+  sock = SetupPort((pi->version == 4) ? AF_INET : AF_INET6, pi->port, pi->protocol);
 
   if (sock == -1) {
     return ERROR;

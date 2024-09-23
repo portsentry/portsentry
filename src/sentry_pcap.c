@@ -124,7 +124,7 @@ void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *
   }
 
   // FIXME: In pcap we need to consider the interface
-  if (IsPortInUse(pi.port, pi.protocol) != FALSE) {
+  if (IsPortInUse(&pi) != FALSE) {
     return;
   }
 

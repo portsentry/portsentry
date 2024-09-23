@@ -107,7 +107,7 @@ int PortSentryStealthMode(void) {
         continue;
       }
 
-      if (IsPortInUse(pi.port, pi.protocol) != FALSE) {
+      if (IsPortInUse(&pi) != FALSE) {
         continue;
       }
 

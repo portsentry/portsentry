@@ -289,7 +289,7 @@ int BindSocket(int sockfd, int family, int port, int proto) {
   return TRUE;
 }
 
-int OpenSocket(const int family, const int type, const int protocol, const uint8_t tcpReuseAddr, const uint8_t setV6OnlyOff) {
+int OpenSocket(const int family, const int type, const int protocol, const uint8_t tcpReuseAddr) {
   int sockfd;
   int optval;
   socklen_t optlen;
@@ -314,7 +314,7 @@ int OpenSocket(const int family, const int type, const int protocol, const uint8
   }
 
 #ifndef __OpenBSD__
-  if (setV6OnlyOff == TRUE) {
+  if (family == AF_INET6) {
     optval = 0;
     optlen = sizeof(optval);
     if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &optval, optlen) < 0) {
@@ -333,8 +333,6 @@ int OpenSocket(const int family, const int type, const int protocol, const uint8
       return ERROR;
     }
   }
-#else
-  (void)setV6OnlyOff;
 #endif
 
   return sockfd;

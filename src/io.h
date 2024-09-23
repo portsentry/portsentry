@@ -19,7 +19,7 @@ void Crash(int errCode, char *logentry, ...);
 void Exit(int);
 int NeverBlock(const char *, const char *);
 int CheckConfig(void);
-int OpenSocket(const int family, const int type, const int protocol, const uint8_t tcpReuseAddr, const uint8_t setV6OnlyOff);
+int OpenSocket(const int family, const int type, const int protocol, const uint8_t tcpReuseAddr);
 int BindSocket(int, int, int, int);
 int KillRoute(char *, int, char *, char *);
 int KillHostsDeny(char *, int, char *, char *);

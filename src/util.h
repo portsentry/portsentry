@@ -22,7 +22,7 @@ const char *GetProtocolString(int proto);
 const char *GetFamilyString(int family);
 const char *GetSocketTypeString(int type);
 int SetupPort(int family, uint16_t port, int proto);
-int IsPortInUse(uint16_t port, int proto);
+int IsPortInUse(struct PacketInfo *pi);
 char *ReportPacketType(struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
 void RunSentry(struct PacketInfo *pi);
