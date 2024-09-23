@@ -20,7 +20,7 @@ jobs:
     - name: Install pcap
       run: |
         sudo apt-get update
-        sudo apt-get install libpcap-dev
+        sudo apt-get install libpcap-dev nmap
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/debug -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
