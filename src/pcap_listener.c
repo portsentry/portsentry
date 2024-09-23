@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
 #include <assert.h>
 #include <poll.h>
@@ -33,8 +32,6 @@ static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo);
 static int PrepDevices(struct ListenerModule *lm);
 // static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet);
 static int SetupFilter(struct Device *device);
-static char *ReallocFilter(char *filter, int newLen);
-static char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);
 static char *AllocAndBuildPcapFilter(struct Device *device);
 static void PrintDevices(const struct ListenerModule *lm);
 
@@ -210,50 +207,6 @@ cleanup:
   }
 
   return status;
-}
-
-static char *ReallocFilter(char *filter, int newLen) {
-  char *newFilter = NULL;
-
-  if ((newFilter = realloc(filter, newLen)) == NULL) {
-    Error("Unable to reallocate %d bytes of memory for pcap filter", newLen);
-    Exit(EXIT_FAILURE);
-  }
-
-  return newFilter;
-}
-
-static char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
-  int neededBufferLen;
-  char *p;
-  va_list args;
-
-  // Calculate the length of the buffer needed (excluding the null terminator)
-  va_start(args, append);
-  neededBufferLen = vsnprintf(NULL, 0, append, args);
-  va_end(args);
-
-  // First time we're called, make sure we alloc room for the null terminator since *snprintf auto adds it and force truncate if it doesn't fit
-  if (filter == NULL)
-    neededBufferLen += 1;
-
-  filter = ReallocFilter(filter, *filterLen + neededBufferLen);
-
-  // First time we're called, start at the beginning of the buffer. Otherwise, go to end of buffer - the null terminator
-  if (*filterLen == 0)
-    p = filter;
-  else
-    p = filter + *filterLen - 1;
-
-  // store the new length of the buffer
-  *filterLen += neededBufferLen;
-
-  // Append the new string to the buffer, *snprintf will add the null terminator
-  va_start(args, append);
-  vsnprintf(p, (p == filter) ? neededBufferLen : neededBufferLen + 1, append, args);
-  va_end(args);
-
-  return filter;
 }
 
 static char *AllocAndBuildPcapFilter(struct Device *device) {

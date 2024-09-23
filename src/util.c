@@ -3,6 +3,7 @@
 //
 // SPDX-License-Identifier: CPL-1.0
 
+#include <stdarg.h>
 #include <arpa/inet.h>
 #include <assert.h>
 #include <ctype.h>
@@ -25,10 +26,12 @@
 #include "portsentry.h"
 #include "state_machine.h"
 #include "util.h"
+#include "packet_info.h"
 
 #define MAX_BUF_SCAN_EVENT 1024
 
 static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock, int flagBlockSuccessful);
+static char *Realloc(char *filter, int newLen);
 
 /* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
@@ -46,52 +49,9 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
   return (dest);
 }
 
-/************************************************************************/
-/* Generic safety function to process an IP address and remove anything */
-/* that is:                                                             */
-/* 1) Not a number.                                                     */
-/* 2) Not a period.                                                     */
-/* 3) Greater than IPMAXBUF (15)                                        */
-/************************************************************************/
-char *CleanIpAddr(char *cleanAddr, const char *dirtyAddr) {
-  int count = 0, maxdot = 0, maxoctet = 0;
-
-  Debug("cleanAddr: Cleaning Ip address: %s", dirtyAddr);
-
-  memset(cleanAddr, '\0', IPMAXBUF);
-  /* dirtyAddr must be valid */
-  if (dirtyAddr == NULL)
-    return (cleanAddr);
-
-  for (count = 0; count < IPMAXBUF - 1; count++) {
-    if (isdigit(dirtyAddr[count])) {
-      if (++maxoctet > 3) {
-        cleanAddr[count] = '\0';
-        break;
-      }
-      cleanAddr[count] = dirtyAddr[count];
-    } else if (dirtyAddr[count] == '.') {
-      if (++maxdot > 3) {
-        cleanAddr[count] = '\0';
-        break;
-      }
-      maxoctet = 0;
-      cleanAddr[count] = dirtyAddr[count];
-    } else {
-      cleanAddr[count] = '\0';
-      break;
-    }
-  }
-
-  Debug("cleanAddr: Cleaned IpAddress: %s Dirty IpAddress: %s", cleanAddr, dirtyAddr);
-
-  return (cleanAddr);
-}
-
-void ResolveAddr(const struct sockaddr *saddr, const socklen_t saddrLen, char *resolvedHost, const int resolvedHostSize) {
-  assert(saddr != NULL && saddrLen > 0);
-
-  if (getnameinfo(saddr, saddrLen, resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
+void ResolveAddr(struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize) {
+  if (getnameinfo(GetSourceSockaddrFromPacketInfo(pi), GetSourceSockaddrLenFromPacketInfo(pi), resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
+    Error("Unable to resolve address for %s", pi->saddr);
     snprintf(resolvedHost, resolvedHostSize, "<unknown>");
   }
 
@@ -183,28 +143,44 @@ const char *GetProtocolString(int proto) {
   }
 }
 
-int SetupPort(uint16_t port, int proto) {
-  char err[ERRNOMAXBUF];
+const char *GetFamilyString(int family) {
+  switch (family) {
+  case AF_INET:
+    return ("AF_INET");
+    break;
+  case AF_INET6:
+    return ("AF_INET6");
+    break;
+  default:
+    return ("UNKNOWN");
+    break;
+  }
+}
+
+const char *GetSocketTypeString(int type) {
+  switch (type) {
+  case SOCK_STREAM:
+    return ("SOCK_STREAM");
+    break;
+  case SOCK_DGRAM:
+    return ("SOCK_DGRAM");
+    break;
+  default:
+    return ("UNKNOWN");
+    break;
+  }
+}
+
+int SetupPort(int family, uint16_t port, int proto) {
   int sock;
 
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
-  if (proto == IPPROTO_TCP) {
-    sock = OpenTCPSocket();
-  } else if (proto == IPPROTO_UDP) {
-    sock = OpenUDPSocket();
-  } else {
-    Error("Invalid protocol %d passed to IsPortInUse on port %d", proto, port);
+  if ((sock = OpenSocket(family, (proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM, proto, TRUE)) == ERROR) {
     return -1;
   }
 
-  if (sock == ERROR) {
-    Error("Could not open %s socket: %s", GetProtocolString(proto), ErrnoString(err, sizeof(err)));
-    return -1;
-  }
-
-  if (BindSocket(sock, port, proto) == ERROR) {
-    Debug("SetupPort: %s port %d failed, in use", GetProtocolString(proto), port);
+  if (BindSocket(sock, family, port, proto) == ERROR) {
     close(sock);
     return -2;
   }
@@ -212,10 +188,10 @@ int SetupPort(uint16_t port, int proto) {
   return sock;
 }
 
-int IsPortInUse(uint16_t port, int proto) {
+int IsPortInUse(struct PacketInfo *pi) {
   int sock;
 
-  sock = SetupPort(port, proto);
+  sock = SetupPort((pi->version == 4) ? AF_INET : AF_INET6, pi->port, pi->protocol);
 
   if (sock == -1) {
     return ERROR;
@@ -261,66 +237,63 @@ char *ErrnoString(char *buf, const size_t buflen) {
   return p;
 }
 
-void RunSentry(uint8_t protocol, uint16_t port, int sockfd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket) {
-  char target[IPMAXBUF], resolvedHost[NI_MAXHOST];
+void RunSentry(struct PacketInfo *pi) {
+  char resolvedHost[NI_MAXHOST];
   int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100, flagBlockSuccessful = -100;  // -100 => unset
 
-  // Note: We need to detrimine contents of resolvedHosr ASAP since it's always needed in the sentry_exit label
-  SafeStrncpy(target, inet_ntoa(client->sin_addr), IPMAXBUF);
-
   if (configData.resolveHost == TRUE) {
-    ResolveAddr((struct sockaddr *)client, sizeof(struct sockaddr_in), resolvedHost, NI_MAXHOST);
+    ResolveAddr(pi, resolvedHost, NI_MAXHOST);
   } else {
-    snprintf(resolvedHost, NI_MAXHOST, "%s", target);
+    snprintf(resolvedHost, NI_MAXHOST, "%s", pi->saddr);
   }
 
   if (configData.sentryMode == SENTRY_MODE_CONNECT) {
-    Debug("RunSentry connect mode: accepted %s connection from: %s", (protocol == IPPROTO_TCP) ? "TCP" : "UDP", target);
+    Debug("RunSentry connect mode: accepted %s connection from: %s", GetProtocolString(pi->protocol), pi->saddr);
   }
 
-  if ((flagIgnored = NeverBlock(target, configData.ignoreFile)) == ERROR) {
+  if ((flagIgnored = NeverBlock(pi->saddr, configData.ignoreFile)) == ERROR) {
     Error("Unable to open ignore file %s. Continuing without it", configData.ignoreFile);
     flagIgnored = FALSE;
   } else if (flagIgnored == TRUE) {
-    Log("attackalert: Host: %s found in ignore file %s, aborting actions", target, configData.ignoreFile);
+    Log("attackalert: Host: %s found in ignore file %s, aborting actions", pi->saddr, configData.ignoreFile);
     goto sentry_exit;
   }
 
-  if ((flagTriggerCountExceeded = CheckStateEngine(target)) != TRUE) {
+  if ((flagTriggerCountExceeded = CheckStateEngine(pi->saddr)) != TRUE) {
     goto sentry_exit;
   }
 
-  if (configData.sentryMode == SENTRY_MODE_CONNECT && protocol == IPPROTO_TCP) {
-    XmitBannerIfConfigured(IPPROTO_TCP, *tcpAcceptSocket, NULL);
-  } else if (configData.sentryMode == SENTRY_MODE_CONNECT && protocol == IPPROTO_UDP) {
-    XmitBannerIfConfigured(IPPROTO_UDP, sockfd, client);
+  if (configData.sentryMode == SENTRY_MODE_CONNECT && pi->protocol == IPPROTO_TCP) {
+    XmitBannerIfConfigured(IPPROTO_TCP, pi->tcpAcceptSocket, NULL, 0);
+  } else if (configData.sentryMode == SENTRY_MODE_CONNECT && pi->protocol == IPPROTO_UDP) {
+    XmitBannerIfConfigured(IPPROTO_UDP, pi->listenSocket, GetSourceSockaddrFromPacketInfo(pi), GetSourceSockaddrLenFromPacketInfo(pi));
   }
 
   // If in log-only mode, don't run any of the blocking code
-  if ((configData.blockTCP == 0 && protocol == IPPROTO_TCP) ||
-      (configData.blockUDP == 0 && protocol == IPPROTO_UDP)) {
+  if ((configData.blockTCP == 0 && pi->protocol == IPPROTO_TCP) ||
+      (configData.blockUDP == 0 && pi->protocol == IPPROTO_UDP)) {
     flagDontBlock = TRUE;
     goto sentry_exit;
   } else {
     flagDontBlock = FALSE;
   }
 
-  if (IsBlocked(target, configData.blockedFile) == FALSE) {
-    if ((flagBlockSuccessful = DisposeTarget(target, port, protocol)) != TRUE) {
-      Error("attackalert: Error during target dispose %s/%s!", resolvedHost, target);
+  if (IsBlocked(pi->saddr, configData.blockedFile) == FALSE) {
+    if ((flagBlockSuccessful = DisposeTarget(pi->saddr, pi->port, pi->protocol)) != TRUE) {
+      Error("attackalert: Error during target dispose %s/%s!", resolvedHost, pi->saddr);
     } else {
-      WriteBlocked(target, resolvedHost, port, configData.blockedFile, GetProtocolString(protocol));
+      WriteBlocked(pi->saddr, resolvedHost, pi->port, configData.blockedFile, GetProtocolString(pi->protocol));
     }
   } else {
-    Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, target);
+    Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, pi->saddr);
   }
 
 sentry_exit:
-  if (tcpAcceptSocket != NULL && *tcpAcceptSocket != -1) {
-    close(*tcpAcceptSocket);
-    *tcpAcceptSocket = -1;
+  if (pi->tcpAcceptSocket != -1) {
+    close(pi->tcpAcceptSocket);
+    pi->tcpAcceptSocket = -1;
   }
-  LogScanEvent(target, resolvedHost, protocol, port, ip, tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock, flagBlockSuccessful);
+  LogScanEvent(pi->saddr, resolvedHost, pi->protocol, pi->port, pi->ip, pi->tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock, flagBlockSuccessful);
 }
 
 int CreateDateTime(char *buf, const int size) {
@@ -439,23 +412,6 @@ static void LogScanEvent(const char *target, const char *resolvedHost, int proto
   fclose(output);
 }
 
-int SetConvenienceData(const struct ip *ip, const void *p, struct sockaddr_in *client, struct tcphdr **tcp, struct udphdr **udp) {
-  if (ip->ip_p != IPPROTO_TCP && ip->ip_p != IPPROTO_UDP) {
-    Error("Unknown protocol %d detected. Attempting to continue.", ip->ip_p);
-    return FALSE;
-  }
-
-  *tcp = (ip->ip_p == IPPROTO_TCP) ? (struct tcphdr *)p : NULL;
-  *udp = (ip->ip_p == IPPROTO_UDP) ? (struct udphdr *)p : NULL;
-
-  memset(client, 0, sizeof(struct sockaddr_in));
-  client->sin_family = AF_INET;
-  client->sin_addr.s_addr = ip->ip_src.s_addr;
-  client->sin_port = (*tcp != NULL) ? (*tcp)->th_dport : (*udp)->uh_dport;
-
-  return TRUE;
-}
-
 int ntohstr(char *buf, const int bufSize, const uint32_t addr) {
   struct in_addr saddr;
 
@@ -487,4 +443,48 @@ int StrToUint16_t(const char *str, uint16_t *val) {
   *val = (uint16_t)value;
 
   return TRUE;
+}
+
+static char *Realloc(char *filter, int newLen) {
+  char *newFilter = NULL;
+
+  if ((newFilter = realloc(filter, newLen)) == NULL) {
+    Error("Unable to reallocate %d bytes of memory for pcap filter", newLen);
+    Exit(EXIT_FAILURE);
+  }
+
+  return newFilter;
+}
+
+char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
+  int neededBufferLen;
+  char *p;
+  va_list args;
+
+  // Calculate the length of the buffer needed (excluding the null terminator)
+  va_start(args, append);
+  neededBufferLen = vsnprintf(NULL, 0, append, args);
+  va_end(args);
+
+  // First time we're called, make sure we alloc room for the null terminator since *snprintf auto adds it and force truncate if it doesn't fit
+  if (filter == NULL)
+    neededBufferLen += 1;
+
+  filter = Realloc(filter, *filterLen + neededBufferLen);
+
+  // First time we're called, start at the beginning of the buffer. Otherwise, go to end of buffer - the null terminator
+  if (*filterLen == 0)
+    p = filter;
+  else
+    p = filter + *filterLen - 1;
+
+  // store the new length of the buffer
+  *filterLen += neededBufferLen;
+
+  // Append the new string to the buffer, *snprintf will add the null terminator
+  va_start(args, append);
+  vsnprintf(p, (p == filter) ? neededBufferLen : neededBufferLen + 1, append, args);
+  va_end(args);
+
+  return filter;
 }

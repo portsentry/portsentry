@@ -11,6 +11,7 @@
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <errno.h>
 
 #include "portsentry.h"
@@ -20,12 +21,11 @@
 #include "io.h"
 #include "util.h"
 #include "config_data.h"
+#include "packet_info.h"
 
 #define POLL_TIMEOUT 500
 
-static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp);
-static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp);
-static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header);
+static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet);
 struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
 
 extern uint8_t g_isRunning;
@@ -111,89 +111,59 @@ exit:
 }
 
 void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
-  struct sockaddr_in client;
   struct Device *device = (struct Device *)args;
-  struct ip *ip;
-  struct tcphdr *tcp;
-  struct udphdr *udp;
-  int proto, port;
+  struct PacketInfo pi;
+  (void)header;
 
-  if (PrepPacket(device, header, packet, &ip, &tcp, &udp) == FALSE) {
+  if (PrepPacket(&pi, device, packet) == FALSE) {
     return;
   }
 
-  proto = ip->ip_p;
-  if (proto == IPPROTO_TCP) {
-    port = ntohs(tcp->th_dport);
-  } else if (proto == IPPROTO_UDP) {
-    port = ntohs(udp->uh_dport);
-  } else {
-    Error("Unknown protocol %d detected during packet handling", proto);
-    return;
-  }
-
-  if (SetSockaddrByPacket(&client, ip, tcp, udp) == FALSE) {
-    return;
-  }
-
-  if (proto == IPPROTO_TCP && (((tcp->th_flags & TH_ACK) != 0) || ((tcp->th_flags & TH_RST) != 0))) {
-    Debug("Got TCP packet with ACK=%d RST=%d, ignoring, offending packet was:", (tcp->th_flags & TH_ACK) != 0 ? 1 : 0, (tcp->th_flags & TH_RST) != 0 ? 1 : 0);
-    if (configData.logFlags & LOGFLAG_DEBUG) {
-      PrintPacket(device, ip, tcp, udp, header);
-    }
+  if (pi.protocol == IPPROTO_TCP && (((pi.tcp->th_flags & TH_ACK) != 0) || ((pi.tcp->th_flags & TH_RST) != 0))) {
     return;
   }
 
   // FIXME: In pcap we need to consider the interface
-  if (IsPortInUse(port, proto) != FALSE) {
+  if (IsPortInUse(&pi) != FALSE) {
     return;
   }
 
-  RunSentry(proto, port, -1, &client, ip, tcp, NULL);
+  RunSentry(&pi);
 }
 
-static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *header, const u_char *packet, struct ip **ip, struct tcphdr **tcp, struct udphdr **udp) {
-  int iplen;
-  uint8_t protocol;
-  *ip = NULL;
-  *tcp = NULL;
-  *udp = NULL;
+static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet) {
+  int ipOffset = ERROR;
 
   if (device == NULL) {
-    *ip = GetIphdrByOffset(packet, 0);
+    ipOffset = 0;
   } else if (pcap_datalink(device->handle) == DLT_EN10MB) {
-    *ip = GetIphdrByOffset(packet, sizeof(struct ether_header));
+    ipOffset = sizeof(struct ether_header);
   } else if (pcap_datalink(device->handle) == DLT_RAW) {
-    *ip = GetIphdrByOffset(packet, 0);
-  } else if (
-      pcap_datalink(device->handle) == DLT_NULL
-#ifdef __OpenBSD__
-      || pcap_datalink(device->handle) == DLT_LOOP
-#endif
-  ) {
+    ipOffset = 0;
+  } else if (pcap_datalink(device->handle) == DLT_NULL) {
     uint32_t nulltype = *packet;
-    if (pcap_datalink(device->handle) == DLT_NULL) {
-      if (nulltype != 2) {
-        Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_NULL dev", device->name, nulltype);
-        return FALSE;
-      }
-#ifdef __OpenBSD__
-    } else if (pcap_datalink(device->handle) == DLT_LOOP) {
-      /*
-       * FIXME: On OpenBSD 7.4 the nulltype is 0 on the loopback interface receiving IPv4 packets.
-       * According to libpcap documentation it's supposed to be a network byte-order AF_ value.
-       * If this holds true for OpenBSD's then packets are for some reason classified as AF_UNSPEC.
-       * Confirm this
-       */
-      if (nulltype != 0) {
-        Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_LOOP dev", device->name, nulltype);
-        return FALSE;
-      }
-#endif
+    if (nulltype != 2 && nulltype != 24 && nulltype != 28 && nulltype != 30) {
+      Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_NULL dev", device->name, nulltype);
+      return FALSE;
     }
-
-    *ip = GetIphdrByOffset(packet, 4);
+    ipOffset = 4;
   }
+#ifdef __OpenBSD__
+  else if (pcap_datalink(device->handle) == DLT_LOOP) {
+    /*
+     * FIXME: On OpenBSD 7.4 the nulltype is 0 on the loopback interface receiving IPv4 packets.
+     * According to libpcap documentation it's supposed to be a network byte-order AF_ value.
+     * If this holds true for OpenBSD's then packets are for some reason classified as AF_UNSPEC.
+     * Confirm this
+     */
+    uint32_t nulltype = *packet;
+    if (nulltype != 0) {
+      Error("Packet on %s have unsupported nulltype set (nulltype: %d) on a DLT_LOOP dev", device->name, nulltype);
+      return FALSE;
+    }
+    ipOffset = 4;
+  }
+#endif
 #ifdef __linux__
   else if (pcap_datalink(device->handle) == DLT_LINUX_SLL) {
     if (ntohs(*(uint16_t *)packet) != 0) {
@@ -206,7 +176,7 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
       return FALSE;
     }
 
-    *ip = GetIphdrByOffset(packet, 16);
+    ipOffset = 16;
   }
 #endif
   else {
@@ -214,79 +184,12 @@ static int PrepPacket(const struct Device *device, const struct pcap_pkthdr *hea
     return FALSE;
   }
 
-  iplen = (*ip)->ip_hl * 4;
-  protocol = (*ip)->ip_p;
-
-  if (protocol == IPPROTO_TCP) {
-    *tcp = (struct tcphdr *)(((u_char *)*ip) + iplen);  // ip struct is wider than 1 byte so need recast
-  } else if (protocol == IPPROTO_UDP) {
-    *udp = (struct udphdr *)(((u_char *)*ip) + iplen);  // ip struct is wider than 1 byte so need recast
-  } else {
-    Error("Packet on %s have unknown protocol %d", (device != NULL) ? device->name : "NOT SET", protocol);
-    if (configData.logFlags & LOGFLAG_DEBUG) {
-      PrintPacket(device, *ip, *tcp, *udp, header);
-    }
+  if (ipOffset == ERROR) {
+    Error("Unable to determine IP offset for packet on %s", device->name);
     return FALSE;
   }
 
-  return TRUE;
-}
-
-static int SetSockaddrByPacket(struct sockaddr_in *client, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp) {
-  uint8_t protocol;
-
-  memset(client, 0, sizeof(struct sockaddr_in));
-  protocol = ip->ip_p;
-  client->sin_addr.s_addr = ip->ip_src.s_addr;
-
-  client->sin_family = AF_INET;
-  if (protocol == IPPROTO_TCP) {
-    client->sin_port = tcp->th_dport;
-  } else if (protocol == IPPROTO_UDP) {
-    client->sin_port = udp->uh_dport;
-  } else {
-    Error("Unknown protocol %d detected during sockaddr resolution. Attempting to continue.", protocol);
-    return FALSE;
-  }
-
-  return TRUE;
-}
-
-static void PrintPacket(const struct Device *device, const struct ip *ip, const struct tcphdr *tcp, const struct udphdr *udp, const struct pcap_pkthdr *header) {
-  int iplen;
-  uint8_t protocol, ipVersion, hl;
-  char saddr[16], daddr[16];
-
-  ntohstr(saddr, sizeof(saddr), ip->ip_src.s_addr);
-  ntohstr(daddr, sizeof(daddr), ip->ip_dst.s_addr);
-  iplen = ip->ip_hl * 4;
-  protocol = ip->ip_p;
-  ipVersion = ip->ip_v;
-  hl = ip->ip_hl;
-
-  if (device != NULL) {
-    printf("%s: ", device->name);
-  }
-
-  if (header != NULL) {
-    printf("%d [%d] ", header->caplen, header->len);
-  }
-
-  printf("ihl: %d IP len: %d proto: %s (%d) ver: %d saddr: %s daddr: %s ", hl, iplen,
-         protocol == IPPROTO_TCP   ? "tcp"
-         : protocol == IPPROTO_UDP ? "udp"
-                                   : "other",
-         protocol,
-         ipVersion, saddr, daddr);
-
-  if (protocol == IPPROTO_TCP) {
-    printf("sport: %d dport: %d", ntohs(tcp->th_sport), ntohs(tcp->th_dport));
-  } else if (protocol == IPPROTO_UDP) {
-    printf("sport: %d dport: %d", ntohs(udp->uh_sport), ntohs(udp->uh_dport));
-  }
-  printf("\n");
-}
-
-struct ip *GetIphdrByOffset(const u_char *packet, const int offset) {
-  return (struct ip *)(packet + offset);
+  ClearPacketInfo(pi);
+  pi->packet = (unsigned char *)packet + ipOffset;
+  return SetPacketInfo(pi);
 }

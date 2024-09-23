@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <poll.h>
 
 #define BUF_SIZE 1024
 
@@ -20,6 +21,7 @@ int main(int argc, char **argv) {
   char buf[BUF_SIZE];
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
+  struct pollfd fds;
 
   if (argc < 3) {
     printf("Usage: %s <port> <protocol>\n", argv[0]);
@@ -52,11 +54,51 @@ int main(int argc, char **argv) {
       return 1;
     }
 
-    result = read(sock, buf, BUF_SIZE);
+    fds.fd = sock;
+    fds.events = POLLIN;
+    fds.revents = 0;
+    result = poll(&fds, 1, 5000);
+
+    if (result == -1) {
+      perror("poll");
+      return 1;
+    } else if (result == 0) {
+      printf("Timeout\n");
+      return 1;
+    }
+
+    if (fds.revents & POLLIN) {
+      if ((result = read(sock, buf, BUF_SIZE)) == -1) {
+        perror("read");
+        return 1;
+      }
+    } else {
+      printf("No POLLIN event\n");
+      return 1;
+    }
   } else {
     sendto(sock, "Hello", 5, 0, (struct sockaddr *)&addr, sizeof(addr));
-    if ((result = recvfrom(sock, buf, BUF_SIZE, 0, (struct sockaddr *)&addr, &addr_len)) == -1) {
-      perror("recvfrom");
+
+    fds.fd = sock;
+    fds.events = POLLIN;
+    fds.revents = 0;
+    result = poll(&fds, 1, 5000);
+
+    if (result == -1) {
+      perror("poll");
+      return 1;
+    } else if (result == 0) {
+      printf("Timeout\n");
+      return 1;
+    }
+
+    if (fds.revents & POLLIN) {
+      if ((result = recvfrom(sock, buf, BUF_SIZE, 0, (struct sockaddr *)&addr, &addr_len)) == -1) {
+        perror("recvfrom");
+        return 1;
+      }
+    } else {
+      printf("No POLLIN event\n");
       return 1;
     }
   }

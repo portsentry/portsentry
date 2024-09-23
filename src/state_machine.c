@@ -12,7 +12,7 @@
 #include "state_machine.h"
 #include "util.h"
 
-static char gblScanDetectHost[MAXSTATE][IPMAXBUF];
+static char gblScanDetectHost[MAXSTATE][INET6_ADDRSTRLEN];
 static int gblScanDetectCount = 0;
 
 /* our cheesy state engine to monitor who has connected here before */
@@ -55,12 +55,12 @@ int CheckStateEngine(char *target) {
     /* now add the fresh meat into the state engine */
     /* if our array is still less than MAXSTATE large add it to the end */
     if (gblScanDetectCount < MAXSTATE) {
-      SafeStrncpy(gblScanDetectHost[gblScanDetectCount], target, IPMAXBUF);
+      SafeStrncpy(gblScanDetectHost[gblScanDetectCount], target, INET6_ADDRSTRLEN);
       gblScanDetectCount++;
     } else {
       /* otherwise tack it to the beginning and start overwriting older ones */
       gblScanDetectCount = 0;
-      SafeStrncpy(gblScanDetectHost[gblScanDetectCount], target, IPMAXBUF);
+      SafeStrncpy(gblScanDetectHost[gblScanDetectCount], target, INET6_ADDRSTRLEN);
       gblScanDetectCount++;
     }
 

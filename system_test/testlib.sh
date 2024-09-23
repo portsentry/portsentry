@@ -121,24 +121,36 @@ confirmOccurrenceStdout() {
 
 confirmStdoutScanMessage() {
   setProtoVars $1
+  local host="127.0.0.1"
+  if [ "$2" = "6" ]; then
+    host="::1"
+  fi
   verbose "expect log scan from message"
-  if ! findInFile "^Scan from: \[127\.0\.0\.1\]" $PORTSENTRY_STDOUT; then
+  if ! findInFile "^Scan from: \[$host\]" $PORTSENTRY_STDOUT; then
     err "Expected attackalert message not found"
   fi
 }
 
 confirmBlockFileMessage() {
   setProtoVars $1
+  local host="127.0.0.1"
+  if [ "$2" = "6" ]; then
+    host="::1"
+  fi
   verbose "expect block file entry"
-  if ! findInFile "Host: 127\.0\.0\.1/127\.0\.0\.1 Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked; then
+  if ! findInFile "Host: $host/$host Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked; then
     err "Expected blocked $proto_u port not found"
   fi
 }
 
 confirmHistoryFileMessage() {
   setProtoVars $1
+  local host="127.0.0.1"
+  if [ "$2" = "6" ]; then
+    host="::1"
+  fi
   verbose "expect history file entry"
-  if ! findInFile ".*Scan from: \[127\.0\.0\.1\] (127\.0\.0\.1) protocol: \[$proto_u\] port: \[11\]" $TEST_DIR/portsentry.history; then
+  if ! findInFile ".*Scan from: \[$host] ($host) protocol: \[$proto_u\] port: \[11\]" $TEST_DIR/portsentry.history; then
     err "Expected history entry not found"
   fi
 }
@@ -166,14 +178,18 @@ confirmHostWrapperMessage() {
 
 confirmBlockTriggered() {
   setProtoVars $1
-  confirmStdoutScanMessage $1
-  confirmBlockFileMessage $1
-  confirmHistoryFileMessage $1
+  confirmStdoutScanMessage $1 $2
+  confirmBlockFileMessage $1 $2
+  confirmHistoryFileMessage $1 $2
 }
 
 confirmAlreadyBlocked() {
+  local host="127.0.0.1"
+  if [ "$1" = "6" ]; then
+    host="::1"
+  fi
   verbose "expect already blocked message"
-  if ! findInFile "attackalert: Host: 127.0.0.1/127.0.0.1 is already blocked Ignoring" $PORTSENTRY_STDOUT; then
+  if ! findInFile "attackalert: Host: $host/$host is already blocked Ignoring" $PORTSENTRY_STDOUT; then
     err "Expected already blocked message not found"
   fi
 }
@@ -240,6 +256,8 @@ waitForFile() {
 }
 
 runNmap() {
+  local opts=""
+
   if [ -z "$1" ]; then
     err "runNmap: no port specified"
   fi
@@ -268,6 +286,14 @@ runNmap() {
     err "runNmap: invalid protocol $2"
   fi
 
+  if [ "$3" = "6" ]; then
+    local host="::1"
+    opts="$opts -6"
+  else
+    local host="localhost"
+  fi
+
   verbose "expect connect to $proto localhost:$port"
-  $NMAP --max-retries 0 -s$proto -p$port-$port localhost >/dev/null
+  debug "runNmap: $NMAP $opts --max-retries 0 -s$proto -p$port-$port $host"
+  $NMAP $opts --max-retries 0 -s$proto -p$port-$port $host >/dev/null
 }

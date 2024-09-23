@@ -8,6 +8,8 @@
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 
+#include "packet_info.h"
+
 int WriteBlocked(char *, char *, int, char *, const char *);
 void Log(char *, ...);
 void Error(char *, ...);
@@ -15,19 +17,15 @@ void Debug(char *logentry, ...);
 void Verbose(char *logentry, ...);
 void Crash(int errCode, char *logentry, ...);
 void Exit(int);
-int NeverBlock(char *, char *);
+int NeverBlock(const char *, const char *);
 int CheckConfig(void);
-int OpenTCPSocket(void);
-int OpenUDPSocket(void);
-int OpenRAWTCPSocket(void);
-int OpenRAWUDPSocket(void);
-int BindSocket(int, int, int);
+int OpenSocket(const int family, const int type, const int protocol, const uint8_t tcpReuseAddr);
+int BindSocket(int, int, int, int);
 int KillRoute(char *, int, char *, char *);
 int KillHostsDeny(char *, int, char *, char *);
 int KillRunCmd(char *, int, char *, char *);
 int IsBlocked(char *, char *);
 int SubstString(const char *, const char *, const char *, char *);
-int CompareIPs(char *, char *, int);
+int CompareIPs(const char *target, const char *ignoreAddr, const int ignoreNetmaskBits);
 int testFileAccess(char *, char *);
-void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr_in *client);
-int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct ip **ipPtr, void **transportPtr);
+void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr *saddr, const socklen_t saddrLen);

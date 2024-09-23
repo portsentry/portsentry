@@ -12,21 +12,21 @@
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 
-/* IP address length plus null */
-#define IPMAXBUF 16
+#include "packet_info.h"
 
 char *SafeStrncpy(char *, const char *, size_t);
-char *CleanIpAddr(char *, const char *);
-void ResolveAddr(const struct sockaddr *saddr, const socklen_t saddrLen, char *resolvedHost, const int resolvedHostSize);
+void ResolveAddr(struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize);
 long getLong(char *buffer);
 int DisposeTarget(char *, int, int);
 const char *GetProtocolString(int proto);
-int SetupPort(uint16_t port, int proto);
-int IsPortInUse(uint16_t port, int proto);
+const char *GetFamilyString(int family);
+const char *GetSocketTypeString(int type);
+int SetupPort(int family, uint16_t port, int proto);
+int IsPortInUse(struct PacketInfo *pi);
 char *ReportPacketType(struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
-void RunSentry(uint8_t protocol, uint16_t port, int sockfd, const struct sockaddr_in *client, struct ip *ip, struct tcphdr *tcp, int *tcpAcceptSocket);
+void RunSentry(struct PacketInfo *pi);
 int CreateDateTime(char *buf, const int size);
-int SetConvenienceData(const struct ip *ip, const void *p, struct sockaddr_in *client, struct tcphdr **tcp, struct udphdr **udp);
 int ntohstr(char *buf, const int bufSize, const uint32_t addr);
 int StrToUint16_t(const char *str, uint16_t *val);
+char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);

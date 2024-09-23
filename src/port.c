@@ -28,7 +28,19 @@ void SetPortRange(struct Port *port, uint16_t start, uint16_t end) {
   port->range.end = end;
 }
 
-int IsPortInRange(struct Port *port, uint16_t portNumber) {
+int IsPortPresent(const struct Port *port, const int portLength, const uint16_t portNumber) {
+  int i;
+
+  for (i = 0; i < portLength; i++) {
+    if (IsPortInRange(&port[i], portNumber) == TRUE) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+int IsPortInRange(const struct Port *port, const uint16_t portNumber) {
   if (port->single == portNumber) {
     return TRUE;
   }
@@ -89,4 +101,19 @@ int ParsePort(const char *portString, struct Port *port) {
   }
 
   return TRUE;
+}
+
+int GetNoPorts(const struct Port *port, const int portLength) {
+  int i;
+  int noPorts = 0;
+
+  for (i = 0; i < portLength; i++) {
+    if (IsPortSingle(&port[i])) {
+      noPorts++;
+    } else {
+      noPorts += port[i].range.end - port[i].range.start + 1;
+    }
+  }
+
+  return noPorts;
 }

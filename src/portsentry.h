@@ -13,8 +13,6 @@
 #define TRUE 1
 #define FALSE 0
 #define MAXBUF 1024
-/* max size of an IP address plus NULL */
-#define IPMAXBUF 16
 
 #define ERRNOMAXBUF 1024
 

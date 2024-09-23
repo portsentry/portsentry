@@ -132,7 +132,7 @@ void Exit(int status) {
 }
 
 /* Compares an IP address against a listed address and its netmask*/
-int CompareIPs(char *target, char *ignoreAddr, int ignoreNetmaskBits) {
+int CompareIPs(const char *target, const char *ignoreAddr, const int ignoreNetmaskBits) {
   unsigned long int ipAddr, targetAddr;
   uint32_t netmaskAddr;
 
@@ -157,7 +157,7 @@ int CompareIPs(char *target, char *ignoreAddr, int ignoreNetmaskBits) {
 }
 
 /* check hosts that should never be blocked */
-int NeverBlock(char *target, char *filename) {
+int NeverBlock(const char *target, const char *filename) {
   FILE *input;
   char buffer[MAXBUF], tempBuffer[MAXBUF], netmaskBuffer[MAXBUF];
   char *slashPos;
@@ -180,7 +180,7 @@ int NeverBlock(char *target, char *filename) {
 
     for (count = 0; count < strlen(buffer); count++) {
       /* Parse out digits, colons, and slashes. Everything else rejected */
-      if ((isdigit(buffer[count])) || (buffer[count] == '.') ||
+      if ((isdigit((int)buffer[count])) || (buffer[count] == '.') ||
           (buffer[count] == ':') || (buffer[count] == '/')) {
         tempBuffer[dest++] = buffer[count];
       } else {
@@ -254,86 +254,94 @@ int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilena
   return WriteToLogFile(blockedFilename, target, resolvedHost, port, portType);
 }
 
-int BindSocket(int sockfd, int port, int proto) {
+int BindSocket(int sockfd, int family, int port, int proto) {
   char err[ERRNOMAXBUF];
-  struct sockaddr_in server;
+  struct sockaddr_in6 sin6;
+  struct sockaddr_in sin4;
 
-  Debug("BindSocket: Binding to port: %d", port);
-
-  bzero((char *)&server, sizeof(server));
-  server.sin_family = AF_INET;
-  server.sin_addr.s_addr = htonl(INADDR_ANY);
-  server.sin_port = htons(port);
-
-  if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) == -1) {
-    Debug("BindSocket: Binding failed: %s", ErrnoString(err, sizeof(err)));
-    return (ERROR);
+  if (family == AF_INET6) {
+    bzero(&sin6, sizeof(sin6));
+    sin6.sin6_family = AF_INET6;
+    sin6.sin6_addr = in6addr_any;
+    sin6.sin6_port = htons(port);
+    if (bind(sockfd, (struct sockaddr *)&sin6, sizeof(sin6)) == -1) {
+      Error("Binding %s %s %d failed: %s", GetFamilyString(family), GetProtocolString(proto), port, ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
+  } else {
+    bzero(&sin4, sizeof(sin4));
+    sin4.sin_family = AF_INET;
+    sin4.sin_addr.s_addr = htonl(INADDR_ANY);
+    sin4.sin_port = htons(port);
+    if (bind(sockfd, (struct sockaddr *)&sin4, sizeof(sin4)) == -1) {
+      Error("Binding %s %s %d failed: %s", GetFamilyString(family), GetProtocolString(proto), port, ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
   }
 
   if (proto == IPPROTO_TCP) {
     if (listen(sockfd, 5) == -1) {
-      Debug("BindSocket: Listen failed: %s", ErrnoString(err, sizeof(err)));
-      return (ERROR);
+      Error("Listen failed: %s %d %s", GetFamilyString(family), port, ErrnoString(err, sizeof(err)));
+      return ERROR;
     }
   }
 
-  return (TRUE);
+  return TRUE;
 }
 
-/* Open a TCP Socket */
-int OpenTCPSocket(void) {
+int OpenSocket(const int family, const int type, const int protocol, const uint8_t tcpReuseAddr) {
   int sockfd;
-  const int enable = 1;
+  int optval;
+  socklen_t optlen;
+  char err[ERRNOMAXBUF];
 
-  Debug("OpenTCPSocket: opening TCP socket");
+  assert(family == AF_INET || family == AF_INET6);
+  assert(type == SOCK_STREAM || type == SOCK_DGRAM);
+  assert(protocol == IPPROTO_TCP || protocol == IPPROTO_UDP);
 
-  if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    return (ERROR);
-
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+  if ((sockfd = socket(family, type, protocol)) < 0) {
+    Error("Could not open socket family: %d type: %d protocol: %d: %s", family, type, protocol, ErrnoString(err, sizeof(err)));
     return ERROR;
+  }
 
-  return (sockfd);
-}
+  if (type == SOCK_STREAM && tcpReuseAddr == TRUE) {
+    optval = 1;
+    optlen = sizeof(optval);
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, optlen) < 0) {
+      Error("Could not set SO_REUSEADDR on TCP socket: %s", ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
+  }
 
-/* Open a UDP Socket */
-int OpenUDPSocket(void) {
-  int sockfd;
+#ifndef __OpenBSD__
+  if (family == AF_INET6) {
+    optval = 0;
+    optlen = sizeof(optval);
+    if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &optval, optlen) < 0) {
+      Error("Could not set IPV6_V6ONLY on socket: %s", ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
 
-  Debug("openUDPSocket opening UDP socket");
+    optlen = sizeof(optval);
+    if (getsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &optval, &optlen) < 0) {
+      Error("Could not get IPV6_V6ONLY on socket: %s", ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
 
-  if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    return (ERROR);
-  else
-    return (sockfd);
-}
+    if (optval != 0) {
+      Error("Could not set IPV6_V6ONLY on socket: %s", ErrnoString(err, sizeof(err)));
+      return ERROR;
+    }
+  }
+#endif
 
-int OpenRAWTCPSocket(void) {
-  int sockfd;
-
-  Debug("OpenRAWTCPSocket: opening RAW TCP socket");
-
-  if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP)) < 0)
-    return (ERROR);
-  else
-    return (sockfd);
-}
-
-int OpenRAWUDPSocket(void) {
-  int sockfd;
-
-  Debug("OpenRAWUDPSocket: opening RAW UDP socket");
-
-  if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP)) < 0)
-    return (ERROR);
-  else
-    return (sockfd);
+  return sockfd;
 }
 
 /* This will use a system() call to change the route of the target host to */
 /* a dead IP address on your LOCAL SUBNET. */
 int KillRoute(char *target, int port, char *killString, char *detectionType) {
-  char cleanAddr[MAXBUF], commandStringTemp[MAXBUF];
+  char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
   int killStatus = ERROR, substStatus = ERROR;
@@ -341,10 +349,9 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
   if (strlen(killString) == 0)
     return FALSE;
 
-  CleanIpAddr(cleanAddr, target);
   snprintf(portString, MAXBUF, "%d", port);
 
-  substStatus = SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
+  substStatus = SubstString(target, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
     Log("No target variable specified in KILL_ROUTE option. Skipping.");
     return ERROR;
@@ -383,7 +390,7 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
 /* This will run a specified command with TARGET as the option if one is given.
  */
 int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
-  char cleanAddr[MAXBUF], commandStringTemp[MAXBUF];
+  char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
   int killStatus = ERROR;
@@ -391,11 +398,10 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
   if (strlen(killString) == 0)
     return FALSE;
 
-  CleanIpAddr(cleanAddr, target);
   snprintf(portString, MAXBUF, "%d", port);
 
   /* Tokens are not required, but we check for an error anyway */
-  if (SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp) == ERROR) {
+  if (SubstString(target, "$TARGET$", killString, commandStringTemp) == ERROR) {
     Log("Error trying to parse $TARGET$ Token for KILL_RUN_CMD. Skipping.");
     return ERROR;
   }
@@ -431,7 +437,7 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
  * as TCP. You may find though that host.deny will be a more permanent home.. */
 int KillHostsDeny(char *target, int port, char *killString, char *detectionType) {
   FILE *output;
-  char cleanAddr[MAXBUF], commandStringTemp[MAXBUF];
+  char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
   int substStatus = ERROR;
@@ -439,14 +445,12 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
   if (strlen(killString) == 0)
     return FALSE;
 
-  CleanIpAddr(cleanAddr, target);
-
   snprintf(portString, MAXBUF, "%d", port);
 
   Debug("KillHostsDeny: parsing string for block: %s", killString);
 
   substStatus =
-      SubstString(cleanAddr, "$TARGET$", killString, commandStringTemp);
+      SubstString(target, "$TARGET$", killString, commandStringTemp);
   if (substStatus == 0) {
     Log("No target variable specified in KILL_HOSTS_DENY option. Skipping.");
     return ERROR;
@@ -501,7 +505,7 @@ int IsBlocked(char *target, char *filename) {
   while (fgets(buffer, MAXBUF, input) != NULL) {
     if ((ipOffset = strstr(buffer, target)) != NULL) {
       for (count = 0; count < strlen(ipOffset); count++) {
-        if ((isdigit(ipOffset[count])) || (ipOffset[count] == '.')) {
+        if ((isdigit((int)ipOffset[count])) || (ipOffset[count] == '.') || (ipOffset[count] == ':')) {
           tempBuffer[count] = ipOffset[count];
         } else {
           tempBuffer[count] = '\0';
@@ -585,7 +589,7 @@ int testFileAccess(char *filename, char *mode) {
   }
 }
 
-void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr_in *client) {
+void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr *saddr, const socklen_t saddrLen) {
   ssize_t result = 0;
   char err[ERRNOMAXBUF];
 
@@ -599,50 +603,14 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
   if (proto == IPPROTO_TCP) {
     result = write(socket, configData.portBanner, strlen(configData.portBanner));
   } else if (proto == IPPROTO_UDP) {
-    if (client == NULL) {
+    if (saddr == NULL) {
       Error("No client address specified for UDP banner transmission (ignoring)");
       return;
     }
-    result = sendto(socket, configData.portBanner, strlen(configData.portBanner), 0, (struct sockaddr *)client, sizeof(struct sockaddr_in));
+    result = sendto(socket, configData.portBanner, strlen(configData.portBanner), 0, (struct sockaddr *)saddr, saddrLen);
   }
 
   if (result == -1) {
     Error("Could not write banner to socket (ignoring): %s", ErrnoString(err, sizeof(err)));
   }
-}
-
-/* Read packet IP and transport headers and set ipPtr/transportPtr to their correct location
- * transportPtr is either a struct tcphdr * or struct udphdr *
- */
-int PacketRead(int socket, char *packetBuffer, size_t packetBufferSize, struct ip **ipPtr, void **transportPtr) {
-  char err[ERRNOMAXBUF];
-  size_t ipHeaderLength;
-  ssize_t result;
-  struct in_addr addr;
-
-  if ((result = read(socket, packetBuffer, packetBufferSize)) == -1) {
-    Error("Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
-    return ERROR;
-  } else if (result < (ssize_t)sizeof(struct ip)) {
-    Error("Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
-    return ERROR;
-  }
-
-  *ipPtr = (struct ip *)packetBuffer;
-
-  if (((*ipPtr)->ip_hl < 5) || ((*ipPtr)->ip_hl > 15)) {
-    addr.s_addr = (u_int)(*ipPtr)->ip_src.s_addr;
-    Log("attackalert: Illegal IP header length detected in TCP packet: %d from (possible) host: %s", (*ipPtr)->ip_hl, inet_ntoa(addr));
-    return (FALSE);
-  }
-
-  ipHeaderLength = (*ipPtr)->ip_hl * 4;
-
-  if (ipHeaderLength > packetBufferSize) {
-    Error("IP header length (%lu) is larger than packet buffer size (%lu). Aborting", ipHeaderLength, packetBufferSize);
-    return FALSE;
-  }
-
-  *transportPtr = (void *)(packetBuffer + ipHeaderLength);
-  return TRUE;
 }
