@@ -11,11 +11,11 @@
 #include "packet_info.h"
 
 int WriteBlocked(char *, char *, int, char *, const char *);
-void Log(char *, ...);
-void Error(char *, ...);
-void Debug(char *logentry, ...);
-void Verbose(char *logentry, ...);
-void Crash(int errCode, char *logentry, ...);
+__attribute__((format(printf, 1, 2))) void Log(char *, ...);
+__attribute__((format(printf, 1, 2))) void Error(char *, ...);
+__attribute__((format(printf, 1, 2))) void Debug(char *logentry, ...);
+__attribute__((format(printf, 1, 2))) void Verbose(char *logentry, ...);
+__attribute__((format(printf, 2, 3))) void Crash(int errCode, char *logentry, ...);
 void Exit(int);
 int NeverBlock(const char *, const char *);
 int CheckConfig(void);

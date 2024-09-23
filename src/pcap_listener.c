@@ -675,7 +675,7 @@ static void PrintDevices(const struct ListenerModule *lm) {
 
   current = lm->root;
   while (current != NULL) {
-    Verbose("Ready Device: %s pcap handle: %p, fd: %d pcap net: %d, mask: %d", current->name, current->handle, current->fd, current->net, current->mask);
+    Verbose("Ready Device: %s pcap handle: %p, fd: %d pcap net: %d, mask: %d", current->name, (void *)current->handle, current->fd, current->net, current->mask);
 
     for (i = 0; i < current->inet4_addrs_count; i++) {
       Verbose("  inet4 addr: %s", current->inet4_addrs[i]);
