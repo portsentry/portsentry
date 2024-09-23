@@ -29,4 +29,4 @@ void RunSentry(struct PacketInfo *pi);
 int CreateDateTime(char *buf, const int size);
 int ntohstr(char *buf, const int bufSize, const uint32_t addr);
 int StrToUint16_t(const char *str, uint16_t *val);
-char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);
+__attribute__((format(printf, 3, 4))) char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);

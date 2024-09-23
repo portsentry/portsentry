@@ -73,7 +73,7 @@ int CheckStateEngine(char *target) {
 
   if (configData.configTriggerCount > MAXSTATE) {
     Log("securityalert: WARNING: Trigger value %d is larger than state engine capacity of %d.", configData.configTriggerCount, MAXSTATE);
-    Log("Adjust the value lower or recompile with a larger state engine value.", MAXSTATE);
+    Log("Adjust the value lower or recompile with a larger state engine value.");
     Log("securityalert: Blocking host anyway because of invalid trigger value");
     scanDetectTrigger = TRUE;
   }
