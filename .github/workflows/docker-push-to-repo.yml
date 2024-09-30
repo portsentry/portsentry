@@ -36,7 +36,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t portsentry:unstable -f ${{github.workspace}}/docker/Dockerfile ${{github.workspace}}
+        cd ${{github.workspace}} && docker build -t portsentry:unstable -f docker/Dockerfile .
 
     - name: Push Docker image
       run: |
