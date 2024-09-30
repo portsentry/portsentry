@@ -25,7 +25,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t portsentry:unstable .
+        docker build -t portsentry:unstable -f docker/Dockerfile .
 
     - name: Push Docker image
       run: |
