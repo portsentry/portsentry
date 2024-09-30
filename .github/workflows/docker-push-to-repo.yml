@@ -17,6 +17,7 @@ jobs:
     - name: Go to portsentry repos
       run: |
         cd /home/runner/work/portsentry/portsentry
+        ls
       
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
