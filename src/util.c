@@ -383,8 +383,13 @@ static void LogScanEvent(const char *target, const char *resolvedHost, int proto
     return;
   }
 
-  // Log w/o date
+  // Log w/o date to stdout/stderr
   Log("%s", p);
+
+  // Also write the log to the history file (if configured)
+  if (strlen(configData.historyFile) == 0) {
+    return;
+  }
 
   bufsize -= ret;
   p += ret;
