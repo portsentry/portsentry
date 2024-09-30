@@ -23,10 +23,10 @@ jobs:
         sudo apt-get install libpcap-dev
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/release -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}/release --config ${{env.BUILD_TYPE}}
       
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
@@ -36,7 +36,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        cd ${{github.workspace}} && docker build -t portsentry:unstable -f docker/Dockerfile .
+        docker build -t portsentry:unstable -f ${{github.workspace}}/docker/Dockerfile ${{github.workspace}}
 
     - name: Push Docker image
       run: |
