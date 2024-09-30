@@ -7,7 +7,7 @@ on:
 
 jobs:
   call-compile-workflow:
-    uses: ./.github/workflows/compile.yml
+    uses: ./.github/workflows/cmake-single-platform.yml
     
   build-and-push-docker:
     needs: call-compile-workflow
