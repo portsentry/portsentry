@@ -48,7 +48,7 @@ elif [ "$ACTION" = "test-release" ]; then
   cd release && \
   ctest
 elif [ "$ACTION" = "docker" ]; then
-  docker build -t portsentry:latest -f docker/Dockerfile .
+  docker build -t portsentry:unstable -f docker/Dockerfile .
 else
   echo "Usage: $0 <command>"
   echo "Commands:"
