@@ -14,11 +14,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Go to portsentry repos
-      run: |
-        cd /home/runner/work/portsentry/portsentry
-        find /home
-      
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
       with:
@@ -27,7 +22,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t portsentry:unstable -f docker/Dockerfile .
+        docker build -t portsentry:unstable -f /home/runner/work/portsentry/portsentry/docker/Dockerfile /home/runner/work/portsentry/portsentry
 
     - name: Push Docker image
       run: |
