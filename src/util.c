@@ -273,6 +273,7 @@ void RunSentry(struct PacketInfo *pi) {
   if ((configData.blockTCP == 0 && pi->protocol == IPPROTO_TCP) ||
       (configData.blockUDP == 0 && pi->protocol == IPPROTO_UDP)) {
     flagDontBlock = TRUE;
+    flagBlockSuccessful = FALSE;
     goto sentry_exit;
   } else {
     flagDontBlock = FALSE;
