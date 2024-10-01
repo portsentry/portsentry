@@ -279,13 +279,16 @@ void RunSentry(struct PacketInfo *pi) {
   }
 
   if (IsBlocked(pi->saddr, configData.blockedFile) == FALSE) {
-    if ((flagBlockSuccessful = DisposeTarget(pi->saddr, pi->port, pi->protocol)) != TRUE) {
+    if (DisposeTarget(pi->saddr, pi->port, pi->protocol) != TRUE) {
       Error("attackalert: Error during target dispose %s/%s!", resolvedHost, pi->saddr);
+      flagBlockSuccessful = FALSE;
     } else {
       WriteBlocked(pi->saddr, resolvedHost, pi->port, configData.blockedFile, GetProtocolString(pi->protocol));
+      flagBlockSuccessful = TRUE;
     }
   } else {
     Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, pi->saddr);
+    flagBlockSuccessful = TRUE;
   }
 
 sentry_exit:
