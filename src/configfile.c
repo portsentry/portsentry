@@ -163,7 +163,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       Exit(EXIT_FAILURE);
     }
 
-    if (testFileAccess(fileConfig->blockedFile, "w") == FALSE) {
+    if (testFileAccess(fileConfig->blockedFile, "w", TRUE) == FALSE) {
       fprintf(stderr, "Unable to open block file for writing %s: %s\n", fileConfig->blockedFile, ErrnoString(err, sizeof(err)));
       Exit(EXIT_FAILURE);
     }
@@ -208,8 +208,8 @@ static void validateConfig(struct ConfigData *fileConfig) {
     Exit(EXIT_FAILURE);
   }
 
-  if (strlen(fileConfig->blockedFile) == 0) {
-    fprintf(stderr, "No BLOCK_FILE specified in config file\n");
+  if (strlen(fileConfig->blockedFile) == 0 && (fileConfig->blockTCP > 0 || fileConfig->blockUDP > 0)) {
+    fprintf(stderr, "No BLOCK_FILE specified while BLOCK_TCP and/or BLOCK_UDP is not 0 (logging only)\n");
     Exit(EXIT_FAILURE);
   }
 

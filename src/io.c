@@ -19,6 +19,7 @@
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #include "config.h"
 #include "config_data.h"
@@ -26,7 +27,10 @@
 #include "portsentry.h"
 #include "util.h"
 
+static int MkdirP(const char *path);
+
 static uint8_t isSyslogOpen = FALSE;
+
 enum LogType { LogTypeNone,
                LogTypeError,
                LogTypeDebug,
@@ -581,15 +585,83 @@ int SubstString(const char *replace, const char *find, const char *target, char 
   return (numberOfSubst);
 }
 
-int testFileAccess(char *filename, char *mode) {
-  FILE *testFile;
+int testFileAccess(const char *filename, const char *mode, uint8_t createDir) {
+  FILE *testFile = NULL;
+  char *pathCopy = NULL, *dirPath;
+  int status = FALSE;
+
+  if ((testFile = fopen(filename, mode)) != NULL) {
+    fclose(testFile);
+    return TRUE;
+  }
+
+  if (createDir == FALSE) {
+    goto exit;
+  }
+
+  if ((pathCopy = strdup(filename)) == NULL) {
+    Error("Unable to allocate memory for path copy: %s", filename);
+    goto exit;
+  }
+
+  if ((dirPath = dirname(pathCopy)) == NULL) {
+    Error("Unable to get directory name from path: %s", filename);
+    goto exit;
+  }
+
+  if (MkdirP(dirPath) != TRUE) {
+    goto exit;
+  }
 
   if ((testFile = fopen(filename, mode)) == NULL) {
-    return (FALSE);
-  } else {
-    fclose(testFile);
-    return (TRUE);
+    goto exit;
   }
+
+  status = TRUE;
+exit:
+  if (testFile != NULL) {
+    fclose(testFile);
+  }
+
+  if (pathCopy != NULL) {
+    free(pathCopy);
+  }
+  return status;
+}
+
+static int MkdirP(const char *path) {
+  char *p;
+  char *pathCopy = NULL;
+  int status = ERROR;
+  char err[ERRNOMAXBUF];
+
+  assert(path != NULL);
+
+  if ((pathCopy = strdup(path)) == NULL) {
+    Error("Could not allocate memory for path copy: %s", ErrnoString(err, sizeof(err)));
+    goto exit;
+  }
+
+  for (p = strchr(pathCopy + 1, '/'); p; p = strchr(p + 1, '/')) {
+    *p = '\0';
+    if (mkdir(pathCopy, 0755) == -1 && errno != EEXIST) {
+      Error("Could not create directory: %s: %s", pathCopy, ErrnoString(err, sizeof(err)));
+      goto exit;
+    }
+    *p = '/';
+  }
+
+  if (mkdir(pathCopy, 0755) == -1 && errno != EEXIST) {
+    Error("Could not create directory: %s: %s", pathCopy, ErrnoString(err, sizeof(err)));
+    goto exit;
+  }
+
+  status = TRUE;
+exit:
+  if (pathCopy != NULL) {
+    free(pathCopy);
+  }
+  return status;
 }
 
 void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr *saddr, const socklen_t saddrLen) {
