@@ -172,6 +172,11 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       fprintf(stderr, "HISTORY_FILE path value too long\n");
       Exit(EXIT_FAILURE);
     }
+
+    if (testFileAccess(fileConfig->historyFile, "w", TRUE) == FALSE) {
+      fprintf(stderr, "Unable to open history file for writing %s: %s\n", fileConfig->historyFile, ErrnoString(err, sizeof(err)));
+      Exit(EXIT_FAILURE);
+    }
   } else if (strncmp(buffer, "IGNORE_FILE", keySize) == 0) {
     if (snprintf(fileConfig->ignoreFile, PATH_MAX, "%s", ptr) >= PATH_MAX) {
       fprintf(stderr, "IGNORE_FILE path value too long\n");
