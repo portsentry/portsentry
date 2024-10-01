@@ -326,7 +326,7 @@ int CreateDateTime(char *buf, const int size) {
   current_size -= ret;
   p += ret;
 
-  if ((ret = snprintf(p, current_size, "%ld", ts.tv_nsec / 1000000)) >= current_size) {
+  if ((ret = snprintf(p, current_size, "%03ld", ts.tv_nsec / 1000000)) >= current_size) {
     Error("Insufficient buffer space to write datetime");
     return ERROR;
   }
