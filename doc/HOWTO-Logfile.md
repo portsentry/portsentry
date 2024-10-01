@@ -20,6 +20,6 @@ Where:
 <IGNORED>       true/false: whether the packet was ignored, according to the IGNORE_FILE. If no IGNORE_FILE is specified, this will always be false
 <TRIGGERED>     true/false/unset: Whether the packet triggered a block according to the SCAN_TRIGGER setting.
 <NOBLOCK>       true/false/unset: If BLOCK_TCP or BLOCK_UDP was set to 0 and the packet matched, then NOBLOCK will be true
-<BLOCKED>       true/false/unset: If BLOCK_TCP or BLOCK_UDP > 0 and the packet matched and the source host was blocked, then BLOCKED will be true
+<BLOCKED>       true/false/unset: If BLOCK_TCP or BLOCK_UDP > 0 and the packet matched and the source host was blocked, then BLOCKED will be true. If the source host was already blocked by a previous packets, <BLOCKED> will be true.
 
 In certain situations, the boolean flags <TRIGGERED>, <NOBLOCK>, and <BLOCKED> will be unset. If a flag is unset, a previous rule/flag in the rule engine has caused an abort before the current rule/flag could be set. This is normal behavior and should not be considered an error. The rule engine has been designed to halt processing of packets as soon as possible in order to be as efficient as possible. This is the reason you can't rely on <TRIGGERED>, <NOBLOCK>, and <BLOCKED> to be set to either true or false in all cases.
