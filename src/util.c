@@ -273,19 +273,23 @@ void RunSentry(struct PacketInfo *pi) {
   if ((configData.blockTCP == 0 && pi->protocol == IPPROTO_TCP) ||
       (configData.blockUDP == 0 && pi->protocol == IPPROTO_UDP)) {
     flagDontBlock = TRUE;
+    flagBlockSuccessful = FALSE;
     goto sentry_exit;
   } else {
     flagDontBlock = FALSE;
   }
 
   if (IsBlocked(pi->saddr, configData.blockedFile) == FALSE) {
-    if ((flagBlockSuccessful = DisposeTarget(pi->saddr, pi->port, pi->protocol)) != TRUE) {
+    if (DisposeTarget(pi->saddr, pi->port, pi->protocol) != TRUE) {
       Error("attackalert: Error during target dispose %s/%s!", resolvedHost, pi->saddr);
+      flagBlockSuccessful = FALSE;
     } else {
       WriteBlocked(pi->saddr, resolvedHost, pi->port, configData.blockedFile, GetProtocolString(pi->protocol));
+      flagBlockSuccessful = TRUE;
     }
   } else {
     Log("attackalert: Host: %s/%s is already blocked Ignoring", resolvedHost, pi->saddr);
+    flagBlockSuccessful = TRUE;
   }
 
 sentry_exit:
@@ -383,8 +387,13 @@ static void LogScanEvent(const char *target, const char *resolvedHost, int proto
     return;
   }
 
-  // Log w/o date
+  // Log w/o date to stdout/stderr
   Log("%s", p);
+
+  // Also write the log to the history file (if configured)
+  if (strlen(configData.historyFile) == 0) {
+    return;
+  }
 
   bufsize -= ret;
   p += ret;

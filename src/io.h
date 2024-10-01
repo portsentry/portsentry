@@ -27,5 +27,5 @@ int KillRunCmd(char *, int, char *, char *);
 int IsBlocked(char *, char *);
 int SubstString(const char *, const char *, const char *, char *);
 int CompareIPs(const char *target, const char *ignoreAddr, const int ignoreNetmaskBits);
-int testFileAccess(char *, char *);
+int testFileAccess(const char *, const char *, uint8_t);
 void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr *saddr, const socklen_t saddrLen);
