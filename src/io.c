@@ -8,7 +8,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <netinet/in.h>
-#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
