@@ -15,7 +15,13 @@ Where:
 <HOSTNAME>      is the hostname of the source host (if RESOLVED_HOST is set to "1" in the config file)
 <PROTOCOL>      is the protocol of the packet (TCP or UDP)
 <PORT>          is the destination port number of the packet
-<SCAN TYPE>     is the type of scan detected (Connect, SYN, FIN, XMAS, NULL, etc.)
+<SCAN TYPE>     is the type of scan detected
+                "Connect" - A full TCP connect (--connect mode)
+                "TCP NULL scan"
+                "TCP XMAS scan"
+                "TCP FIN scan"
+                "TCP SYN/Normal scan"
+                "Unknown Type: TCP Packet Flags: ..." - A TCP packet with unknown flags
 <IP OPTIONS>    IP options of the packet. can also be "unknown" or "not set" if the options are not obtainable (such as --connect mode or if no options are present)
 <IGNORED>       true/false: whether the packet was ignored, according to the IGNORE_FILE. If no IGNORE_FILE is specified, this will always be false
 <TRIGGERED>     true/false/unset: Whether the packet triggered a block according to the SCAN_TRIGGER setting.
