@@ -156,7 +156,6 @@ int CompareIPs(const char *target, const char *ignoreAddr, const int ignoreNetma
     return (FALSE);
 }
 
-/* check hosts that should never be blocked */
 int NeverBlock(const char *target, const char *filename) {
   FILE *input;
   char buffer[MAXBUF], tempBuffer[MAXBUF], netmaskBuffer[MAXBUF];
@@ -164,10 +163,15 @@ int NeverBlock(const char *target, const char *filename) {
   int dest = 0, netmaskBits = 0;
   size_t count = 0;
 
+  // If no ignore file is specified, then we treat all hosts as valid to block
+  if (filename == NULL || strlen(filename) == 0) {
+    return FALSE;
+  }
+
   Debug("NeverBlock: Opening ignore file: %s ", filename);
 
   if ((input = fopen(filename, "r")) == NULL)
-    return (ERROR);
+    return ERROR;
 
   Debug("NeverBlock: Doing lookup for host: %s ", target);
 
@@ -208,11 +212,10 @@ int NeverBlock(const char *target, const char *filename) {
 
     if (CompareIPs(target, tempBuffer, netmaskBits)) {
       Debug("NeverBlock: Host: %s found in ignore file with netmask %s", target, netmaskBuffer);
-
       fclose(input);
-      return (TRUE);
+      return TRUE;
     }
-  } /* end while() */
+  }
 
   Debug("NeverBlock: Host: %s NOT found in ignore file", target);
 

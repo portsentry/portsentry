@@ -208,11 +208,6 @@ static void validateConfig(struct ConfigData *fileConfig) {
     Exit(EXIT_FAILURE);
   }
 
-  if (strlen(fileConfig->ignoreFile) == 0) {
-    fprintf(stderr, "No IGNORE_FILE specified in config file\n");
-    Exit(EXIT_FAILURE);
-  }
-
   if (strlen(fileConfig->blockedFile) == 0) {
     fprintf(stderr, "No BLOCK_FILE specified in config file\n");
     Exit(EXIT_FAILURE);
