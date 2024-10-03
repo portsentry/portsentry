@@ -1,10 +1,8 @@
 name: Docker Image Create and Push To Docker HUB
 
 on:
-  workflow_run:
-    workflows: ["CMake on a single platform"]
-    types:
-      - completed
+  push:
+    branches: [ "master" ]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
