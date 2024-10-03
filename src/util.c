@@ -6,7 +6,6 @@
 #include <stdarg.h>
 #include <arpa/inet.h>
 #include <assert.h>
-#include <ctype.h>
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>

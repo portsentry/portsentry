@@ -20,7 +20,6 @@
 #include "pcap_device.h"
 #include "io.h"
 #include "util.h"
-#include "config_data.h"
 #include "packet_info.h"
 
 #define POLL_TIMEOUT 500

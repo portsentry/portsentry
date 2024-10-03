@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: CPL-1.0
 
 #include <ctype.h>
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
