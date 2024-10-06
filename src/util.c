@@ -72,6 +72,9 @@ long getLong(char *buffer) {
   if (endptr == buffer)
     return ERROR;
 
+  if (*endptr != '\0')
+    return ERROR;
+
   return value;
 }
 
