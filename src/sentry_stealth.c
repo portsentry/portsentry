@@ -26,6 +26,7 @@
 #include "packet_info.h"
 #include "io.h"
 #include "util.h"
+#include "sentry.h"
 
 #define NFDS 2
 

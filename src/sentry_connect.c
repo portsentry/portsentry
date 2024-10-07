@@ -21,9 +21,10 @@
 #include "config_data.h"
 #include "sentry_connect.h"
 #include "io.h"
-#include "portsentry.h"
 #include "util.h"
+#include "portsentry.h"
 #include "packet_info.h"
+#include "sentry.h"
 
 extern uint8_t g_isRunning;
 

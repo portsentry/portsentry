@@ -25,7 +25,6 @@ int SetupPort(int family, uint16_t port, int proto);
 int IsPortInUse(struct PacketInfo *pi);
 char *ReportPacketType(struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
-void RunSentry(struct PacketInfo *pi);
 int CreateDateTime(char *buf, const int size);
 int ntohstr(char *buf, const int bufSize, const uint32_t addr);
 int StrToUint16_t(const char *str, uint16_t *val);

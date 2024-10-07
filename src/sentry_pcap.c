@@ -21,6 +21,7 @@
 #include "io.h"
 #include "util.h"
 #include "packet_info.h"
+#include "sentry.h"
 
 #define POLL_TIMEOUT 500
 

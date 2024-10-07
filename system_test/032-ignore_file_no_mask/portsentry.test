@@ -1,0 +1,1 @@
+--stealth -m pcap -d -i ALL -v
