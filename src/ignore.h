@@ -25,5 +25,6 @@ struct IgnoreState {
   uint8_t isInitialized;
 };
 
-int IgnoreInit(struct IgnoreState *is);
+int InitIgnore(struct IgnoreState *is);
+void FreeIgnore(struct IgnoreState *is);
 int IgnoreIpIsPresent(const struct IgnoreState *is, const struct sockaddr *sa);

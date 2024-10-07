@@ -16,6 +16,7 @@
 #include "sentry_connect.h"
 #include "io.h"
 #include "portsentry.h"
+#include "sentry.h"
 #ifdef USE_PCAP
 #include "sentry_pcap.h"
 #endif
@@ -54,6 +55,11 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  if (InitSentry() != TRUE) {
+    fprintf(stderr, "Could not initialize sentry. Shutting down.\n");
+    Exit(EXIT_FAILURE);
+  }
+
   if (configData.sentryMode == SENTRY_MODE_CONNECT) {
     status = PortSentryConnectMode();
   } else if (configData.sentryMode == SENTRY_MODE_STEALTH) {
@@ -77,5 +83,6 @@ int main(int argc, char *argv[]) {
   }
 
 exit:
+  FreeSentry();
   Exit(status);
 }

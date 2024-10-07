@@ -16,18 +16,8 @@
 #include "ignore.h"
 #include "util.h"
 
-static void IgnoreClear(struct IgnoreState *is);
 static int IgnoreParse(const char *buffer, struct IgnoreIp *ignoreIp);
 static int IsValidIPChar(char c);
-
-static void IgnoreClear(struct IgnoreState *is) {
-  if (is->ignoreIpList != NULL) {
-    free(is->ignoreIpList);
-  }
-
-  memset(is, 0, sizeof(struct IgnoreState));
-  is->isInitialized = FALSE;
-}
 
 static int IsValidIPChar(char c) {
   if ((c >= '0' && c <= '9') || c == '.' || c == ':' || (c >= 'a' && c <= 'f') || c == '/') {
@@ -115,12 +105,21 @@ exit:
   return status;
 }
 
+void FreeIgnore(struct IgnoreState *is) {
+  if (is->ignoreIpList != NULL) {
+    free(is->ignoreIpList);
+  }
+
+  memset(is, 0, sizeof(struct IgnoreState));
+  is->isInitialized = FALSE;
+}
+
 /* Initialize the ignore state
  * Returns TRUE if the ignore file is read successfully
  * Returns FALSE if the ignore file is not set
  * Returns ERROR if the ignore file is set but cannot be read
  */
-int IgnoreInit(struct IgnoreState *is) {
+int InitIgnore(struct IgnoreState *is) {
   FILE *fp = NULL;
   int status = ERROR;
   char buffer[MAXBUF];
@@ -130,7 +129,7 @@ int IgnoreInit(struct IgnoreState *is) {
     return FALSE;
   }
 
-  IgnoreClear(is);
+  FreeIgnore(is);
 
   if ((fp = fopen(configData.ignoreFile, "r")) == NULL) {
     Verbose("Unable to open ignore file: %s, skipping", configData.ignoreFile);
@@ -191,7 +190,7 @@ exit:
   }
 
   if (status != TRUE) {
-    IgnoreClear(is);
+    FreeIgnore(is);
   }
 
   return status;
