@@ -138,10 +138,6 @@ void RunSentry(struct PacketInfo *pi) {
     snprintf(resolvedHost, NI_MAXHOST, "%s", pi->saddr);
   }
 
-  if (configData.sentryMode == SENTRY_MODE_CONNECT) {
-    Debug("RunSentry connect mode: accepted %s connection from: %s", GetProtocolString(pi->protocol), pi->saddr);
-  }
-
   if ((flagIgnored = IgnoreIpIsPresent(&is, GetSourceSockaddrFromPacketInfo(pi))) == ERROR) {
     flagIgnored = FALSE;
   } else if (flagIgnored == TRUE) {

@@ -141,6 +141,8 @@ int PortSentryConnectMode(void) {
         pi.sa6_daddr.sin6_port = connectionData[count].port;
       }
 
+      Debug("RunSentry connect mode: accepted %s connection from: %s", GetProtocolString(pi.protocol), pi.saddr);
+
       RunSentry(&pi);
     }
   }
