@@ -105,7 +105,7 @@ int InitSentry(void) {
     return TRUE;
   }
 
-  if (is.isInitialized == FALSE && InitIgnore(&is) != TRUE) {
+  if (is.isInitialized == FALSE && InitIgnore(&is) == ERROR) {
     return ERROR;
   }
 
