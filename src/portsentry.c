@@ -26,14 +26,14 @@
 uint8_t g_isRunning = TRUE;
 
 int main(int argc, char *argv[]) {
-  int status = 0;
+  int status = EXIT_FAILURE;
   printf("PortSentry %d.%d\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR);
 
   ParseCmdline(argc, argv);
 
   if (SetupSignalHandlers() != TRUE) {
     fprintf(stderr, "Could not setup signal handler. Shutting down.\n");
-    Exit(EXIT_FAILURE);
+    goto exit;
   }
 
   readConfigFile();
@@ -45,19 +45,19 @@ int main(int argc, char *argv[]) {
 
   if ((geteuid()) && (getuid()) != 0) {
     fprintf(stderr, "You need to be root to run this.\n");
-    Exit(EXIT_FAILURE);
+    goto exit;
   }
 
   if (configData.daemon == TRUE) {
     if (daemon(0, 0) == -1) {
       fprintf(stderr, "Could not go into daemon mode. Shutting down.\n");
-      Exit(EXIT_FAILURE);
+      goto exit;
     }
   }
 
   if (InitSentry() != TRUE) {
     fprintf(stderr, "Could not initialize sentry. Shutting down.\n");
-    Exit(EXIT_FAILURE);
+    goto exit;
   }
 
   if (configData.sentryMode == SENTRY_MODE_CONNECT) {
@@ -76,13 +76,14 @@ int main(int argc, char *argv[]) {
     }
 #endif
     Error("Invalid sentry method specified. Shutting down.");
-    Exit(EXIT_FAILURE);
+    goto exit;
   } else {
     Error("Invalid sentry mode specified. Shutting down.");
-    Exit(EXIT_FAILURE);
+    goto exit;
   }
 
 exit:
   FreeSentry();
+  FreeConfigData(&configData);
   Exit(status);
 }

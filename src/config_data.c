@@ -16,6 +16,7 @@
 struct ConfigData configData;
 
 static int IsInterfacePresent(const struct ConfigData *cd, const char *interface);
+static char *GetSentryMethodString(const enum SentryMethod sentryMethod);
 
 void ResetConfigData(struct ConfigData *cd) {
   memset(cd, 0, sizeof(struct ConfigData));
@@ -124,7 +125,7 @@ char *GetSentryModeString(const enum SentryMode sentryMode) {
   }
 }
 
-char *GetSentryMethodString(const enum SentryMethod sentryMethod) {
+static char *GetSentryMethodString(const enum SentryMethod sentryMethod) {
   switch (sentryMethod) {
   case SENTRY_METHOD_PCAP:
     return "pcap";
@@ -156,23 +157,6 @@ int AddInterface(struct ConfigData *cd, const char *interface) {
   SafeStrncpy(cd->interfaces[noInterfaces], interface, IF_NAMESIZE);
 
   return TRUE;
-}
-
-void FreeInterfaces(struct ConfigData *cd) {
-  int i;
-
-  if (cd->interfaces == NULL) {
-    return;
-  }
-
-  i = 0;
-  while (cd->interfaces[i] != NULL) {
-    free(cd->interfaces[i]);
-    i++;
-  }
-
-  free(cd->interfaces);
-  cd->interfaces = NULL;
 }
 
 int GetNoInterfaces(const struct ConfigData *cd) {
@@ -208,4 +192,27 @@ static int IsInterfacePresent(const struct ConfigData *cd, const char *interface
   }
 
   return FALSE;
+}
+
+void FreeConfigData(struct ConfigData *cd) {
+  if (cd->interfaces != NULL) {
+    int i = 0;
+    while (cd->interfaces[i] != NULL) {
+      free(cd->interfaces[i]);
+      i++;
+    }
+
+    free(cd->interfaces);
+    cd->interfaces = NULL;
+  }
+
+  if (cd->tcpPorts != NULL) {
+    free(cd->tcpPorts);
+    cd->tcpPorts = NULL;
+  }
+
+  if (cd->udpPorts != NULL) {
+    free(cd->udpPorts);
+    cd->udpPorts = NULL;
+  }
 }
