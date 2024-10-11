@@ -24,7 +24,6 @@ int BindSocket(int, int, int, int);
 int KillRoute(char *, int, char *, char *);
 int KillHostsDeny(char *, int, char *, char *);
 int KillRunCmd(char *, int, char *, char *);
-int IsBlocked(char *, char *);
 int SubstString(const char *, const char *, const char *, char *);
 int testFileAccess(const char *, const char *, uint8_t);
 void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr *saddr, const socklen_t saddrLen);
