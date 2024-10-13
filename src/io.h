@@ -10,7 +10,6 @@
 
 #include "packet_info.h"
 
-int WriteBlocked(char *, char *, int, char *, const char *);
 __attribute__((format(printf, 1, 2))) void Log(char *, ...);
 __attribute__((format(printf, 1, 2))) void Error(char *, ...);
 __attribute__((format(printf, 1, 2))) void Debug(char *logentry, ...);
