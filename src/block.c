@@ -2,10 +2,12 @@
 //
 // SPDX-License-Identifier: CPL-1.0
 
+#include <bits/sockaddr.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "block.h"
 #include "portsentry.h"
@@ -16,16 +18,38 @@
 static void FreeBlockedNodeList(struct BlockedNode *node);
 static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, struct sockaddr *address);
 static int RemoveBlockedNode(struct BlockedState *bs, struct BlockedNode *node);
-static struct sockaddr PrepBlockSockaddr(struct sockaddr *address);
+static void DebugPrintBlockedNodeList(const char *msg, const struct BlockedState *bs);
 
 int IsBlocked(struct sockaddr *address, struct BlockedState *bs) {
-  struct BlockedNode *node = bs->head;
-  struct sockaddr target = PrepBlockSockaddr(address);
+  struct BlockedNode *node;
+  char b1[4096], b2[4096];
+
+  assert(address != NULL);
+  assert(bs != NULL);
+
+  if (bs == NULL) {
+    return FALSE;
+  }
+
+  node = bs->head;
 
   while (node != NULL) {
-    if (memcmp(&node->address, &target, sizeof(struct sockaddr)) == 0) {
-      return TRUE;
+    if (address->sa_family == AF_INET && node->address.sin6_family == AF_INET) {
+      struct sockaddr_in *target = (struct sockaddr_in *)address;
+      struct sockaddr_in *current = (struct sockaddr_in *)&node->address;
+      Debug("IsBlocked: Checking target %s against %s", DebugPrintSockaddr(address, b1, 4096), DebugPrintSockaddr((struct sockaddr *)&node->address, b2, 4096));
+      if (memcmp(&current->sin_addr.s_addr, &target->sin_addr.s_addr, sizeof(target->sin_addr.s_addr)) == 0) {
+        return TRUE;
+      }
+    } else if (address->sa_family == AF_INET6 && node->address.sin6_family == AF_INET6) {
+      struct sockaddr_in6 *target = (struct sockaddr_in6 *)address;
+      struct sockaddr_in6 *current = (struct sockaddr_in6 *)&node->address;
+      Debug("IsBlocked: Checking target %s against %s", DebugPrintSockaddr(address, b1, 4096), DebugPrintSockaddr((struct sockaddr *)&node->address, b2, 4096));
+      if (memcmp(&current->sin6_addr, &target->sin6_addr, sizeof(target->sin6_addr)) == 0) {
+        return TRUE;
+      }
     }
+
     node = node->next;
   }
 
@@ -33,30 +57,68 @@ int IsBlocked(struct sockaddr *address, struct BlockedState *bs) {
 }
 
 int BlockedStateInit(struct BlockedState *bs) {
+  int status = ERROR;
   FILE *fp = NULL;
   char err[ERRNOMAXBUF];
+  sa_family_t family;
+  struct sockaddr_in sa4;
+  struct sockaddr_in6 sa6;
+
+  assert(bs != NULL);
+
   memset(bs, 0, sizeof(struct BlockedState));
 
   if ((fp = fopen(configData.blockedFile, "r")) == NULL) {
     Error("Cannot open blocked file: %s for reading: %s", configData.blockedFile, ErrnoString(err, sizeof(err)));
-    return ERROR;
+    goto exit;
   }
 
   while (TRUE) {
-    struct sockaddr address;
-    if (fread(&address, sizeof(struct sockaddr), 1, fp) != 1) {
-      break;
+    if (fread(&family, sizeof(family), 1, fp) != 1) {
+      if (feof(fp)) {
+        break;
+      }
+      Error("Unable to read address family from blocked file: %s", configData.blockedFile);
+      goto exit;
     }
-    AddBlockedNode(bs, &address);
+
+    if (family == AF_INET) {
+      if (fread(&sa4.sin_addr.s_addr, sizeof(sa4.sin_addr.s_addr), 1, fp) != 1) {
+        Error("Unable to read address from blocked file: %s", configData.blockedFile);
+        goto exit;
+      }
+
+      sa4.sin_family = family;
+      AddBlockedNode(bs, (struct sockaddr *)&sa4);
+    } else if (family == AF_INET6) {
+      if (fread(&sa6.sin6_addr, sizeof(sa6.sin6_addr), 1, fp) != 1) {
+        Error("Unable to read address from blocked file: %s", configData.blockedFile);
+        goto exit;
+      }
+
+      sa6.sin6_family = family;
+      AddBlockedNode(bs, (struct sockaddr *)&sa6);
+    } else {
+      Error("Unsupported address family: %d", family);
+      goto exit;
+    }
   }
 
+  DebugPrintBlockedNodeList("Already blocked hosts, won't block again:", bs);
+
+  status = TRUE;
   bs->isInitialized = TRUE;
 
+exit:
   if (fp != NULL) {
     fclose(fp);
   }
 
-  return TRUE;
+  if (status != TRUE) {
+    BlockedStateFree(bs);
+  }
+
+  return status;
 }
 
 void BlockedStateFree(struct BlockedState *bs) {
@@ -71,24 +133,52 @@ void BlockedStateFree(struct BlockedState *bs) {
 
 int WriteBlockedFile(struct sockaddr *address, struct BlockedState *bs) {
   int status = ERROR;
-  FILE *fp;
+  FILE *fp = NULL;
   struct BlockedNode *node = NULL;
   char err[ERRNOMAXBUF];
-  struct sockaddr target = PrepBlockSockaddr(address);
+
+  assert(address != NULL);
+  assert(bs != NULL);
+  assert(address->sa_family == AF_INET || address->sa_family == AF_INET6);
 
   if ((fp = fopen(configData.blockedFile, "a")) == NULL) {
     Error("Unable to open blocked file: %s for writing: %s", configData.blockedFile, ErrnoString(err, sizeof(err)));
     goto exit;
   }
 
-  if ((node = AddBlockedNode(bs, &target)) == NULL) {
+  Debug("Storing blocked address: %s", DebugPrintSockaddr(address, err, ERRNOMAXBUF));
+  if ((node = AddBlockedNode(bs, address)) == NULL) {
     Error("Unable to add blocked node");
     goto exit;
   }
 
-  if (fwrite(&target, sizeof(struct sockaddr), 1, fp) != 1) {
-    Error("Unable to write blocked file: %s", configData.blockedFile);
-    RemoveBlockedNode(bs, node);
+  if (address->sa_family == AF_INET) {
+    struct sockaddr_in *addr = (struct sockaddr_in *)address;
+
+    if (fwrite(&addr->sin_family, sizeof(addr->sin_family), 1, fp) != 1) {
+      Error("Unable to write sin_family to blocked file: %s", configData.blockedFile);
+      goto exit;
+    }
+
+    if (fwrite(&addr->sin_addr.s_addr, sizeof(addr->sin_addr.s_addr), 1, fp) != 1) {
+      Error("Unable to write sin_addr to blocked file: %s", configData.blockedFile);
+      goto exit;
+    }
+
+  } else if (address->sa_family == AF_INET6) {
+    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)address;
+
+    if (fwrite(&addr->sin6_family, sizeof(addr->sin6_family), 1, fp) != 1) {
+      Error("Unable to write sin6_family to blocked file: %s", configData.blockedFile);
+      goto exit;
+    }
+
+    if (fwrite(&addr->sin6_addr, sizeof(addr->sin6_addr), 1, fp) != 1) {
+      Error("Unable to write sin6_addr to blocked file: %s", configData.blockedFile);
+      goto exit;
+    }
+  } else {
+    Error("Unsupported address family: %d", address->sa_family);
     goto exit;
   }
 
@@ -97,6 +187,12 @@ int WriteBlockedFile(struct sockaddr *address, struct BlockedState *bs) {
 exit:
   if (fp != NULL) {
     fclose(fp);
+  }
+
+  if (status != TRUE) {
+    if (node != NULL) {
+      RemoveBlockedNode(bs, node);
+    }
   }
 
   return status;
@@ -114,12 +210,24 @@ static void FreeBlockedNodeList(struct BlockedNode *node) {
 static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, struct sockaddr *address) {
   struct BlockedNode *node = NULL;
 
+  assert(bs != NULL);
+  assert(address != NULL);
+  assert(address->sa_family == AF_INET || address->sa_family == AF_INET6);
+
   if ((node = calloc(1, sizeof(struct BlockedNode))) == NULL) {
     Error("Unable to allocate memory for blocked node");
     return NULL;
   }
 
-  memcpy(&node->address, address, sizeof(struct sockaddr));
+  if (address->sa_family == AF_INET) {
+    memcpy(&node->address, address, sizeof(struct sockaddr_in));
+  } else if (address->sa_family == AF_INET6) {
+    memcpy(&node->address, address, sizeof(struct sockaddr_in6));
+  } else {
+    free(node);
+    return NULL;
+  }
+
   node->next = bs->head;
   bs->head = node;
   return node;
@@ -149,17 +257,20 @@ static int RemoveBlockedNode(struct BlockedState *bs, struct BlockedNode *node) 
   return FALSE;
 }
 
-static struct sockaddr PrepBlockSockaddr(struct sockaddr *address) {
-  struct sockaddr sa;
-  memset(&sa, 0, sizeof(struct sockaddr));
+static void DebugPrintBlockedNodeList(const char *msg, const struct BlockedState *bs) {
+  struct BlockedNode *node;
 
-  if (address->sa_family == AF_INET) {
-    ((struct sockaddr_in *)&sa)->sin_addr.s_addr = ((struct sockaddr_in *)address)->sin_addr.s_addr;
-  } else if (address->sa_family == AF_INET6) {
-    struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)&sa;
-    struct sockaddr_in6 *address6 = (struct sockaddr_in6 *)address;
-    memcpy(&sa6->sin6_addr, &address6->sin6_addr, sizeof(struct in6_addr));
+  assert(bs != NULL);
+
+  Debug("%s", msg);
+  if (bs == NULL || bs->head == NULL) {
+    return;
   }
 
-  return sa;
+  node = bs->head;
+  while (node != NULL) {
+    char buf[MAXBUF];
+    Debug("%s", DebugPrintSockaddr((struct sockaddr *)&node->address, buf, MAXBUF));
+    node = node->next;
+  }
 }

@@ -6,9 +6,10 @@
 
 #include <stdint.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 
 struct BlockedNode {
-  struct sockaddr address;
+  struct sockaddr_in6 address;  // Will be casred to sockaddr_in or sockaddr_in6 depending on address family
   struct BlockedNode *next;
 };
 
