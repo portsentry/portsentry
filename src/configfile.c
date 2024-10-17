@@ -162,7 +162,7 @@ static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t va
       Exit(EXIT_FAILURE);
     }
 
-    if (testFileAccess(fileConfig->blockedFile, "w", TRUE) == FALSE) {
+    if (testFileAccess(fileConfig->blockedFile, "a", TRUE) == FALSE) {
       fprintf(stderr, "Unable to open block file for writing %s: %s\n", fileConfig->blockedFile, ErrnoString(err, sizeof(err)));
       Exit(EXIT_FAILURE);
     }
