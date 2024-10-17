@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: CPL-1.0
 
-#include <bits/sockaddr.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
