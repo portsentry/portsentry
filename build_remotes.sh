@@ -2,33 +2,38 @@
 
 BUILD_TYPE="debug"
 
-if [ -n "$1" ]; then
-  BUILD_TYPE="$1"
-
-  if [ "$BUILD_TYPE" != "debug" ] && [ "$BUILD_TYPE" != "release" ]; then
-    echo "Invalid build type: $BUILD_TYPE"
+for host in $(cat remotes.txt); do
+  echo "Building on $host"
+  ssh $host "rm -rf /tmp/portsentry"
+  rsync -az -e ssh ../portsentry $host:/tmp/
+  ssh $host "cd /tmp/portsentry && ./build.sh clean && ./build.sh $BUILD_TYPE"
+  if [ $? -ne 0 ]; then
+    echo "ERROR: Failed to build on $host"
     exit 1
   fi
-fi
-
-for host in $(cat remotes.txt); do
-  if [ "$host" == "[LOCAL]" ]; then
-    echo "Building local"
-    ./build.sh clean && ./build.sh debug
-    if [ $? -ne 0 ]; then
-      echo "ERROR: Failed to build local"
-      exit 1
-    fi
-  else
-    echo "Building on $host"
-    ssh $host "rm -rf /tmp/portsentry"
-    rsync -az -e ssh ../portsentry $host:/tmp/
-    ssh $host "cd /tmp/portsentry && ./build.sh clean && ./build.sh $BUILD_TYPE"
-    if [ $? -ne 0 ]; then
-      echo "ERROR: Failed to build on $host"
-      exit 1
-    fi
-  fi
-
   echo
 done
+
+if [ -n "$1" ]; then
+  exit 0
+fi
+
+tmux new -s rat -d
+tmux split-window -h
+tmux split-window -v -t 0
+tmux split-window -v -t 2
+
+tmux select-pane -t 0
+tmux send-keys 'ssh root@deb-portsentry rat.sh' C-m
+
+tmux select-pane -t 1
+tmux send-keys 'ssh root@netbsd /usr/sbin/rat.sh' C-m
+
+tmux select-pane -t 2
+tmux send-keys 'ssh root@freebsd rat.sh' C-m
+
+tmux select-pane -t 3
+tmux send-keys 'ssh root@openbsd rat.sh' C-m
+
+tmux a
+

@@ -132,7 +132,7 @@ int InitIgnore(struct IgnoreState *is) {
   FreeIgnore(is);
 
   if ((fp = fopen(configData.ignoreFile, "r")) == NULL) {
-    Verbose("Unable to open ignore file: %s, skipping", configData.ignoreFile);
+    Error("Unable to open ignore file: %s", configData.ignoreFile);
     goto exit;
   }
 

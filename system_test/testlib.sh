@@ -132,15 +132,8 @@ confirmStdoutScanMessage() {
 }
 
 confirmBlockFileMessage() {
-  setProtoVars $1
-  local host="127.0.0.1"
-  if [ "$2" = "6" ]; then
-    host="::1"
-  fi
-  verbose "expect block file entry"
-  if ! findInFile "Host: $host/$host Port: 11 $proto_u Blocked" $TEST_DIR/portsentry.blocked; then
-    err "Expected blocked $proto_u port not found"
-  fi
+  # Not applicable anymore
+  true
 }
 
 confirmHistoryFileMessage() {

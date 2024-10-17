@@ -353,3 +353,40 @@ char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
 
   return filter;
 }
+
+// FIXME: Make sure there is enough room in the buffer
+char *DebugPrintSockaddr(const struct sockaddr *sa, char *buf, int buflen) {
+  char *p = buf;
+
+  memset(buf, 0, buflen);
+
+  if (!(configData.logFlags & LOGFLAG_DEBUG)) {
+    return buf;
+  }
+
+  if (sa->sa_family == AF_INET) {
+    p += snprintf(p, buflen - (p - buf), "AF_INET: ");
+    struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+    for (long unsigned int i = 0; i < sizeof(struct sockaddr_in); i++) {
+      p += snprintf(p, buflen - (p - buf), "%02x ", ((unsigned char *)sin)[i]);
+    }
+    if (inet_ntop(AF_INET, &sin->sin_addr, p, buflen - (p - buf)) == NULL) {
+      Error("Unable to convert IPv4 address to string");
+      p += snprintf(p, buflen - (p - buf), "?");
+    }
+  } else if (sa->sa_family == AF_INET6) {
+    p += snprintf(p, buflen - (p - buf), "AF_INET6: ");
+    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+    for (long unsigned int i = 0; i < sizeof(struct sockaddr_in6); i++) {
+      p += snprintf(p, buflen - (p - buf), "%02x ", ((unsigned char *)sin6)[i]);
+    }
+    if (inet_ntop(AF_INET6, &sin6->sin6_addr, p, buflen - (p - buf)) == NULL) {
+      Error("Unable to convert IPv6 address to string");
+      p += snprintf(p, buflen - (p - buf), "?");
+    }
+  } else {
+    p += snprintf(p, buflen - (p - buf), "?");
+  }
+
+  return buf;
+}

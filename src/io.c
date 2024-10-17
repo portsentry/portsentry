@@ -134,41 +134,6 @@ void Exit(int status) {
   exit(status);
 }
 
-/* Compares an IP address against a listed address and its netmask*/
-static int WriteToLogFile(const char *filename, const char *target, const char *resolvedHost, const int port, const char *portType) {
-  FILE *output;
-  char err[ERRNOMAXBUF];
-  struct tm tm, *tmptr;
-  time_t current_time;
-  current_time = time(0);
-  tmptr = localtime_r(&current_time, &tm);
-
-  Debug("WriteToLogFile: Opening: %s ", filename);
-
-  if ((output = fopen(filename, "a")) == NULL) {
-    Log("Unable to open block log file: %s (%s)", filename, ErrnoString(err, sizeof(err)));
-    return FALSE;
-  }
-
-#ifdef __OpenBSD__
-  fprintf(output, "%lld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
-          current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-          tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
-#else
-  fprintf(output, "%ld - %02d/%02d/%04d %02d:%02d:%02d Host: %s/%s Port: %d %s Blocked\n",
-          current_time, tmptr->tm_mon + 1, tmptr->tm_mday, tmptr->tm_year + 1900,
-          tmptr->tm_hour, tmptr->tm_min, tmptr->tm_sec, resolvedHost, target, port, portType);
-#endif
-
-  fclose(output);
-
-  return TRUE;
-}
-
-int WriteBlocked(char *target, char *resolvedHost, int port, char *blockedFilename, const char *portType) {
-  return WriteToLogFile(blockedFilename, target, resolvedHost, port, portType);
-}
-
 int BindSocket(int sockfd, int family, int port, int proto) {
   char err[ERRNOMAXBUF];
   struct sockaddr_in6 sin6;
@@ -401,42 +366,6 @@ int KillHostsDeny(char *target, int port, char *killString, char *detectionType)
   fclose(output);
   Log("attackalert: Host %s has been blocked via wrappers with string: \"%s\"", target, commandStringFinal);
   return TRUE;
-}
-
-/* check if the host is already blocked */
-int IsBlocked(char *target, char *filename) {
-  FILE *input;
-  char buffer[MAXBUF], tempBuffer[MAXBUF], err[ERRNOMAXBUF];
-  char *ipOffset;
-  size_t count;
-
-  Debug("IsBlocked: Opening block file: %s ", filename);
-
-  if ((input = fopen(filename, "r")) == NULL) {
-    Error("Cannot open blocked file: %s for reading: %s. Will create.", filename, ErrnoString(err, sizeof(err)));
-    return (FALSE);
-  }
-
-  while (fgets(buffer, MAXBUF, input) != NULL) {
-    if ((ipOffset = strstr(buffer, target)) != NULL) {
-      for (count = 0; count < strlen(ipOffset); count++) {
-        if ((isdigit((int)ipOffset[count])) || (ipOffset[count] == '.') || (ipOffset[count] == ':')) {
-          tempBuffer[count] = ipOffset[count];
-        } else {
-          tempBuffer[count] = '\0';
-          break;
-        }
-      }
-      if (strcmp(target, tempBuffer) == 0) {
-        Debug("isBlocked: Host: %s found in blocked file", target);
-        fclose(input);
-        return (TRUE);
-      }
-    }
-  }
-  Debug("IsBlocked: Host: %s NOT found in blocked file", target);
-  fclose(input);
-  return (FALSE);
 }
 
 /*********************************************************************************
