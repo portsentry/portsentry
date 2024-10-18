@@ -15,7 +15,7 @@
 #include "config_data.h"
 
 static void FreeBlockedNodeList(struct BlockedNode *node);
-static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, struct sockaddr *address);
+static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, const struct sockaddr *address);
 static int RemoveBlockedNode(struct BlockedState *bs, struct BlockedNode *node);
 static void DebugPrintBlockedNodeList(const char *msg, const struct BlockedState *bs);
 
@@ -206,7 +206,7 @@ static void FreeBlockedNodeList(struct BlockedNode *node) {
   free(node);
 }
 
-static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, struct sockaddr *address) {
+static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, const struct sockaddr *address) {
   struct BlockedNode *node = NULL;
 
   assert(bs != NULL);
