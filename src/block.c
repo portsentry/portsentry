@@ -219,9 +219,11 @@ static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, struct sockad
   }
 
   if (address->sa_family == AF_INET) {
-    memcpy(&node->address, address, sizeof(struct sockaddr_in));
+    struct sockaddr_in *addr = (struct sockaddr_in *)address;
+    memcpy(&node->address, addr, sizeof(struct sockaddr_in));
   } else if (address->sa_family == AF_INET6) {
-    memcpy(&node->address, address, sizeof(struct sockaddr_in6));
+    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)address;
+    memcpy(&node->address, addr, sizeof(struct sockaddr_in6));
   } else {
     free(node);
     return NULL;
