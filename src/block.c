@@ -60,8 +60,7 @@ int BlockedStateInit(struct BlockedState *bs) {
   FILE *fp = NULL;
   char err[ERRNOMAXBUF];
   sa_family_t family;
-  struct sockaddr_in sa4;
-  struct sockaddr_in6 sa6;
+  struct sockaddr_in6 sa;  // Use the larger sockaddr_in6 to hold both IPv4 and IPv6 addresses. Otherwise _FORTIFY_SOURCE=2 will erroneously complain in AddBlockedNode
 
   assert(bs != NULL);
 
@@ -73,6 +72,8 @@ int BlockedStateInit(struct BlockedState *bs) {
   }
 
   while (TRUE) {
+    memset(&sa, 0, sizeof(sa));
+
     if (fread(&family, sizeof(family), 1, fp) != 1) {
       if (feof(fp)) {
         break;
@@ -82,21 +83,22 @@ int BlockedStateInit(struct BlockedState *bs) {
     }
 
     if (family == AF_INET) {
-      if (fread(&sa4.sin_addr.s_addr, sizeof(sa4.sin_addr.s_addr), 1, fp) != 1) {
+      struct sockaddr_in *sa4 = (struct sockaddr_in *)&sa;
+      if (fread(&sa4->sin_addr.s_addr, sizeof(sa4->sin_addr.s_addr), 1, fp) != 1) {
         Error("Unable to read address from blocked file: %s", configData.blockedFile);
         goto exit;
       }
 
-      sa4.sin_family = family;
-      AddBlockedNode(bs, (struct sockaddr *)&sa4);
+      sa.sin6_family = family;
+      AddBlockedNode(bs, (struct sockaddr *)&sa);
     } else if (family == AF_INET6) {
-      if (fread(&sa6.sin6_addr, sizeof(sa6.sin6_addr), 1, fp) != 1) {
+      if (fread(&sa.sin6_addr, sizeof(sa.sin6_addr), 1, fp) != 1) {
         Error("Unable to read address from blocked file: %s", configData.blockedFile);
         goto exit;
       }
 
-      sa6.sin6_family = family;
-      AddBlockedNode(bs, (struct sockaddr *)&sa6);
+      sa.sin6_family = family;
+      AddBlockedNode(bs, (struct sockaddr *)&sa);
     } else {
       Error("Unsupported address family: %d", family);
       goto exit;
