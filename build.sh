@@ -38,6 +38,7 @@ elif [ "$ACTION" = "autobuild" ]; then
   while [ 1 ]; do
     inotifywait -e modify src/[a-zA-Z]*.c
     ./build.sh debug && \
+    ./build.sh release && \
     ./build.sh sast
     sleep 5
   done
