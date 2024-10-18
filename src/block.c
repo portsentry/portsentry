@@ -272,7 +272,7 @@ static void DebugPrintBlockedNodeList(const char *msg, const struct BlockedState
   node = bs->head;
   while (node != NULL) {
     char buf[MAXBUF];
-    Debug("%s: %s", msg, DebugPrintSockaddr((struct sockaddr *)&node->address, buf, MAXBUF));
+    Debug("%s %s", msg, DebugPrintSockaddr((struct sockaddr *)&node->address, buf, MAXBUF));
     node = node->next;
   }
 }
