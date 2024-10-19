@@ -13,11 +13,13 @@
 #include "util.h"
 #include "packet_info.h"
 #include "state_machine.h"
+#include "block.h"
 
 #define MAX_BUF_SCAN_EVENT 1024
 
 static uint8_t isInitialized = FALSE;
 static struct IgnoreState is = {0};
+static struct BlockedState bs = {0};
 
 static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock, int flagBlockSuccessful);
 
@@ -106,6 +108,13 @@ int InitSentry(void) {
   }
 
   if (is.isInitialized == FALSE && InitIgnore(&is) == ERROR) {
+    Error("Error initializing ignore file %s", configData.ignoreFile);
+    return ERROR;
+  }
+
+  if (bs.isInitialized == FALSE && BlockedStateInit(&bs) == ERROR) {
+    Error("Error initializing blocked file %s", configData.blockedFile);
+    FreeIgnore(&is);
     return ERROR;
   }
 
@@ -120,6 +129,10 @@ void FreeSentry(void) {
 
   if (is.isInitialized == TRUE) {
     FreeIgnore(&is);
+  }
+
+  if (bs.isInitialized == TRUE) {
+    BlockedStateFree(&bs);
   }
 
   isInitialized = FALSE;
@@ -165,12 +178,12 @@ void RunSentry(struct PacketInfo *pi) {
     flagDontBlock = FALSE;
   }
 
-  if (IsBlocked(pi->saddr, configData.blockedFile) == FALSE) {
+  if (IsBlocked(GetSourceSockaddrFromPacketInfo(pi), &bs) == FALSE) {
     if (DisposeTarget(pi->saddr, pi->port, pi->protocol) != TRUE) {
       Error("attackalert: Error during target dispose %s/%s!", resolvedHost, pi->saddr);
       flagBlockSuccessful = FALSE;
     } else {
-      WriteBlocked(pi->saddr, resolvedHost, pi->port, configData.blockedFile, GetProtocolString(pi->protocol));
+      WriteBlockedFile(GetSourceSockaddrFromPacketInfo(pi), &bs);
       flagBlockSuccessful = TRUE;
     }
   } else {
