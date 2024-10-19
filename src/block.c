@@ -105,6 +105,7 @@ int BlockedStateInit(struct BlockedState *bs) {
       AddBlockedNode(bs, (struct sockaddr *)&sa);
     } else {
       Error("Unsupported address family: %d", family);
+      status = FALSE;
       goto exit;
     }
   }
