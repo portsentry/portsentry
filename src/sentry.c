@@ -112,10 +112,18 @@ int InitSentry(void) {
     return ERROR;
   }
 
-  if (bs.isInitialized == FALSE && BlockedStateInit(&bs) == ERROR) {
-    Error("Error initializing blocked file %s", configData.blockedFile);
-    FreeIgnore(&is);
-    return ERROR;
+  if (bs.isInitialized == FALSE) {
+    int ret;
+    ret = BlockedStateInit(&bs);
+    if (ret == ERROR) {
+      Error("Error initializing blocked file %s", configData.blockedFile);
+      FreeIgnore(&is);
+      return ERROR;
+    } else if (ret == FALSE) {
+      if (RewriteBlockedFile(&bs) == ERROR) {
+        return ERROR;
+      }
+    }
   }
 
   isInitialized = TRUE;
