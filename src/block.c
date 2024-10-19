@@ -17,11 +17,9 @@
 static void FreeBlockedNodeList(struct BlockedNode *node);
 static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, const struct sockaddr *address);
 static int RemoveBlockedNode(struct BlockedState *bs, struct BlockedNode *node);
-static void DebugPrintBlockedNodeList(const char *msg, const struct BlockedState *bs);
 
 int IsBlocked(struct sockaddr *address, struct BlockedState *bs) {
   struct BlockedNode *node;
-  char b1[4096], b2[4096];
 
   assert(address != NULL);
   assert(bs != NULL);
@@ -36,14 +34,12 @@ int IsBlocked(struct sockaddr *address, struct BlockedState *bs) {
     if (address->sa_family == AF_INET && node->address.sin6_family == AF_INET) {
       struct sockaddr_in *target = (struct sockaddr_in *)address;
       struct sockaddr_in *current = (struct sockaddr_in *)&node->address;
-      Debug("IsBlocked: Checking target %s against %s", DebugPrintSockaddr(address, b1, 4096), DebugPrintSockaddr((struct sockaddr *)&node->address, b2, 4096));
       if (memcmp(&current->sin_addr.s_addr, &target->sin_addr.s_addr, sizeof(target->sin_addr.s_addr)) == 0) {
         return TRUE;
       }
     } else if (address->sa_family == AF_INET6 && node->address.sin6_family == AF_INET6) {
       struct sockaddr_in6 *target = (struct sockaddr_in6 *)address;
       struct sockaddr_in6 *current = (struct sockaddr_in6 *)&node->address;
-      Debug("IsBlocked: Checking target %s against %s", DebugPrintSockaddr(address, b1, 4096), DebugPrintSockaddr((struct sockaddr *)&node->address, b2, 4096));
       if (memcmp(&current->sin6_addr, &target->sin6_addr, sizeof(target->sin6_addr)) == 0) {
         return TRUE;
       }
@@ -105,8 +101,6 @@ int BlockedStateInit(struct BlockedState *bs) {
     }
   }
 
-  DebugPrintBlockedNodeList("Already blocked:", bs);
-
   status = TRUE;
   bs->isInitialized = TRUE;
 
@@ -147,7 +141,6 @@ int WriteBlockedFile(struct sockaddr *address, struct BlockedState *bs) {
     goto exit;
   }
 
-  Debug("Storing blocked address: %s", DebugPrintSockaddr(address, err, ERRNOMAXBUF));
   if ((node = AddBlockedNode(bs, address)) == NULL) {
     Error("Unable to add blocked node");
     goto exit;
@@ -258,21 +251,4 @@ static int RemoveBlockedNode(struct BlockedState *bs, struct BlockedNode *node) 
     current = current->next;
   }
   return FALSE;
-}
-
-static void DebugPrintBlockedNodeList(const char *msg, const struct BlockedState *bs) {
-  struct BlockedNode *node;
-
-  assert(bs != NULL);
-
-  if (bs == NULL || bs->head == NULL) {
-    return;
-  }
-
-  node = bs->head;
-  while (node != NULL) {
-    char buf[MAXBUF];
-    Debug("%s %s", msg, DebugPrintSockaddr((struct sockaddr *)&node->address, buf, MAXBUF));
-    node = node->next;
-  }
 }
