@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -51,6 +50,12 @@ int IsBlocked(struct sockaddr *address, struct BlockedState *bs) {
   return FALSE;
 }
 
+/* Initialize the BlockedState structure by reading the blocked file.
+ * returns:
+ *  TRUE: Success
+ *  FALSE: Potentially partial success, but the structure is not fully initialized but usable
+ *  ERROR: Failure, unrecoverable error
+ */
 int BlockedStateInit(struct BlockedState *bs) {
   int status = ERROR;
   FILE *fp = NULL;
@@ -75,6 +80,7 @@ int BlockedStateInit(struct BlockedState *bs) {
         break;
       }
       Error("Unable to read address family from blocked file: %s", configData.blockedFile);
+      status = FALSE;
       goto exit;
     }
 
@@ -82,6 +88,7 @@ int BlockedStateInit(struct BlockedState *bs) {
       struct sockaddr_in *sa4 = (struct sockaddr_in *)&sa;
       if (fread(&sa4->sin_addr.s_addr, sizeof(sa4->sin_addr.s_addr), 1, fp) != 1) {
         Error("Unable to read address from blocked file: %s", configData.blockedFile);
+        status = FALSE;
         goto exit;
       }
 
@@ -90,6 +97,7 @@ int BlockedStateInit(struct BlockedState *bs) {
     } else if (family == AF_INET6) {
       if (fread(&sa.sin6_addr, sizeof(sa.sin6_addr), 1, fp) != 1) {
         Error("Unable to read address from blocked file: %s", configData.blockedFile);
+        status = FALSE;
         goto exit;
       }
 
@@ -102,14 +110,17 @@ int BlockedStateInit(struct BlockedState *bs) {
   }
 
   status = TRUE;
-  bs->isInitialized = TRUE;
 
 exit:
+  if (status == TRUE || status == FALSE) {
+    bs->isInitialized = TRUE;
+  }
+
   if (fp != NULL) {
     fclose(fp);
   }
 
-  if (status != TRUE) {
+  if (status == ERROR) {
     BlockedStateFree(bs);
   }
 
@@ -187,6 +198,65 @@ exit:
     if (node != NULL) {
       RemoveBlockedNode(bs, node);
     }
+  }
+
+  return status;
+}
+
+int RewriteBlockedFile(struct BlockedState *bs) {
+  int status = ERROR;
+  FILE *fp = NULL;
+  struct BlockedNode *node = NULL;
+  char err[ERRNOMAXBUF];
+
+  assert(bs != NULL);
+
+  if (bs == NULL || bs->isInitialized == FALSE || bs->head == NULL) {
+    return FALSE;
+  }
+
+  if ((fp = fopen(configData.blockedFile, "w")) == NULL) {
+    Error("Unable to open blocked file: %s for writing: %s", configData.blockedFile, ErrnoString(err, sizeof(err)));
+    goto exit;
+  }
+
+  node = bs->head;
+  while (node != NULL) {
+    if (node->address.sin6_family == AF_INET) {
+      struct sockaddr_in *addr = (struct sockaddr_in *)&node->address;
+
+      if (fwrite(&addr->sin_family, sizeof(addr->sin_family), 1, fp) != 1) {
+        Error("Unable to write sin_family to blocked file: %s", configData.blockedFile);
+        goto exit;
+      }
+
+      if (fwrite(&addr->sin_addr.s_addr, sizeof(addr->sin_addr.s_addr), 1, fp) != 1) {
+        Error("Unable to write sin_addr to blocked file: %s", configData.blockedFile);
+        goto exit;
+      }
+    } else if (node->address.sin6_family == AF_INET6) {
+      if (fwrite(&node->address.sin6_family, sizeof(node->address.sin6_family), 1, fp) != 1) {
+        Error("Unable to write sin6_family to blocked file: %s", configData.blockedFile);
+        goto exit;
+      }
+
+      if (fwrite(&node->address.sin6_addr, sizeof(node->address.sin6_addr), 1, fp) != 1) {
+        Error("Unable to write sin6_addr to blocked file: %s", configData.blockedFile);
+        goto exit;
+      }
+    } else {
+      Error("Unsupported address family: %d", node->address.sin6_family);
+      goto exit;
+    }
+
+    node = node->next;
+  }
+
+  status = TRUE;
+
+exit:
+  if (fp != NULL) {
+    fclose(fp);
   }
 
   return status;

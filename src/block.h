@@ -22,3 +22,4 @@ int WriteBlockedFile(struct sockaddr *address, struct BlockedState *bs);
 int IsBlocked(struct sockaddr *address, struct BlockedState *bs);
 int BlockedStateInit(struct BlockedState *bs);
 void BlockedStateFree(struct BlockedState *bs);
+int RewriteBlockedFile(struct BlockedState *bs);
