@@ -16,6 +16,7 @@
 static void FreeBlockedNodeList(struct BlockedNode *node);
 static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, const struct sockaddr *address);
 static int RemoveBlockedNode(struct BlockedState *bs, struct BlockedNode *node);
+static int WriteAddressToBlockFile(FILE *fp, struct sockaddr_in6 *addr);
 
 int IsBlocked(struct sockaddr *address, struct BlockedState *bs) {
   struct BlockedNode *node;
@@ -158,36 +159,9 @@ int WriteBlockedFile(struct sockaddr *address, struct BlockedState *bs) {
     goto exit;
   }
 
-  if (address->sa_family == AF_INET) {
-    struct sockaddr_in *addr = (struct sockaddr_in *)address;
-
-    if (fwrite(&addr->sin_family, sizeof(addr->sin_family), 1, fp) != 1) {
-      Error("Unable to write sin_family to blocked file: %s", configData.blockedFile);
-      goto exit;
-    }
-
-    if (fwrite(&addr->sin_addr.s_addr, sizeof(addr->sin_addr.s_addr), 1, fp) != 1) {
-      Error("Unable to write sin_addr to blocked file: %s", configData.blockedFile);
-      goto exit;
-    }
-
-  } else if (address->sa_family == AF_INET6) {
-    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)address;
-
-    if (fwrite(&addr->sin6_family, sizeof(addr->sin6_family), 1, fp) != 1) {
-      Error("Unable to write sin6_family to blocked file: %s", configData.blockedFile);
-      goto exit;
-    }
-
-    if (fwrite(&addr->sin6_addr, sizeof(addr->sin6_addr), 1, fp) != 1) {
-      Error("Unable to write sin6_addr to blocked file: %s", configData.blockedFile);
-      goto exit;
-    }
-  } else {
-    Error("Unsupported address family: %d", address->sa_family);
-    goto exit;
-  }
-
+  // Ignore file write errors. Atlreast the addr is in memory and will be ignored in this session.
+  // The function will report any errors to the log.
+  WriteAddressToBlockFile(fp, (struct sockaddr_in6 *)address);
   status = TRUE;
 
 exit:
@@ -195,10 +169,8 @@ exit:
     fclose(fp);
   }
 
-  if (status != TRUE) {
-    if (node != NULL) {
-      RemoveBlockedNode(bs, node);
-    }
+  if (status != TRUE && node != NULL) {
+    RemoveBlockedNode(bs, node);
   }
 
   return status;
@@ -223,30 +195,7 @@ int RewriteBlockedFile(struct BlockedState *bs) {
 
   node = bs->head;
   while (node != NULL) {
-    if (node->address.sin6_family == AF_INET) {
-      struct sockaddr_in *addr = (struct sockaddr_in *)&node->address;
-
-      if (fwrite(&addr->sin_family, sizeof(addr->sin_family), 1, fp) != 1) {
-        Error("Unable to write sin_family to blocked file: %s", configData.blockedFile);
-        goto exit;
-      }
-
-      if (fwrite(&addr->sin_addr.s_addr, sizeof(addr->sin_addr.s_addr), 1, fp) != 1) {
-        Error("Unable to write sin_addr to blocked file: %s", configData.blockedFile);
-        goto exit;
-      }
-    } else if (node->address.sin6_family == AF_INET6) {
-      if (fwrite(&node->address.sin6_family, sizeof(node->address.sin6_family), 1, fp) != 1) {
-        Error("Unable to write sin6_family to blocked file: %s", configData.blockedFile);
-        goto exit;
-      }
-
-      if (fwrite(&node->address.sin6_addr, sizeof(node->address.sin6_addr), 1, fp) != 1) {
-        Error("Unable to write sin6_addr to blocked file: %s", configData.blockedFile);
-        goto exit;
-      }
-    } else {
-      Error("Unsupported address family: %d", node->address.sin6_family);
+    if (WriteAddressToBlockFile(fp, &node->address) == ERROR) {
       goto exit;
     }
 
@@ -322,4 +271,39 @@ static int RemoveBlockedNode(struct BlockedState *bs, struct BlockedNode *node) 
     current = current->next;
   }
   return FALSE;
+}
+
+static int WriteAddressToBlockFile(FILE *fp, struct sockaddr_in6 *addr) {
+  assert(fp != NULL);
+  assert(addr != NULL);
+
+  if (fp == NULL || addr == NULL || (addr->sin6_family != AF_INET && addr->sin6_family != AF_INET6)) {
+    return FALSE;
+  }
+
+  if (addr->sin6_family == AF_INET) {
+    struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
+
+    if (fwrite(&addr4->sin_family, sizeof(addr4->sin_family), 1, fp) != 1) {
+      Error("Unable to write sin_family to blocked file: %s", configData.blockedFile);
+      return ERROR;
+    }
+
+    if (fwrite(&addr4->sin_addr.s_addr, sizeof(addr4->sin_addr.s_addr), 1, fp) != 1) {
+      Error("Unable to write sin_addr to blocked file: %s", configData.blockedFile);
+      return ERROR;
+    }
+  } else if (addr->sin6_family == AF_INET6) {
+    if (fwrite(&addr->sin6_family, sizeof(addr->sin6_family), 1, fp) != 1) {
+      Error("Unable to write sin6_family to blocked file: %s", configData.blockedFile);
+      return ERROR;
+    }
+
+    if (fwrite(&addr->sin6_addr, sizeof(addr->sin6_addr), 1, fp) != 1) {
+      Error("Unable to write sin6_addr to blocked file: %s", configData.blockedFile);
+      return ERROR;
+    }
+  }
+
+  return TRUE;
 }
