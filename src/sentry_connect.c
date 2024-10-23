@@ -128,18 +128,7 @@ int PortSentryConnectMode(void) {
       }
 
       ClearPacketInfo(&pi);
-      pi.protocol = connectionData[count].protocol;
-      pi.port = connectionData[count].port;
-      pi.version = (connectionData[count].family == AF_INET) ? 4 : 6;
-      pi.listenSocket = connectionData[count].sockfd;
-      pi.tcpAcceptSocket = incomingSockfd;
-      if (pi.version == 4) {
-        SetSockaddr(&pi.sa_saddr, client4.sin_addr.s_addr, client4.sin_port, pi.saddr, sizeof(pi.saddr));
-        pi.sa_daddr.sin_port = connectionData[count].port;
-      } else {
-        SetSockaddr6(&pi.sa6_saddr, client6.sin6_addr, client6.sin6_port, pi.saddr, sizeof(pi.saddr));
-        pi.sa6_daddr.sin6_port = connectionData[count].port;
-      }
+      SetPacketInfoFromConnectData(&pi, connectionData[count].port, connectionData[count].family, connectionData[count].protocol, connectionData[count].sockfd, incomingSockfd, &client4, &client6);
 
       Debug("RunSentry connect mode: accepted %s connection from: %s", GetProtocolString(pi.protocol), pi.saddr);
 

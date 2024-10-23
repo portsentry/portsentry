@@ -86,9 +86,8 @@ int PortSentryStealthMode(void) {
         continue;
 
       ClearPacketInfo(&pi);
-      pi.packet = (unsigned char *)packetBuffer;
       pi.packetLength = IP_MAXPACKET;
-      if (SetPacketInfo(&pi) != TRUE) {
+      if (SetPacketInfoFromPacket(&pi, (unsigned char *)packetBuffer) != TRUE) {
         continue;
       }
 
@@ -112,7 +111,6 @@ int PortSentryStealthMode(void) {
         continue;
       }
 
-      Debug("Packet: %s", GetPacketInfoString(&pi, NULL, -1, -1));
       RunSentry(&pi);
     }
   }
