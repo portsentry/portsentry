@@ -18,13 +18,16 @@
 
 #define IPV4_MAPPED_IPV6_PREFIX "::ffff:"
 
+static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, size_t buflen);
+static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, size_t buflen);
+
 void ClearPacketInfo(struct PacketInfo *pi) {
   memset(pi, 0, sizeof(struct PacketInfo));
   pi->listenSocket = -1;
   pi->tcpAcceptSocket = -1;
 }
 
-int SetPacketInfo(struct PacketInfo *pi) {
+int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet) {
   int iplen, nextHeader;
   uint8_t protocol, ipVersion;
   struct ip6_ext *ip6ext;
@@ -34,7 +37,9 @@ int SetPacketInfo(struct PacketInfo *pi) {
   struct udphdr *udp = NULL;
 
   assert(pi != NULL);
-  assert(pi->packet != NULL);
+  assert(packet != NULL);
+
+  pi->packet = packet;
 
   ipVersion = (*pi->packet >> 4) & 0x0f;
   if (ipVersion == 4) {
@@ -106,17 +111,17 @@ int SetPacketInfo(struct PacketInfo *pi) {
   pi->udp = (udp != NULL) ? udp : NULL;
 
   if (pi->ip != NULL) {
-    if (SetSockaddr(&pi->sa_saddr, pi->ip->ip_src.s_addr, (tcp != NULL) ? tcp->th_sport : udp->uh_sport, pi->saddr, sizeof(pi->saddr)) != TRUE) {
+    if (SetSockaddr4(&pi->sa_saddr, &pi->ip->ip_src.s_addr, (tcp != NULL) ? tcp->th_sport : udp->uh_sport, pi->saddr, sizeof(pi->saddr)) != TRUE) {
       return FALSE;
     }
-    if (SetSockaddr(&pi->sa_daddr, pi->ip->ip_dst.s_addr, (tcp != NULL) ? tcp->th_dport : udp->uh_dport, pi->daddr, sizeof(pi->daddr)) != TRUE) {
+    if (SetSockaddr4(&pi->sa_daddr, &pi->ip->ip_dst.s_addr, (tcp != NULL) ? tcp->th_dport : udp->uh_dport, pi->daddr, sizeof(pi->daddr)) != TRUE) {
       return FALSE;
     }
   } else if (pi->ip6 != NULL) {
-    if (SetSockaddr6(&pi->sa6_saddr, pi->ip6->ip6_src, (tcp != NULL) ? tcp->th_sport : udp->uh_sport, pi->saddr, sizeof(pi->saddr)) != TRUE) {
+    if (SetSockaddr6(&pi->sa6_saddr, &pi->ip6->ip6_src, (tcp != NULL) ? tcp->th_sport : udp->uh_sport, pi->saddr, sizeof(pi->saddr)) != TRUE) {
       return FALSE;
     }
-    if (SetSockaddr6(&pi->sa6_daddr, pi->ip6->ip6_dst, (tcp != NULL) ? tcp->th_dport : udp->uh_dport, pi->daddr, sizeof(pi->daddr)) != TRUE) {
+    if (SetSockaddr6(&pi->sa6_daddr, &pi->ip6->ip6_dst, (tcp != NULL) ? tcp->th_dport : udp->uh_dport, pi->daddr, sizeof(pi->daddr)) != TRUE) {
       return FALSE;
     }
   }
@@ -124,11 +129,49 @@ int SetPacketInfo(struct PacketInfo *pi) {
   return TRUE;
 }
 
-int SetSockaddr(struct sockaddr_in *sa, const in_addr_t addr, const uint16_t port, char *buf, size_t buflen) {
+int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const int protocol, const int sockfd, const int incomingSockfd, struct sockaddr_in *client4, struct sockaddr_in6 *client6) {
+  pi->protocol = protocol;
+  pi->port = port;
+  pi->version = (family == AF_INET) ? 4 : 6;
+  pi->listenSocket = sockfd;
+  pi->tcpAcceptSocket = incomingSockfd;
+
+  // There will only by one correct client address, depending on the family (only valid in sentry_connect)
+  if (pi->version == 4) {
+    pi->client4 = client4;
+    pi->client6 = NULL;
+  } else {
+    pi->client4 = NULL;
+    pi->client6 = client6;
+  }
+
+  if (pi->version == 4) {
+    SetSockaddr4(&pi->sa_saddr, &client4->sin_addr.s_addr, client4->sin_port, pi->saddr, sizeof(pi->saddr));
+    pi->sa_daddr.sin_port = port;
+  } else {
+    // In a dual stack environment, we may receive an IPv4-mapped IPv6 address
+    // In this case, extract the ipv4 address and port from the mapped address
+    // in order to present it as an IPv4 address instead of ::ffff:<ipv4>
+    if (IN6_IS_ADDR_V4MAPPED(&client6->sin6_addr)) {
+      struct in_addr addr4;
+      memcpy(&addr4, &client6->sin6_addr.s6_addr[12], sizeof(struct in_addr));
+      SetSockaddr4(&pi->sa_saddr, &addr4.s_addr, client6->sin6_port, pi->saddr, sizeof(pi->saddr));
+      pi->sa_daddr.sin_port = port;
+      pi->version = 4;  // Since we are treating this as an IPv4 address and the sockaddr_in is set, set version to 4 too (needed by GetSourceSockaddr*())
+    } else {
+      SetSockaddr6(&pi->sa6_saddr, &client6->sin6_addr, client6->sin6_port, pi->saddr, sizeof(pi->saddr));
+      pi->sa6_daddr.sin6_port = port;
+    }
+  }
+
+  return TRUE;
+}
+
+static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, size_t buflen) {
   char err[ERRNOMAXBUF];
 
   memset(sa, 0, sizeof(struct sockaddr_in));
-  sa->sin_addr.s_addr = addr;
+  sa->sin_addr.s_addr = *addr;
   sa->sin_family = AF_INET;
   sa->sin_port = port;
 
@@ -142,11 +185,11 @@ int SetSockaddr(struct sockaddr_in *sa, const in_addr_t addr, const uint16_t por
   return TRUE;
 }
 
-int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr addr6, const uint16_t port, char *buf, size_t buflen) {
+static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, size_t buflen) {
   char err[ERRNOMAXBUF];
 
   memset(sa6, 0, sizeof(struct sockaddr_in6));
-  memcpy(&sa6->sin6_addr, &addr6, sizeof(struct in6_addr));
+  memcpy(&sa6->sin6_addr, addr6, sizeof(struct in6_addr));
   sa6->sin6_family = AF_INET6;
   sa6->sin6_port = port;
 
@@ -155,12 +198,6 @@ int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr addr6, const ui
       Error("Unable to resolve IPv6 address: %s", ErrnoString(err, sizeof(err)));
       return ERROR;
     }
-  }
-
-  if (strncmp(buf, IPV4_MAPPED_IPV6_PREFIX, strlen(IPV4_MAPPED_IPV6_PREFIX)) == 0) {
-    char ipv4_addr[INET_ADDRSTRLEN];
-    snprintf(ipv4_addr, sizeof(ipv4_addr), "%s", buf + strlen(IPV4_MAPPED_IPV6_PREFIX));
-    snprintf(buf, buflen, "%s", ipv4_addr);
   }
 
   return TRUE;
@@ -186,35 +223,22 @@ socklen_t GetSourceSockaddrLenFromPacketInfo(const struct PacketInfo *pi) {
   return 0;
 }
 
-char *GetPacketInfoString(const struct PacketInfo *pi, const char *deviceName, const int hdrCapLen, const int hdrLen) {
-  int buflen = 0;
-  char *buf = NULL;
-
-  if (deviceName != NULL) {
-    buf = ReallocAndAppend(buf, &buflen, "Device: %s ", deviceName);
+struct sockaddr *GetClientSockaddrFromPacketInfo(const struct PacketInfo *pi) {
+  if (pi->client4 != NULL) {
+    return (struct sockaddr *)pi->client4;
+  } else if (pi->client6 != NULL) {
+    return (struct sockaddr *)pi->client6;
   }
 
-  if (hdrCapLen >= 0 || hdrLen >= 0) {
-    buf = ReallocAndAppend(buf, &buflen, "Packet: %d [%d] ", hdrCapLen, hdrLen);
+  return NULL;
+}
+
+socklen_t GetClientSockaddrLenFromPacketInfo(const struct PacketInfo *pi) {
+  if (pi->client4 != NULL) {
+    return sizeof(struct sockaddr_in);
+  } else if (pi->client6 != NULL) {
+    return sizeof(struct sockaddr_in6);
   }
 
-  if (pi->ip != NULL) {
-    buf = ReallocAndAppend(buf, &buflen, "ihl: %d IP len: %d ", pi->ip->ip_hl, pi->ip->ip_len);
-  }
-
-  buf = ReallocAndAppend(buf, &buflen, "proto: %s (%d) ver: %d saddr: %s %d daddr: %s %d",
-                         pi->protocol == IPPROTO_TCP   ? "tcp"
-                         : pi->protocol == IPPROTO_UDP ? "udp"
-                                                       : "other",
-                         pi->protocol,
-                         pi->version, pi->saddr,
-                         (pi->tcp) ? ntohs(pi->tcp->th_sport) : ntohs(pi->udp->uh_sport),
-                         pi->daddr,
-                         (pi->tcp) ? ntohs(pi->tcp->th_dport) : ntohs(pi->udp->uh_dport));
-
-  if (pi->protocol == IPPROTO_TCP) {
-    buf = ReallocAndAppend(buf, &buflen, " seq: %u ack: %u", ntohl(pi->tcp->th_seq), ntohl(pi->tcp->th_ack));
-  }
-
-  return buf;
+  return 0;
 }

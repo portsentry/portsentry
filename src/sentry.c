@@ -173,7 +173,7 @@ void RunSentry(struct PacketInfo *pi) {
   if (configData.sentryMode == SENTRY_MODE_CONNECT && pi->protocol == IPPROTO_TCP) {
     XmitBannerIfConfigured(IPPROTO_TCP, pi->tcpAcceptSocket, NULL, 0);
   } else if (configData.sentryMode == SENTRY_MODE_CONNECT && pi->protocol == IPPROTO_UDP) {
-    XmitBannerIfConfigured(IPPROTO_UDP, pi->listenSocket, GetSourceSockaddrFromPacketInfo(pi), GetSourceSockaddrLenFromPacketInfo(pi));
+    XmitBannerIfConfigured(IPPROTO_UDP, pi->listenSocket, GetClientSockaddrFromPacketInfo(pi), GetClientSockaddrLenFromPacketInfo(pi));
   }
 
   // If in log-only mode, don't run any of the blocking code

@@ -190,6 +190,5 @@ static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const 
   }
 
   ClearPacketInfo(pi);
-  pi->packet = (unsigned char *)packet + ipOffset;
-  return SetPacketInfo(pi);
+  return SetPacketInfoFromPacket(pi, (unsigned char *)packet + ipOffset);
 }
