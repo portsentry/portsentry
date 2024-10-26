@@ -135,8 +135,8 @@ confirmBlockFileSize() {
   local noIpv4=$1
   local noIpv6=$2
 
-  [ -z "$noIpv4" ] && $noIpv4=0
-  [ -z "$noIpv6" ] && $noIpv6=0
+  [ -z "$noIpv4" ] && noIpv4=0
+  [ -z "$noIpv6" ] && noIpv6=0
 
   # Linux uses 2 bytes for address family identifier, BSD uses 1
   if [ "$(uname -s)" = "Linux" ]; then
