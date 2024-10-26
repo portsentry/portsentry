@@ -12,6 +12,7 @@ chmod +x $TEST_DIR/extcmd.sh
 runNmap 11 T
 
 confirmBlockTriggered tcp
+confirmBlockFileSize 1 0
 
 confirmRouteKillMessage
 

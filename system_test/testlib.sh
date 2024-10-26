@@ -131,9 +131,27 @@ confirmStdoutScanMessage() {
   fi
 }
 
-confirmBlockFileMessage() {
-  # Not applicable anymore
-  true
+confirmBlockFileSize() {
+  local noIpv4=$1
+  local noIpv6=$2
+
+  [ -z "$noIpv4" ] && noIpv4=0
+  [ -z "$noIpv6" ] && noIpv6=0
+
+  # Linux uses 2 bytes for address family identifier, BSD uses 1
+  if [ "$(uname -s)" = "Linux" ]; then
+    local family_size=2
+  else
+    local family_size=1
+  fi
+
+  verbose "expect block file contains $noIpv4 IPv4 and $noIpv6 IPv6 entries"
+  # ipv4 = 4 bytes for address + X bytes address family identifier
+  # ipv6 = 16 bytes for address + X bytes address family identifier
+  local sum=$((($noIpv4 * (4 + $family_size)) + ($noIpv6 * (16 + $family_size))))
+  if [ $(/bin/ls -l $TEST_DIR/portsentry.blocked |tr -s ' '|cut -d ' ' -f 5) -ne $sum ]; then
+    err "Expected block file size $sum, found $(/bin/ls -l $TEST_DIR/portsentry.blocked |tr -s ' '|cut -d ' ' -f 5)"
+  fi
 }
 
 confirmHistoryFileMessage() {
@@ -172,7 +190,6 @@ confirmHostWrapperMessage() {
 confirmBlockTriggered() {
   setProtoVars $1
   confirmStdoutScanMessage $1 $2
-  confirmBlockFileMessage $1 $2
   confirmHistoryFileMessage $1 $2
 }
 

@@ -20,6 +20,7 @@ runNmap 11 T
 
 waitForFile $TEST_DIR/extcmd.stdout
 sleep 1
+confirmBlockFileSize 1 0
 
 verbose "expect routesim.sh output"
 if ! findInFile "^127\.0\.0\.1" $TEST_DIR/routesim.stdout ; then
