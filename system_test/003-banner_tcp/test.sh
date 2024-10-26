@@ -7,9 +7,11 @@ if ! $TEST_DIR/portcon 11 tcp | grep -q "Some banner printed on port"; then
 fi
 
 confirmBlockTriggered tcp
+confirmBlockFileSize 1 0
 
 runNmap 11 T
 
 confirmAlreadyBlocked
+confirmBlockFileSize 1 0
 
 ok

@@ -17,6 +17,7 @@ if ! findInFile "^127\.0\.0\.1" $TEST_DIR/routesim.stdout ; then
 fi
 
 confirmBlockTriggered tcp
+confirmBlockFileSize 1 0
 
 confirmRouteKillMessage
 
