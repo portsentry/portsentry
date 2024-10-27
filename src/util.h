@@ -29,3 +29,7 @@ int CreateDateTime(char *buf, const int size);
 int ntohstr(char *buf, const int bufSize, const uint32_t addr);
 int StrToUint16_t(const char *str, uint16_t *val);
 __attribute__((format(printf, 3, 4))) char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);
+
+#ifndef NDEBUG
+void DebugWritePacketToFs(const struct PacketInfo *pi);
+#endif
