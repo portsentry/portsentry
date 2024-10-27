@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+uint8_t g_isRunning = 1;
+
 #include "../src/sentry_pcap.h"
 
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
