@@ -30,6 +30,15 @@ struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
 
 extern uint8_t g_isRunning;
 
+#ifdef FUZZ_SENTRY_PCAP_PREP_PACKET
+uint8_t g_isRunning = TRUE;
+int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+  struct PacketInfo pi;
+  PrepPacket(&pi, NULL, Data);
+  return 0;
+}
+#endif
+
 int PortSentryPcap(void) {
   int status = EXIT_FAILURE, ret, nfds = 0, i;
   char err[ERRNOMAXBUF];
