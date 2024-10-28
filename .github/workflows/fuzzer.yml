@@ -6,6 +6,10 @@ on:
   push:
     branches: [ "master" ]
 
+env:
+  BUILD_TYPE: Debug
+  CC: /usr/bin/clang
+  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,11 +23,14 @@ jobs:
         sudo apt-get update
         sudo apt-get install libpcap-dev cmake clang
 
-    - name: Configure CMake
-      run: ./build.sh fuzzer
+    - name: Configure Fuzzing
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -D BUILD_FUZZER=ON
+
+    - name: Build Fuzzer
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -v
 
     - name: Run fuzzer sentry pcap
-      run: ${{github.workspace}}/debug/fuzz_sentry_pcap -max_total_time=60 ${{github.workspace}}/tests/fuzzing/corpus_sentry_pcap
+      run: ${{github.workspace}}/build/fuzz_sentry_pcap -max_total_time=60 ${{github.workspace}}/tests/fuzzing/corpus_sentry_pcap
 
     - name: Run fuzzer sentry stealth
-      run: ${{github.workspace}}/debug/fuzz_sentry_stealth -max_total_time=60 ${{github.workspace}}/tests/fuzzing/corpus_sentry_raw
+      run: ${{github.workspace}}/build/fuzz_sentry_stealth -max_total_time=60 ${{github.workspace}}/tests/fuzzing/corpus_sentry_raw
