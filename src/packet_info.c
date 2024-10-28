@@ -27,7 +27,7 @@ void ClearPacketInfo(struct PacketInfo *pi) {
   pi->tcpAcceptSocket = -1;
 }
 
-int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet) {
+int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet, const uint32_t packetLength) {
   int iplen, nextHeader;
   uint8_t protocol, ipVersion;
   struct ip6_ext *ip6ext;
@@ -38,6 +38,11 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet) {
 
   assert(pi != NULL);
   assert(packet != NULL);
+
+  if (packetLength < 40) {
+    Error("Packet is too short, ignoring");
+    return FALSE;
+  }
 
   pi->packet = packet;
 

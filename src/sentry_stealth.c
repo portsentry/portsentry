@@ -34,7 +34,19 @@ extern uint8_t g_isRunning;
 
 static int PacketRead(int socket, char *buffer, int bufferLen);
 
+#ifdef FUZZ_SENTRY_STEALTH_PREP_PACKET
+uint8_t g_isRunning = TRUE;
+int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+  struct PacketInfo pi;
+  ClearPacketInfo(&pi);
+  pi.packetLength = IP_MAXPACKET;
+  SetPacketInfoFromPacket(&pi, (unsigned char *)Data, Size);
+  return 0;
+}
+#endif
+
 int PortSentryStealthMode(void) {
+  int32_t packetLen;
   int status = EXIT_FAILURE, result, nfds = NFDS, i;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct pollfd fds[NFDS];
@@ -82,12 +94,12 @@ int PortSentryStealthMode(void) {
         continue;
       }
 
-      if (PacketRead(fds[i].fd, packetBuffer, IP_MAXPACKET) != TRUE)
+      if ((packetLen = PacketRead(fds[i].fd, packetBuffer, IP_MAXPACKET)) == ERROR)
         continue;
 
       ClearPacketInfo(&pi);
       pi.packetLength = IP_MAXPACKET;
-      if (SetPacketInfoFromPacket(&pi, (unsigned char *)packetBuffer) != TRUE) {
+      if (SetPacketInfoFromPacket(&pi, (unsigned char *)packetBuffer, packetLen) != TRUE) {
         continue;
       }
 
@@ -153,8 +165,8 @@ static int PacketRead(int socket, char *buffer, int bufferLen) {
                                                          : (sll.sll_pkttype == PACKET_KERNEL)      ? "PACKET_KERNEL"
                                                                                                    : "UNKNOWN",
           sll.sll_halen);
-    return FALSE;
+    return ERROR;
   }
 
-  return TRUE;
+  return result;
 }

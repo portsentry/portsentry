@@ -36,7 +36,7 @@ struct PacketInfo {
 };
 
 void ClearPacketInfo(struct PacketInfo *pi);
-int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet);
+int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet, const uint32_t packetLength);
 int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const int protocol, const int sockfd, const int incomingSockfd, struct sockaddr_in *client4, struct sockaddr_in6 *client6);
 struct sockaddr *GetSourceSockaddrFromPacketInfo(const struct PacketInfo *pi);
 socklen_t GetSourceSockaddrLenFromPacketInfo(const struct PacketInfo *pi);

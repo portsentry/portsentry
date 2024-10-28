@@ -26,7 +26,8 @@ elif [ "$ACTION" = "sast" ]; then
   exit 0
 elif [ "$ACTION" = "fuzzer" ]; then
   export CC=/usr/bin/clang
-  cmake -B debug -D CMAKE_BUILD_TYPE=Debug -D BUILD_FUZZER=ON $CMAKE_OPTS
+  $0 clean && \
+  cmake -B debug -D CMAKE_BUILD_TYPE=Debug -D BUILD_FUZZER=ON $CMAKE_OPTS && \
   cmake --build debug -v
 elif [ "$ACTION" = "cdt" ]; then
   $0 clean && \
