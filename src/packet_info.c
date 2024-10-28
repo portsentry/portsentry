@@ -84,6 +84,10 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet) {
 
       ip6ext = (struct ip6_ext *)(pi->packet + iplen);
       nextHeader = ip6ext->ip6e_nxt;
+      if (ip6ext->ip6e_len == 0) {
+        Error("IPv6 extension header length is 0, ignoring packet");
+        return FALSE;
+      }
       iplen += ip6ext->ip6e_len;
     }
 
