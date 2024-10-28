@@ -39,19 +39,24 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet, const 
   assert(pi != NULL);
   assert(packet != NULL);
 
-  if (packetLength < 40) {
-    Error("Packet is too short, ignoring");
-    return FALSE;
-  }
-
   pi->packet = packet;
 
   ipVersion = (*pi->packet >> 4) & 0x0f;
   if (ipVersion == 4) {
+    if (packetLength < 20) {
+      Error("IPv4 packet is too short (%d bytes), ignoring", packetLength);
+      return FALSE;
+    }
+
     ip = (struct ip *)pi->packet;
     iplen = ip->ip_hl * 4;
     protocol = ip->ip_p;
   } else if (ipVersion == 6) {
+    if (packetLength < 40) {
+      Error("IPv6 packet is too short (%d bytes), ignoring", packetLength);
+      return FALSE;
+    }
+
     ip6 = (struct ip6_hdr *)pi->packet;
     nextHeader = ip6->ip6_nxt;
     iplen = sizeof(struct ip6_hdr);
