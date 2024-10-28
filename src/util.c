@@ -409,6 +409,8 @@ void DebugWritePacketToFs(const struct PacketInfo *pi) {
     }
   }
 
+  Debug("Wrote packet to file %s", filename);
+
 exit:
   if (fd != -1)
     close(fd);
