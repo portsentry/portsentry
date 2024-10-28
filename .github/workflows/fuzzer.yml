@@ -23,7 +23,7 @@ jobs:
       run: ./build.sh fuzzer
 
     - name: Run fuzzer sentry pcap
-      run: ./debug/fuzz_sentry_pcap -max_total_time=60 tests/fuzzing/corpus_sentry_pcap
+      run: ${{github.workspace}}/debug/fuzz_sentry_pcap -max_total_time=60 ${{github.workspace}}/tests/fuzzing/corpus_sentry_pcap
 
     - name: Run fuzzer sentry stealth
-      run: ./debug/fuzz_sentry_stealth -max_total_time=60 tests/fuzzing/corpus_sentry_raw
+      run: ${{github.workspace}}/debug/fuzz_sentry_stealth -max_total_time=60 ${{github.workspace}}/tests/fuzzing/corpus_sentry_raw
