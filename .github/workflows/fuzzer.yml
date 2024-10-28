@@ -1,0 +1,27 @@
+name: fuzzer
+
+on:
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install deps
+      run: |
+        sudo apt-get update
+        sudo apt-get install libpcap-dev cmake clang
+
+    - name: Configure CMake
+      run: ./build.sh fuzzer
+
+    - name: Run fuzzer sentry pcap
+      run: ./debug/fuzz_sentry_pcap -max_total_time=60 tests/fuzzing/corpus_sentry_pcap
+
+    - name: Run fuzzer sentry stealth
+      run: ./debug/fuzz_sentry_stealth -max_total_time=60 tests/fuzzing/corpus_sentry_raw
