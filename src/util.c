@@ -19,6 +19,7 @@
 #include <netinet/tcp.h>
 #include <time.h>
 #include <sys/time.h>
+#include <fcntl.h>
 
 #include "config_data.h"
 #include "io.h"
@@ -353,3 +354,65 @@ char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
 
   return filter;
 }
+
+#ifndef NDEBUG
+void DebugWritePacketToFs(const struct PacketInfo *pi) {
+  int fd = -1;
+  char filename[64], err[ERRNOMAXBUF];
+  int ipLen;
+  unsigned char *ip;
+
+  if (pi->ip != NULL) {
+    ip = (unsigned char *)pi->ip;
+  } else if (pi->ip6 != NULL) {
+    ip = (unsigned char *)pi->ip6;
+  } else {
+    Error("No IP address to write to file");
+    goto exit;
+  }
+
+  if (pi->tcp != NULL) {
+    ipLen = (unsigned char *)pi->tcp - ip;
+  } else if (pi->udp != NULL) {
+    ipLen = (unsigned char *)pi->udp - ip;
+  } else {
+    Error("No TCP or UDP header to write to file");
+    goto exit;
+  }
+
+#ifdef __linux__
+  snprintf(filename, sizeof(filename), "/tmp/packet-%lu", time(NULL));
+#elif __OpenBSD__
+  snprintf(filename, sizeof(filename), "/tmp/packet-%lld", time(NULL));
+#else
+  snprintf(filename, sizeof(filename), "/tmp/packet-%ld", time(NULL));
+#endif
+  if ((fd = open(filename, O_CREAT | O_WRONLY, 0644)) == -1) {
+    Error("Unable to open file %s for writing: %s", filename, ErrnoString(err, sizeof(err)));
+    goto exit;
+  }
+
+  if (write(fd, ip, ipLen) == -1) {
+    Error("Unable to write IP header to file %s: %s", filename, ErrnoString(err, sizeof(err)));
+    goto exit;
+  }
+
+  if (pi->tcp != NULL) {
+    if (write(fd, pi->tcp, sizeof(struct tcphdr)) == -1) {
+      Error("Unable to write TCP header to file %s: %s", filename, ErrnoString(err, sizeof(err)));
+      goto exit;
+    }
+  } else if (pi->udp != NULL) {
+    if (write(fd, pi->udp, sizeof(struct udphdr)) == -1) {
+      Error("Unable to write UDP header to file %s: %s", filename, ErrnoString(err, sizeof(err)));
+      goto exit;
+    }
+  }
+
+  Debug("Wrote packet to file %s", filename);
+
+exit:
+  if (fd != -1)
+    close(fd);
+}
+#endif

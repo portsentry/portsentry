@@ -25,10 +25,19 @@
 
 #define POLL_TIMEOUT 500
 
-static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet);
+static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet, const uint32_t packetLength);
 struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
 
 extern uint8_t g_isRunning;
+
+#ifdef FUZZ_SENTRY_PCAP_PREP_PACKET
+uint8_t g_isRunning = TRUE;
+int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+  struct PacketInfo pi;
+  PrepPacket(&pi, NULL, Data, Size);
+  return 0;
+}
+#endif
 
 int PortSentryPcap(void) {
   int status = EXIT_FAILURE, ret, nfds = 0, i;
@@ -115,7 +124,7 @@ void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *
   struct PacketInfo pi;
   (void)header;
 
-  if (PrepPacket(&pi, device, packet) == FALSE) {
+  if (PrepPacket(&pi, device, packet, header->len) == FALSE) {
     return;
   }
 
@@ -131,7 +140,7 @@ void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *
   RunSentry(&pi);
 }
 
-static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet) {
+static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet, const uint32_t packetLength) {
   int ipOffset = ERROR;
 
   if (device == NULL) {
@@ -190,5 +199,5 @@ static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const 
   }
 
   ClearPacketInfo(pi);
-  return SetPacketInfoFromPacket(pi, (unsigned char *)packet + ipOffset);
+  return SetPacketInfoFromPacket(pi, (unsigned char *)packet + ipOffset, packetLength - ipOffset);
 }

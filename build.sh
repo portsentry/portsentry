@@ -24,6 +24,11 @@ elif [ "$ACTION" = "sast" ]; then
   semgrep scan --config=auto
 
   exit 0
+elif [ "$ACTION" = "fuzzer" ]; then
+  export CC=/usr/bin/clang
+  $0 clean && \
+  cmake -B debug -D CMAKE_BUILD_TYPE=Debug -D BUILD_FUZZER=ON $CMAKE_OPTS && \
+  cmake --build debug -v
 elif [ "$ACTION" = "cdt" ]; then
   $0 clean && \
   $0 debug && \

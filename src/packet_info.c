@@ -27,7 +27,7 @@ void ClearPacketInfo(struct PacketInfo *pi) {
   pi->tcpAcceptSocket = -1;
 }
 
-int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet) {
+int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet, const uint32_t packetLength) {
   int iplen, nextHeader;
   uint8_t protocol, ipVersion;
   struct ip6_ext *ip6ext;
@@ -43,10 +43,20 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet) {
 
   ipVersion = (*pi->packet >> 4) & 0x0f;
   if (ipVersion == 4) {
+    if (packetLength < 20) {
+      Error("IPv4 packet is too short (%d bytes), ignoring", packetLength);
+      return FALSE;
+    }
+
     ip = (struct ip *)pi->packet;
     iplen = ip->ip_hl * 4;
     protocol = ip->ip_p;
   } else if (ipVersion == 6) {
+    if (packetLength < 40) {
+      Error("IPv6 packet is too short (%d bytes), ignoring", packetLength);
+      return FALSE;
+    }
+
     ip6 = (struct ip6_hdr *)pi->packet;
     nextHeader = ip6->ip6_nxt;
     iplen = sizeof(struct ip6_hdr);
@@ -84,6 +94,10 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet) {
 
       ip6ext = (struct ip6_ext *)(pi->packet + iplen);
       nextHeader = ip6ext->ip6e_nxt;
+      if (ip6ext->ip6e_len == 0) {
+        Error("IPv6 extension header length is 0, ignoring packet");
+        return FALSE;
+      }
       iplen += ip6ext->ip6e_len;
     }
 
@@ -109,6 +123,26 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet) {
   pi->ip6 = (ip6 != NULL) ? ip6 : NULL;
   pi->tcp = (tcp != NULL) ? tcp : NULL;
   pi->udp = (udp != NULL) ? udp : NULL;
+
+  if (pi->version != 4 && pi->version != 6) {
+    Error("Packet validation failes, unknown IP version %d", pi->version);
+    return FALSE;
+  }
+
+  if (pi->protocol != IPPROTO_TCP && pi->protocol != IPPROTO_UDP) {
+    Error("Packet validation failed, unknown protocol %d", pi->protocol);
+    return FALSE;
+  }
+
+  if (pi->ip == NULL && pi->ip6 == NULL) {
+    Error("Packet validation failed, no IP header found");
+    return FALSE;
+  }
+
+  if (pi->tcp == NULL && pi->udp == NULL) {
+    Error("Packet validation failed, no TCP or UDP header found");
+    return FALSE;
+  }
 
   if (pi->ip != NULL) {
     if (SetSockaddr4(&pi->sa_saddr, &pi->ip->ip_src.s_addr, (tcp != NULL) ? tcp->th_sport : udp->uh_sport, pi->saddr, sizeof(pi->saddr)) != TRUE) {
