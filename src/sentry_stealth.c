@@ -38,9 +38,12 @@ static int PacketRead(int socket, char *buffer, int bufferLen);
 uint8_t g_isRunning = TRUE;
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
   struct PacketInfo pi;
+  configData.logFlags = LOGFLAG_OUTPUT_STDOUT;
   ClearPacketInfo(&pi);
   pi.packetLength = IP_MAXPACKET;
-  SetPacketInfoFromPacket(&pi, (unsigned char *)Data, Size);
+  if (SetPacketInfoFromPacket(&pi, (unsigned char *)Data, Size) != TRUE) {
+    return -1;
+  }
   return 0;
 }
 #endif

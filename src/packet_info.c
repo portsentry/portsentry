@@ -108,8 +108,16 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet, const 
   }
 
   if (protocol == IPPROTO_TCP) {
+    if ((int)(packetLength - iplen) < (int)sizeof(struct tcphdr)) {
+      Error("Packet is too short for TCP header, ignoring");
+      return FALSE;
+    }
     tcp = (struct tcphdr *)(pi->packet + iplen);
   } else if (protocol == IPPROTO_UDP) {
+    if ((int)(packetLength - iplen) < (int)sizeof(struct udphdr)) {
+      Error("Packet is too short for UDP header, ignoring");
+      return FALSE;
+    }
     udp = (struct udphdr *)(pi->packet + iplen);
   } else {
     // Debug("Unknown protocol %d", protocol);
