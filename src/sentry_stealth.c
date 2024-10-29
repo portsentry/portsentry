@@ -40,7 +40,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
   struct PacketInfo pi;
   ClearPacketInfo(&pi);
   pi.packetLength = IP_MAXPACKET;
-  SetPacketInfoFromPacket(&pi, (unsigned char *)Data, Size);
+  if (SetPacketInfoFromPacket(&pi, (unsigned char *)Data, Size) != TRUE) {
+    return -1;
+  }
   return 0;
 }
 #endif

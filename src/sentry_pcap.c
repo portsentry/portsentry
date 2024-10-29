@@ -34,7 +34,9 @@ extern uint8_t g_isRunning;
 uint8_t g_isRunning = TRUE;
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
   struct PacketInfo pi;
-  PrepPacket(&pi, NULL, Data, Size);
+  if (PrepPacket(&pi, NULL, Data, Size) != TRUE) {
+    return -1;
+  }
   return 0;
 }
 #endif
