@@ -64,7 +64,7 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" A
   endif()
 
   add_executable(fuzz_sentry_pcap src/sentry_pcap.c)
-  target_compile_options(fuzz_sentry_pcap PUBLIC -O1 -DFUZZ_SENTRY_PCAP_PREP_PACKET)
+  target_compile_options(fuzz_sentry_pcap PUBLIC -O1 -DFUZZ_SENTRY_PCAP_PREP_PACKET ${FUZZER_OPTS})
   target_include_directories(fuzz_sentry_pcap PRIVATE "${PROJECT_BINARY_DIR}")
   target_link_options(fuzz_sentry_pcap PRIVATE ${FUZZER_OPTS})
   target_link_libraries(fuzz_sentry_pcap PRIVATE lportsentry)
@@ -73,7 +73,7 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" A
   endif()
 
   add_executable(fuzz_sentry_stealth src/sentry_stealth.c)
-  target_compile_options(fuzz_sentry_stealth PUBLIC -O1 -DFUZZ_SENTRY_STEALTH_PREP_PACKET)
+  target_compile_options(fuzz_sentry_stealth PUBLIC -O1 -DFUZZ_SENTRY_STEALTH_PREP_PACKET ${FUZZER_OPTS})
   target_include_directories(fuzz_sentry_stealth PRIVATE "${PROJECT_BINARY_DIR}")
   target_link_options(fuzz_sentry_stealth PRIVATE ${FUZZER_OPTS})
   target_link_libraries(fuzz_sentry_stealth PRIVATE lportsentry)
