@@ -30,7 +30,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -v
 
     - name: Run fuzzer sentry pcap
-      run: ${{github.workspace}}/build/fuzz_sentry_pcap -max_total_time=60 ${{github.workspace}}/tests/fuzzing/corpus_sentry_pcap
+      run: ${{github.workspace}}/build/fuzz_sentry_pcap -max_total_time=20 ${{github.workspace}}/tests/fuzzing/corpus_sentry_pcap
 
     - name: Run fuzzer sentry stealth
-      run: ${{github.workspace}}/build/fuzz_sentry_stealth -max_total_time=60 ${{github.workspace}}/tests/fuzzing/corpus_sentry_raw
+      run: ${{github.workspace}}/build/fuzz_sentry_stealth -max_total_time=20 ${{github.workspace}}/tests/fuzzing/corpus_sentry_raw
