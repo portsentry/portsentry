@@ -31,11 +31,9 @@ struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
 extern uint8_t g_isRunning;
 
 #ifdef FUZZ_SENTRY_PCAP_PREP_PACKET
-#include "config_data.h"
 uint8_t g_isRunning = TRUE;
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
   struct PacketInfo pi;
-  configData.logFlags = LOGFLAG_OUTPUT_STDOUT;
   if (PrepPacket(&pi, NULL, Data, Size) != TRUE) {
     return -1;
   }
