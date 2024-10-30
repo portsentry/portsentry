@@ -23,14 +23,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install libpcap-dev cmake clang
 
-    - name: Configure Fuzzing
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -D BUILD_FUZZER=ON
+    - name: Build Fuzzing
+      run: cd ${{github.workspace}} && ./build.sh build_fuzz
 
-    - name: Build Fuzzer
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -v
-
-    - name: Run fuzzer sentry pcap
-      run: ${{github.workspace}}/build/fuzz_sentry_pcap -max_total_time=60 ${{github.workspace}}/tests/fuzzing/corpus_sentry_pcap
-
-    - name: Run fuzzer sentry stealth
-      run: ${{github.workspace}}/build/fuzz_sentry_stealth -max_total_time=60 ${{github.workspace}}/tests/fuzzing/corpus_sentry_raw
+    - name: Run Fuzzer
+      run: cd ${{github.workspace}} && ./build.sh run_fuzz
