@@ -35,7 +35,7 @@ struct ConnectionData {
   int sockfd;
 };
 
-static int SetConnectionData(struct ConnectionData **cd, const int cdIdx, const uint16_t port, const int proto, int family);
+static int SetConnectionData(struct ConnectionData **cd, const int cdIdx, const uint16_t port, const int proto, const int family);
 static int ConstructConnectionData(struct ConnectionData **cd);
 static void FreeConnectionData(struct ConnectionData **cd, int *cdSize);
 static int PrepareNoFds(void);
@@ -133,6 +133,11 @@ int PortSentryConnectMode(void) {
       Debug("RunSentry connect mode: accepted %s connection from: %s", GetProtocolString(pi.protocol), pi.saddr);
 
       RunSentry(&pi);
+      if (incomingSockfd != -1) {
+        close(incomingSockfd);
+        incomingSockfd = -1;
+        pi.tcpAcceptSocket = -1;
+      }
     }
   }
 
@@ -161,7 +166,7 @@ exit:
   return status;
 }
 
-static int SetConnectionData(struct ConnectionData **cd, const int cdIdx, const uint16_t port, const int proto, int family) {
+static int SetConnectionData(struct ConnectionData **cd, const int cdIdx, const uint16_t port, const int proto, const int family) {
   int sockfd;
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
   assert(family == AF_INET || family == AF_INET6);

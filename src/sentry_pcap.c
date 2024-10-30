@@ -25,8 +25,8 @@
 
 #define POLL_TIMEOUT 500
 
+static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet, const uint32_t packetLength);
-struct ip *GetIphdrByOffset(const u_char *packet, const int offset);
 
 extern uint8_t g_isRunning;
 
@@ -121,7 +121,7 @@ exit:
   return status;
 }
 
-void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
   struct Device *device = (struct Device *)args;
   struct PacketInfo pi;
   (void)header;

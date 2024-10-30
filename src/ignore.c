@@ -17,9 +17,9 @@
 #include "util.h"
 
 static int IgnoreParse(const char *buffer, struct IgnoreIp *ignoreIp);
-static int IsValidIPChar(char c);
+static int IsValidIPChar(const char c);
 
-static int IsValidIPChar(char c) {
+static int IsValidIPChar(const char c) {
   if ((c >= '0' && c <= '9') || c == '.' || c == ':' || (c >= 'a' && c <= 'f') || c == '/') {
     return TRUE;
   }

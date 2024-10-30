@@ -18,8 +18,8 @@
 
 #define IPV4_MAPPED_IPV6_PREFIX "::ffff:"
 
-static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, size_t buflen);
-static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, size_t buflen);
+static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const size_t buflen);
+static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const size_t buflen);
 
 void ClearPacketInfo(struct PacketInfo *pi) {
   memset(pi, 0, sizeof(struct PacketInfo));
@@ -27,7 +27,7 @@ void ClearPacketInfo(struct PacketInfo *pi) {
   pi->tcpAcceptSocket = -1;
 }
 
-int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet, const uint32_t packetLength) {
+int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, const uint32_t packetLength) {
   int iplen, nextHeader;
   uint8_t protocol, ipVersion;
   struct ip6_ext *ip6ext;
@@ -171,7 +171,7 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet, const 
   return TRUE;
 }
 
-int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const int protocol, const int sockfd, const int incomingSockfd, struct sockaddr_in *client4, struct sockaddr_in6 *client6) {
+int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const int protocol, const int sockfd, const int incomingSockfd, const struct sockaddr_in *client4, const struct sockaddr_in6 *client6) {
   pi->protocol = protocol;
   pi->port = port;
   pi->version = (family == AF_INET) ? 4 : 6;
@@ -209,7 +209,7 @@ int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, con
   return TRUE;
 }
 
-static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, size_t buflen) {
+static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const size_t buflen) {
   char err[ERRNOMAXBUF];
 
   memset(sa, 0, sizeof(struct sockaddr_in));
@@ -227,7 +227,7 @@ static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uin
   return TRUE;
 }
 
-static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, size_t buflen) {
+static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const size_t buflen) {
   char err[ERRNOMAXBUF];
 
   memset(sa6, 0, sizeof(struct sockaddr_in6));

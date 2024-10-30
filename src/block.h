@@ -18,8 +18,8 @@ struct BlockedState {
   struct BlockedNode *head;
 };
 
-int WriteBlockedFile(struct sockaddr *address, struct BlockedState *bs);
-int IsBlocked(struct sockaddr *address, struct BlockedState *bs);
+int WriteBlockedFile(const struct sockaddr *address, struct BlockedState *bs);
+int IsBlocked(const struct sockaddr *address, const struct BlockedState *bs);
 int BlockedStateInit(struct BlockedState *bs);
 void BlockedStateFree(struct BlockedState *bs);
-int RewriteBlockedFile(struct BlockedState *bs);
+int RewriteBlockedFile(const struct BlockedState *bs);

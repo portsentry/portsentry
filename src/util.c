@@ -45,7 +45,7 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
   return (dest);
 }
 
-void ResolveAddr(struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize) {
+void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize) {
   if (getnameinfo(GetSourceSockaddrFromPacketInfo(pi), GetSourceSockaddrLenFromPacketInfo(pi), resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
     Error("Unable to resolve address for %s", pi->saddr);
     snprintf(resolvedHost, resolvedHostSize, "<unknown>");
@@ -54,7 +54,7 @@ void ResolveAddr(struct PacketInfo *pi, char *resolvedHost, const int resolvedHo
   Debug("ResolveAddr: Resolved: %s", resolvedHost);
 }
 
-long getLong(char *buffer) {
+long getLong(const char *buffer) {
   long value = 0;
   char *endptr = NULL;
 
@@ -75,7 +75,7 @@ long getLong(char *buffer) {
   return value;
 }
 
-int DisposeTarget(char *target, int port, int protocol) {
+int DisposeTarget(const char *target, int port, int protocol) {
   int status, killRunCmdStatus, killHostsDenyStatus, killRouteStatus;
   int blockProtoConfig;
 
@@ -203,7 +203,7 @@ int IsPortInUse(struct PacketInfo *pi) {
 }
 
 /* This takes a tcp packet and reports what type of scan it is */
-char *ReportPacketType(struct tcphdr *tcpPkt) {
+char *ReportPacketType(const struct tcphdr *tcpPkt) {
   static char packetDesc[MAXBUF];
   static char *packetDescPtr = packetDesc;
 

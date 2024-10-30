@@ -16,8 +16,8 @@ struct Port {
 };
 
 void ResetPort(struct Port *port);
-void SetPortSingle(struct Port *port, uint16_t single);
-void SetPortRange(struct Port *port, uint16_t start, uint16_t end);
+void SetPortSingle(struct Port *port, const uint16_t single);
+void SetPortRange(struct Port *port, const uint16_t start, const uint16_t end);
 int IsPortPresent(const struct Port *port, const int portLength, const uint16_t portNumber);
 int IsPortInRange(const struct Port *port, const uint16_t portNumber);
 int IsPortSingle(const struct Port *port);

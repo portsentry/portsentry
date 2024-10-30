@@ -17,12 +17,12 @@ void ResetPort(struct Port *port) {
   port->range.end = 0;
 }
 
-void SetPortSingle(struct Port *port, uint16_t single) {
+void SetPortSingle(struct Port *port, const uint16_t single) {
   ResetPort(port);
   port->single = single;
 }
 
-void SetPortRange(struct Port *port, uint16_t start, uint16_t end) {
+void SetPortRange(struct Port *port, const uint16_t start, const uint16_t end) {
   ResetPort(port);
   port->range.start = start;
   port->range.end = end;

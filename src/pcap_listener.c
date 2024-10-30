@@ -26,13 +26,12 @@
 
 #define BUFFER_TIMEOUT 2000
 
-pcap_t *PcapOpenLiveImmediate(const char *source, int snaplen, int promisc, int to_ms, char *errbuf);
+static pcap_t *PcapOpenLiveImmediate(const char *source, const int snaplen, const int promisc, const int to_ms, char *errbuf);
 static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name);
-static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo);
+static int AutoPrepDevices(struct ListenerModule *lm, const uint8_t includeLo);
 static int PrepDevices(struct ListenerModule *lm);
-// static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet);
-static int SetupFilter(struct Device *device);
-static char *AllocAndBuildPcapFilter(struct Device *device);
+static int SetupFilter(const struct Device *device);
+static char *AllocAndBuildPcapFilter(const struct Device *device);
 static void PrintDevices(const struct ListenerModule *lm);
 
 /* Heavily inspired by src/lib/libpcap/pcap-bpf.c from OpenBSD's pcap implementation.
@@ -46,7 +45,7 @@ static void PrintDevices(const struct ListenerModule *lm);
  * with a non-blocking fd makes pcap a bit snappier anyway so it's a win-win.
  * See: https://marc.info/?l=openbsd-tech&m=169878430118943&w=2 for more information.
  * */
-pcap_t *PcapOpenLiveImmediate(const char *source, int snaplen, int promisc, int to_ms, char *errbuf) {
+static pcap_t *PcapOpenLiveImmediate(const char *source, const int snaplen, const int promisc, const int to_ms, char *errbuf) {
   pcap_t *p;
   int status;
 
@@ -93,7 +92,7 @@ static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name) {
   return TRUE;
 }
 
-static int AutoPrepDevices(struct ListenerModule *lm, uint8_t includeLo) {
+static int AutoPrepDevices(struct ListenerModule *lm, const uint8_t includeLo) {
   pcap_if_t *alldevs, *d;
   char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -209,7 +208,7 @@ cleanup:
   return status;
 }
 
-static char *AllocAndBuildPcapFilter(struct Device *device) {
+static char *AllocAndBuildPcapFilter(const struct Device *device) {
   int i;
   int filterLen = 0;
   char *filter = NULL;
@@ -474,7 +473,7 @@ uint8_t AddDevice(struct ListenerModule *lm, struct Device *add) {
   return TRUE;
 }
 
-uint8_t RemoveDevice(struct ListenerModule *lm, struct Device *remove) {
+uint8_t RemoveDevice(struct ListenerModule *lm, const struct Device *remove) {
   struct Device *current, *previous;
 
   if (lm == NULL || remove == NULL) {
@@ -502,7 +501,7 @@ uint8_t RemoveDevice(struct ListenerModule *lm, struct Device *remove) {
   return FALSE;
 }
 
-uint8_t FindDeviceByName(struct ListenerModule *lm, const char *name) {
+uint8_t FindDeviceByName(const struct ListenerModule *lm, const char *name) {
   struct Device *current;
 
   if (lm == NULL) {
@@ -584,55 +583,8 @@ struct Device *GetDeviceByFd(const struct ListenerModule *lm, const int fd) {
 
   return NULL;
 }
-/*
-void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
-  PrintPacket(args, header, packet);
-}
 
-static void PrintPacket(const u_char *interface, const struct pcap_pkthdr *header, const u_char *packet) {
-  int iplen;
-  uint8_t protocol, ipVersion, hl;
-  char saddr[16], daddr[16];
-  struct tcphdr *tcphdr;
-  struct udphdr *udphdr;
-#ifdef BSD
-  struct ip *iphdr;
-  iphdr = (struct ip *)(packet + sizeof(struct ether_header));
-  ntohstr(saddr, sizeof(saddr), iphdr->ip_src.s_addr);
-  ntohstr(daddr, sizeof(daddr), iphdr->ip_dst.s_addr);
-  iplen = iphdr->ip_hl * 4;
-  protocol = iphdr->ip_p;
-  ipVersion = iphdr->ip_v;
-  hl = iphdr->ip_hl;
-#else
-  struct iphdr *iphdr;
-  iphdr = (struct iphdr *)(packet + sizeof(struct ether_header));
-  ntohstr(saddr, sizeof(saddr), iphdr->saddr);
-  ntohstr(daddr, sizeof(daddr), iphdr->daddr);
-  iplen = iphdr->ihl * 4;
-  protocol = iphdr->protocol;
-  ipVersion = iphdr->version;
-  hl = iphdr->ihl;
-#endif
-
-  printf("%s: %d [%d] ", interface, header->caplen, header->len);
-  printf("ihl: %d IP len: %d proto: %s ver: %d saddr: %s daddr: %s ", hl, iplen,
-         protocol == IPPROTO_TCP   ? "tcp"
-         : protocol == IPPROTO_UDP ? "udp"
-                                   : "other",
-         ipVersion, saddr, daddr);
-
-  if (protocol == IPPROTO_TCP) {
-    tcphdr = (struct tcphdr *)(packet + sizeof(struct ether_header) + iplen);
-    printf("sport: %d dport: %d", ntohs(tcphdr->th_sport), ntohs(tcphdr->th_dport));
-  } else if (protocol == IPPROTO_UDP) {
-    udphdr = (struct udphdr *)(packet + sizeof(struct ether_header) + iplen);
-    printf("sport: %d dport: %d", ntohs(udphdr->uh_sport), ntohs(udphdr->uh_dport));
-  }
-  printf("\n");
-}
-*/
-static int SetupFilter(struct Device *device) {
+static int SetupFilter(const struct Device *device) {
   struct bpf_program fp;
   char *filter = NULL;
   int status = FALSE;

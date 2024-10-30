@@ -21,7 +21,7 @@ struct PacketInfo {
   struct sockaddr_in6 sa6_daddr;  // The dest address for ipv6 connections
   char saddr[INET6_ADDRSTRLEN];   // The source address as a string
   char daddr[INET6_ADDRSTRLEN];   // The dest address as a string
-  unsigned char *packet;          // The raw packet + pointers into the various headers, where applicable
+  const unsigned char *packet;    // The raw packet + pointers into the various headers, where applicable
   int packetLength;
   struct ip *ip;        // pointer into packet for ipv4 header
   struct ip6_hdr *ip6;  // pointer into packet for ipv6 header
@@ -29,15 +29,15 @@ struct PacketInfo {
   struct udphdr *udp;   // pointer into packet for udp header (if it's a udp packet, otherwise NULL)
 
   // Connection based (sentry_connect) information
-  int listenSocket;              // The listening socket for the connection (also used to sendUDP packets if applicable)
-  int tcpAcceptSocket;           // If TCP connection, the socket that accept()ed the connection
-  struct sockaddr_in *client4;   // The client address for ipv4 connections as returned by accept() or recvfrom()
-  struct sockaddr_in6 *client6;  // The client address for ipv6 connections as returned by accept() or recvfrom()
+  int listenSocket;                    // The listening socket for the connection (also used to sendUDP packets if applicable)
+  int tcpAcceptSocket;                 // If TCP connection, the socket that accept()ed the connection
+  const struct sockaddr_in *client4;   // The client address for ipv4 connections as returned by accept() or recvfrom()
+  const struct sockaddr_in6 *client6;  // The client address for ipv6 connections as returned by accept() or recvfrom()
 };
 
 void ClearPacketInfo(struct PacketInfo *pi);
-int SetPacketInfoFromPacket(struct PacketInfo *pi, unsigned char *packet, const uint32_t packetLength);
-int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const int protocol, const int sockfd, const int incomingSockfd, struct sockaddr_in *client4, struct sockaddr_in6 *client6);
+int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, const uint32_t packetLength);
+int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const int protocol, const int sockfd, const int incomingSockfd, const struct sockaddr_in *client4, const struct sockaddr_in6 *client6);
 struct sockaddr *GetSourceSockaddrFromPacketInfo(const struct PacketInfo *pi);
 socklen_t GetSourceSockaddrLenFromPacketInfo(const struct PacketInfo *pi);
 struct sockaddr *GetClientSockaddrFromPacketInfo(const struct PacketInfo *pi);

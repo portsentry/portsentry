@@ -30,7 +30,7 @@
 static void Usage(void);
 static void Version(void);
 
-void ParseCmdline(int argc, char **argv) {
+void ParseCmdline(const int argc, char **argv) {
   int opt;
   uint8_t ifFlagAll = FALSE, ifFlagNlo = FALSE, ifFlagOther = FALSE, flagModeSet = FALSE;
   struct ConfigData cmdlineConfig;
