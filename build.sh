@@ -24,11 +24,19 @@ elif [ "$ACTION" = "sast" ]; then
   semgrep scan --config=auto
 
   exit 0
-elif [ "$ACTION" = "fuzzer" ]; then
+elif [ "$ACTION" = "build_fuzz" ]; then
   export CC=/usr/bin/clang
   $0 clean && \
   cmake -B debug -D CMAKE_BUILD_TYPE=Debug -D BUILD_FUZZER=ON $CMAKE_OPTS && \
   cmake --build debug -v
+elif [ "$ACTION" = "run_fuzz" ]; then
+  total_time=60
+  [ -n "$2" ] && total_time=$2
+  find debug -maxdepth 1 -name "fuzz_*" | while read f
+  do
+    echo "Running $f"
+    ./$f -max_total_time=$total_time tests/fuzzing/corpus_$(basename $f)
+  done
 elif [ "$ACTION" = "cdt" ]; then
   $0 clean && \
   $0 debug && \
