@@ -16,7 +16,7 @@ static char gblScanDetectHost[MAXSTATE][INET6_ADDRSTRLEN];
 static int gblScanDetectCount = 0;
 
 /* our cheesy state engine to monitor who has connected here before */
-int CheckStateEngine(char *target) {
+int CheckStateEngine(const char *target) {
   int count = 0, scanDetectTrigger = TRUE;
   int gotOne = 0;
 

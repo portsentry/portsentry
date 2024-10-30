@@ -15,10 +15,10 @@
 
 static void FreeBlockedNodeList(struct BlockedNode *node);
 static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, const struct sockaddr *address);
-static int RemoveBlockedNode(struct BlockedState *bs, struct BlockedNode *node);
-static int WriteAddressToBlockFile(FILE *fp, struct sockaddr_in6 *addr);
+static int RemoveBlockedNode(struct BlockedState *bs, const struct BlockedNode *node);
+static int WriteAddressToBlockFile(FILE *fp, const struct sockaddr_in6 *addr);
 
-int IsBlocked(struct sockaddr *address, struct BlockedState *bs) {
+int IsBlocked(const struct sockaddr *address, const struct BlockedState *bs) {
   struct BlockedNode *node;
 
   assert(address != NULL);
@@ -139,7 +139,7 @@ void BlockedStateFree(struct BlockedState *bs) {
   bs->isInitialized = FALSE;
 }
 
-int WriteBlockedFile(struct sockaddr *address, struct BlockedState *bs) {
+int WriteBlockedFile(const struct sockaddr *address, struct BlockedState *bs) {
   int status = ERROR;
   FILE *fp = NULL;
   struct BlockedNode *node = NULL;
@@ -176,7 +176,7 @@ exit:
   return status;
 }
 
-int RewriteBlockedFile(struct BlockedState *bs) {
+int RewriteBlockedFile(const struct BlockedState *bs) {
   int status = ERROR;
   FILE *fp = NULL;
   struct BlockedNode *node = NULL;
@@ -249,7 +249,7 @@ static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, const struct 
   return node;
 }
 
-static int RemoveBlockedNode(struct BlockedState *bs, struct BlockedNode *node) {
+static int RemoveBlockedNode(struct BlockedState *bs, const struct BlockedNode *node) {
   struct BlockedNode *prev = NULL;
   struct BlockedNode *current = bs->head;
 
@@ -273,7 +273,7 @@ static int RemoveBlockedNode(struct BlockedState *bs, struct BlockedNode *node) 
   return FALSE;
 }
 
-static int WriteAddressToBlockFile(FILE *fp, struct sockaddr_in6 *addr) {
+static int WriteAddressToBlockFile(FILE *fp, const struct sockaddr_in6 *addr) {
   assert(fp != NULL);
   assert(addr != NULL);
 

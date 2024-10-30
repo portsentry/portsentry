@@ -14,13 +14,13 @@
 #include "util.h"
 #include "port.h"
 
-static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
+static void setConfiguration(const char *buffer, const size_t keySize, char *ptr, const ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
 static void validateConfig(struct ConfigData *fileConfig);
 static void mergeToConfigData(struct ConfigData *fileConfig);
 static char *skipSpaceAndTab(char *buffer);
 static size_t getKeySize(char *buffer);
 static void stripTrailingSpace(char *buffer);
-static ssize_t getSizeToQuote(char *buffer);
+static ssize_t getSizeToQuote(const char *buffer);
 static int parsePortsList(char *str, struct Port **ports, int *portsLength);
 
 void readConfigFile(void) {
@@ -90,7 +90,7 @@ void readConfigFile(void) {
   mergeToConfigData(&fileConfig);
 }
 
-static void setConfiguration(char *buffer, size_t keySize, char *ptr, ssize_t valueSize, const size_t line, struct ConfigData *fileConfig) {
+static void setConfiguration(const char *buffer, const size_t keySize, char *ptr, const ssize_t valueSize, const size_t line, struct ConfigData *fileConfig) {
   char err[ERRNOMAXBUF];
   Debug("setConfiguration: %s keySize: %lu valueSize: %ld sentryMode: %s", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
 
@@ -307,7 +307,7 @@ static void stripTrailingSpace(char *buffer) {
   }
 }
 
-static ssize_t getSizeToQuote(char *buffer) {
+static ssize_t getSizeToQuote(const char *buffer) {
   char *ptr;
   ssize_t valueSize = 0;
 

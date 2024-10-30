@@ -32,7 +32,7 @@
 
 extern uint8_t g_isRunning;
 
-static int PacketRead(int socket, char *buffer, int bufferLen);
+static int PacketRead(const int socket, char *buffer, const int bufferLen);
 
 #ifdef FUZZ_SENTRY_STEALTH_PREP_PACKET
 uint8_t g_isRunning = TRUE;
@@ -141,7 +141,7 @@ exit:
   return status;
 }
 
-static int PacketRead(int socket, char *buffer, int bufferLen) {
+static int PacketRead(const int socket, char *buffer, const int bufferLen) {
   char err[ERRNOMAXBUF];
   ssize_t result;
   struct sockaddr_ll sll;

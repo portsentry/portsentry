@@ -27,5 +27,5 @@ struct Device {
 
 struct Device *CreateDevice(const char *name);
 uint8_t FreeDevice(struct Device *device);
-int AddAddress(struct Device *device, const char *address, int type);
-int AddressExists(const struct Device *device, const char *address, int type);
+int AddAddress(struct Device *device, const char *address, const int type);
+int AddressExists(const struct Device *device, const char *address, const int type);

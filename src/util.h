@@ -15,15 +15,15 @@
 #include "packet_info.h"
 
 char *SafeStrncpy(char *, const char *, size_t);
-void ResolveAddr(struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize);
-long getLong(char *buffer);
-int DisposeTarget(char *, int, int);
+void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize);
+long getLong(const char *buffer);
+int DisposeTarget(const char *, int, int);
 const char *GetProtocolString(int proto);
 const char *GetFamilyString(int family);
 const char *GetSocketTypeString(int type);
 int SetupPort(int family, uint16_t port, int proto);
 int IsPortInUse(struct PacketInfo *pi);
-char *ReportPacketType(struct tcphdr *);
+char *ReportPacketType(const struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
 int CreateDateTime(char *buf, const int size);
 int ntohstr(char *buf, const int bufSize, const uint32_t addr);

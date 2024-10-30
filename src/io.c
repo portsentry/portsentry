@@ -35,9 +35,9 @@ enum LogType { LogTypeNone,
                LogTypeDebug,
                LogTypeVerbose };
 
-static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr);
+static void LogEntry(const enum LogType logType, const char *logentry, va_list argsPtr);
 
-static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr) {
+static void LogEntry(const enum LogType logType, const char *logentry, va_list argsPtr) {
   char logbuffer[MAXBUF];
 
   vsnprintf(logbuffer, MAXBUF, logentry, argsPtr);
@@ -64,21 +64,21 @@ static void LogEntry(enum LogType logType, char *logentry, va_list argsPtr) {
   }
 }
 
-void Log(char *logentry, ...) {
+void Log(const char *logentry, ...) {
   va_list argsPtr;
   va_start(argsPtr, logentry);
   LogEntry(LogTypeNone, logentry, argsPtr);
   va_end(argsPtr);
 }
 
-void Error(char *logentry, ...) {
+void Error(const char *logentry, ...) {
   va_list argsPtr;
   va_start(argsPtr, logentry);
   LogEntry(LogTypeError, logentry, argsPtr);
   va_end(argsPtr);
 }
 
-void Debug(char *logentry, ...) {
+void Debug(const char *logentry, ...) {
   va_list argsPtr;
 
   if ((configData.logFlags & LOGFLAG_DEBUG) == 0) {
@@ -90,7 +90,7 @@ void Debug(char *logentry, ...) {
   va_end(argsPtr);
 }
 
-void Verbose(char *logentry, ...) {
+void Verbose(const char *logentry, ...) {
   va_list argsPtr;
 
   if ((configData.logFlags & LOGFLAG_VERBOSE) == 0) {
@@ -102,7 +102,7 @@ void Verbose(char *logentry, ...) {
   va_end(argsPtr);
 }
 
-void Crash(int errCode, char *logentry, ...) {
+void Crash(const int errCode, const char *logentry, ...) {
   va_list argsPtr;
   va_start(argsPtr, logentry);
   LogEntry(LogTypeError, logentry, argsPtr);
@@ -111,7 +111,7 @@ void Crash(int errCode, char *logentry, ...) {
   Exit(errCode);
 }
 
-void Exit(int status) {
+void Exit(const int status) {
   Log("PortSentry is shutting down");
 
   if (isSyslogOpen == TRUE) {
@@ -134,7 +134,7 @@ void Exit(int status) {
   exit(status);
 }
 
-int BindSocket(int sockfd, int family, int port, int proto) {
+int BindSocket(const int sockfd, const int family, const int port, const int proto) {
   char err[ERRNOMAXBUF];
   struct sockaddr_in6 sin6;
   struct sockaddr_in sin4;
@@ -220,7 +220,7 @@ int OpenSocket(const int family, const int type, const int protocol, const uint8
 
 /* This will use a system() call to change the route of the target host to */
 /* a dead IP address on your LOCAL SUBNET. */
-int KillRoute(char *target, int port, char *killString, char *detectionType) {
+int KillRoute(const char *target, const int port, const char *killString, const char *detectionType) {
   char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
@@ -269,7 +269,7 @@ int KillRoute(char *target, int port, char *killString, char *detectionType) {
 
 /* This will run a specified command with TARGET as the option if one is given.
  */
-int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
+int KillRunCmd(const char *target, const int port, const char *killString, const char *detectionType) {
   char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
@@ -315,7 +315,7 @@ int KillRunCmd(char *target, int port, char *killString, char *detectionType) {
 /* this function will drop the host into the TCP wrappers hosts.deny file to deny
  * all access. The drop route metod is preferred as this stops UDP attacks as well
  * as TCP. You may find though that host.deny will be a more permanent home.. */
-int KillHostsDeny(char *target, int port, char *killString, char *detectionType) {
+int KillHostsDeny(const char *target, const int port, const char *killString, const char *detectionType) {
   FILE *output;
   char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
@@ -422,7 +422,7 @@ int SubstString(const char *replace, const char *find, const char *target, char 
   return (numberOfSubst);
 }
 
-int testFileAccess(const char *filename, const char *mode, uint8_t createDir) {
+int testFileAccess(const char *filename, const char *mode, const uint8_t createDir) {
   FILE *testFile = NULL;
   char *pathCopy = NULL, *dirPath;
   int status = FALSE;

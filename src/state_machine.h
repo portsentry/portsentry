@@ -5,4 +5,4 @@
 
 #pragma once
 
-int CheckStateEngine(char *);
+int CheckStateEngine(const char *);

@@ -30,7 +30,7 @@ struct Device *CreateDevice(const char *name) {
   return new;
 }
 
-int AddAddress(struct Device *device, const char *address, int type) {
+int AddAddress(struct Device *device, const char *address, const int type) {
   char **addresses = NULL;
   int addresses_count = 0;
 
@@ -75,7 +75,7 @@ int AddAddress(struct Device *device, const char *address, int type) {
   return TRUE;
 }
 
-int AddressExists(const struct Device *device, const char *address, int type) {
+int AddressExists(const struct Device *device, const char *address, const int type) {
   int i;
   char **addresses = NULL;
   int addresses_count = 0;

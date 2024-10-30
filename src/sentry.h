@@ -8,4 +8,4 @@
 
 int InitSentry(void);
 void FreeSentry(void);
-void RunSentry(struct PacketInfo *pi);
+void RunSentry(const struct PacketInfo *pi);

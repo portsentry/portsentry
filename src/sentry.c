@@ -21,9 +21,9 @@ static uint8_t isInitialized = FALSE;
 static struct IgnoreState is = {0};
 static struct BlockedState bs = {0};
 
-static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock, int flagBlockSuccessful);
+static void LogScanEvent(const char *target, const char *resolvedHost, const int protocol, const uint16_t port, const struct ip *ip, const struct tcphdr *tcp, const int flagIgnored, const int flagTriggerCountExceeded, const int flagDontBlock, const int flagBlockSuccessful);
 
-static void LogScanEvent(const char *target, const char *resolvedHost, int protocol, uint16_t port, struct ip *ip, struct tcphdr *tcp, int flagIgnored, int flagTriggerCountExceeded, int flagDontBlock, int flagBlockSuccessful) {
+static void LogScanEvent(const char *target, const char *resolvedHost, const int protocol, const uint16_t port, const struct ip *ip, const struct tcphdr *tcp, const int flagIgnored, const int flagTriggerCountExceeded, const int flagDontBlock, const int flagBlockSuccessful) {
   int ret, bufsize = MAX_BUF_SCAN_EVENT;
   char buf[MAX_BUF_SCAN_EVENT], *p = buf;
   char err[ERRNOMAXBUF];
@@ -146,7 +146,7 @@ void FreeSentry(void) {
   isInitialized = FALSE;
 }
 
-void RunSentry(struct PacketInfo *pi) {
+void RunSentry(const struct PacketInfo *pi) {
   char resolvedHost[NI_MAXHOST];
   int flagIgnored = -100, flagTriggerCountExceeded = -100, flagDontBlock = -100, flagBlockSuccessful = -100;  // -100 => unset
 
@@ -200,9 +200,5 @@ void RunSentry(struct PacketInfo *pi) {
   }
 
 sentry_exit:
-  if (pi->tcpAcceptSocket != -1) {
-    close(pi->tcpAcceptSocket);
-    pi->tcpAcceptSocket = -1;
-  }
   LogScanEvent(pi->saddr, resolvedHost, pi->protocol, pi->port, pi->ip, pi->tcp, flagIgnored, flagTriggerCountExceeded, flagDontBlock, flagBlockSuccessful);
 }

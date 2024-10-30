@@ -4,4 +4,4 @@
 
 #pragma once
 
-void ParseCmdline(int argc, char **argv);
+void ParseCmdline(const int argc, char **argv);
