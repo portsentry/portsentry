@@ -37,16 +37,6 @@ elif [ "$ACTION" = "run_fuzz" ]; then
     echo "Running $f"
     ./$f -max_total_time=$total_time tests/fuzzing/corpus_$(basename $f)
   done
-elif [ "$ACTION" = "cdt" ]; then
-  $0 clean && \
-  $0 debug && \
-  $0 test-debug
-
-  if [ "$?" -ne 0 ]; then
-    echo "Build failed"
-    cat debug/Testing/Temporary/LastTest.log
-    exit 1
-  fi
 elif [ "$ACTION" = "autobuild" ]; then
   while [ 1 ]; do
     inotifywait -e modify src/[a-zA-Z]*.c
@@ -55,12 +45,6 @@ elif [ "$ACTION" = "autobuild" ]; then
     ./build.sh sast
     sleep 5
   done
-elif [ "$ACTION" = "test-debug" ]; then
-  cd debug && \
-  ctest
-elif [ "$ACTION" = "test-release" ]; then
-  cd release && \
-  ctest
 elif [ "$ACTION" = "docker" ]; then
   docker build -t portsentry:unstable -f docker/Dockerfile .
 else
@@ -70,9 +54,8 @@ else
   echo "  debug         - Build debug version"
   echo "  release       - Build release version"
   echo "  sast          - Run static analysis tools"
-  echo "  cdt           - Run clean, debug, test-debug in sequence"
-  echo "  test-debug    - Run unit tests for debug build"
-  echo "  test-release  - Run unit tests for release build"
+  echo "  build_fuzz    - Build fuzzing targets"
+  echo "  run_fuzz      - Run fuzzing targets"
   echo "  docker        - Build docker image"
   exit 0
 fi
