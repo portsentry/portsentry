@@ -23,6 +23,6 @@ int BindSocket(const int, const int, const int, const int);
 int KillRoute(const char *, const int, const char *, const char *);
 int KillHostsDeny(const char *, const int, const char *, const char *);
 int KillRunCmd(const char *, const int, const char *, const char *);
-int SubstString(const char *, const char *, const char *, char *);
+int SubstString(const char *replaceToken, const char *findToken, const char *source, char *dest, const int destSize);
 int testFileAccess(const char *, const char *, const uint8_t);
 void XmitBannerIfConfigured(const int proto, const int socket, const struct sockaddr *saddr, const socklen_t saddrLen);
