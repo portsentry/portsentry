@@ -231,7 +231,7 @@ int KillRoute(const char *target, const int port, const char *killString, const 
 
   snprintf(portString, MAXBUF, "%d", port);
 
-  substStatus = SubstString(target, "$TARGET$", killString, commandStringTemp);
+  substStatus = SubstString(target, "$TARGET$", killString, commandStringTemp, MAXBUF);
   if (substStatus == 0) {
     Log("No target variable specified in KILL_ROUTE option. Skipping.");
     return ERROR;
@@ -240,12 +240,12 @@ int KillRoute(const char *target, const int port, const char *killString, const 
     return ERROR;
   }
 
-  if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
+  if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2, MAXBUF) == ERROR) {
     Log("Error trying to parse $PORT$ Token for KILL_ROUTE. Skipping.");
     return ERROR;
   }
 
-  if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
+  if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal, MAXBUF) == ERROR) {
     Log("Error trying to parse $MODE$ Token for KILL_ROUTE. Skipping.");
     return ERROR;
   }
@@ -281,17 +281,17 @@ int KillRunCmd(const char *target, const int port, const char *killString, const
   snprintf(portString, MAXBUF, "%d", port);
 
   /* Tokens are not required, but we check for an error anyway */
-  if (SubstString(target, "$TARGET$", killString, commandStringTemp) == ERROR) {
+  if (SubstString(target, "$TARGET$", killString, commandStringTemp, MAXBUF) == ERROR) {
     Log("Error trying to parse $TARGET$ Token for KILL_RUN_CMD. Skipping.");
     return ERROR;
   }
 
-  if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
+  if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2, MAXBUF) == ERROR) {
     Log("Error trying to parse $PORT$ Token for KILL_RUN_CMD. Skipping.");
     return ERROR;
   }
 
-  if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
+  if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal, MAXBUF) == ERROR) {
     Log("Error trying to parse $MODE$ Token for KILL_RUN_CMD. Skipping.");
     return ERROR;
   }
@@ -330,7 +330,7 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
   Debug("KillHostsDeny: parsing string for block: %s", killString);
 
   substStatus =
-      SubstString(target, "$TARGET$", killString, commandStringTemp);
+      SubstString(target, "$TARGET$", killString, commandStringTemp, MAXBUF);
   if (substStatus == 0) {
     Log("No target variable specified in KILL_HOSTS_DENY option. Skipping.");
     return ERROR;
@@ -339,12 +339,12 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
     return ERROR;
   }
 
-  if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2) == ERROR) {
+  if (SubstString(portString, "$PORT$", commandStringTemp, commandStringTemp2, MAXBUF) == ERROR) {
     Log("Error trying to parse $PORT$ Token for KILL_HOSTS_DENY. Skipping.");
     return ERROR;
   }
 
-  if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal) == ERROR) {
+  if (SubstString(detectionType, "$MODE$", commandStringTemp2, commandStringFinal, MAXBUF) == ERROR) {
     Log("Error trying to parse $MODE$ Token for KILL_HOSTS_DENY. Skipping.");
     return ERROR;
   }
@@ -371,55 +371,57 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
 /*********************************************************************************
  * String substitute function
  *
- * This function takes:
- *
- * 1) A token to use for replacement.
- * 2) A token to find.
- * 3) A string with the tokens in it.
- * 4) A string to write the replaced result.
+ * replaceToken - The token to replace with.
+ * findToken - The token to find.
+ * source - The source string to search.
+ * dest - The destination string to copy to.
+ * destSize - The size of the destination buffer.
  *
  * It returns the number of substitutions made during the operation.
  **********************************************************************************/
-int SubstString(const char *replace, const char *find, const char *target, char *result) {
-  int count = 0, findCount = 0, findLen = 0, numberOfSubst = 0;
-  char tempString[MAXBUF], *tempStringPtr;
-  size_t replaceCount = 0;
+int SubstString(const char *replaceToken, const char *findToken, const char *source, char *dest, const int destSize) {
+  int remainDestSize = destSize, chunkSize, numberOfSubst = 0;
+  const char *srcToken, *srcStart = source;
+  char *destPtr = dest;
 
-  Debug("SubstString: Processing string: %s %lu", target, strlen(target));
-  Debug("SubstString: Processing search text: %s %lu", replace, strlen(replace));
-  Debug("SubstString: Processing replace text: %s %lu", find, strlen(find));
-
-  /* string not found in target */
-  if (strstr(target, find) == NULL) {
-    strncpy(result, target, MAXBUF);
-    Debug("SubstString: Result string: %s", result);
-    return (numberOfSubst);
-  } else if ((strlen(target)) + (strlen(replace)) + (strlen(find)) > MAXBUF) { /* String/victim/target too long */
-    return (ERROR);
-  }
-
-  memset(tempString, '\0', MAXBUF);
-  memset(result, '\0', MAXBUF);
-  findLen = strlen(find);
-  tempStringPtr = tempString;
-
-  for (count = 0; count < MAXBUF; count++) {
-    if (*target == '\0') {
-      break;
-    } else if ((strncmp(target, find, findLen)) != 0) {
-      *tempStringPtr++ = *target++;
-    } else {
-      numberOfSubst++;
-      for (replaceCount = 0; replaceCount < strlen(replace); replaceCount++)
-        *tempStringPtr++ = replace[replaceCount];
-      for (findCount = 0; findCount < findLen; findCount++)
-        target++;
+  while ((srcToken = strstr(srcStart, findToken)) != NULL) {
+    // Copy data leading up to the findToken
+    chunkSize = srcToken - srcStart;
+    if (remainDestSize <= chunkSize) {
+      return ERROR;
     }
+    memcpy(destPtr, srcStart, chunkSize);
+    destPtr += chunkSize;
+    remainDestSize -= chunkSize;
+    srcStart = srcToken + strlen(findToken);
+
+    // Copy the replaceToken where the findToken was
+    chunkSize = strlen(replaceToken);
+    if (remainDestSize <= chunkSize) {
+      return ERROR;
+    }
+    memcpy(destPtr, replaceToken, chunkSize);
+    destPtr += chunkSize;
+    remainDestSize -= chunkSize;
+
+    numberOfSubst++;
   }
 
-  strncpy(result, tempString, MAXBUF);
-  Debug("SubstString: Result string: %s", result);
-  return (numberOfSubst);
+  // Copy the remaining data
+  chunkSize = strlen(srcStart);
+  if (remainDestSize <= chunkSize) {
+    return ERROR;
+  }
+  memcpy(destPtr, srcStart, chunkSize);
+  destPtr += chunkSize;
+  remainDestSize -= chunkSize;
+
+  if (remainDestSize <= 0) {
+    return ERROR;
+  }
+  *destPtr = '\0';
+
+  return numberOfSubst;
 }
 
 int testFileAccess(const char *filename, const char *mode, const uint8_t createDir) {
