@@ -596,7 +596,7 @@ static int SetupFilter(const struct Device *device) {
     goto exit;
   }
 
-  if (pcap_compile(device->handle, &fp, filter, 0, device->net) == PCAP_ERROR) {
+  if (pcap_compile(device->handle, &fp, filter, 1, device->net) == PCAP_ERROR) {
     Error("Unable to compile pcap filter %s: %s", filter, pcap_geterr(device->handle));
     goto exit;
   }
