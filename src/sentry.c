@@ -20,6 +20,7 @@
 static uint8_t isInitialized = FALSE;
 static struct IgnoreState is = {0};
 static struct BlockedState bs = {0};
+static struct SentryState ss = {0};
 
 static void LogScanEvent(const char *target, const char *resolvedHost, const int protocol, const uint16_t port, const struct ip *ip, const struct tcphdr *tcp, const int flagIgnored, const int flagTriggerCountExceeded, const int flagDontBlock, const int flagBlockSuccessful);
 
@@ -126,6 +127,10 @@ int InitSentry(void) {
     }
   }
 
+  if (ss.isInitialized == FALSE) {
+    InitSentryState(&ss);
+  }
+
   isInitialized = TRUE;
   return TRUE;
 }
@@ -166,7 +171,7 @@ void RunSentry(const struct PacketInfo *pi) {
     goto sentry_exit;
   }
 
-  if ((flagTriggerCountExceeded = CheckStateEngine(pi->saddr)) != TRUE) {
+  if ((flagTriggerCountExceeded = CheckState(&ss, GetSourceSockaddrFromPacketInfo(pi))) != TRUE) {
     goto sentry_exit;
   }
 
