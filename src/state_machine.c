@@ -1,81 +1,133 @@
 // SPDX-FileCopyrightText: 2024 Marcus Hufvudsson <mh@protohuf.com>
-// SPDX-FileContributor: Craig Rowland
 //
 // SPDX-License-Identifier: CPL-1.0
 
 #include <string.h>
+#include <assert.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "config.h"
 #include "config_data.h"
-#include "io.h"
 #include "portsentry.h"
+#include "io.h"
 #include "state_machine.h"
-#include "util.h"
 
-static char gblScanDetectHost[MAXSTATE][INET6_ADDRSTRLEN];
-static int gblScanDetectCount = 0;
+#define MAX_HASH_SIZE 1000000
 
-/* our cheesy state engine to monitor who has connected here before */
-int CheckStateEngine(const char *target) {
-  int count = 0, scanDetectTrigger = TRUE;
-  int gotOne = 0;
+static int CheckStateIpv4(struct SentryState *state, struct sockaddr_in *addr);
+static int CheckStateIpv6(struct SentryState *state, struct sockaddr_in6 *addr);
 
-  /* This is the rather basic scan state engine. It maintains     */
-  /* an array of past hosts who triggered a connection on a port */
-  /* when a new host arrives it is compared against the array */
-  /* if it is found in the array it increments a state counter by */
-  /* one and checks the remainder of the array. It does this until */
-  /* the end is reached or the trigger value has been exceeded */
-  /* This would probably be better as a linked list/hash table, */
-  /* but for the number of hosts we are tracking this is just as good. */
-  /* This will probably change in the future */
+static int CheckStateIpv4(struct SentryState *state, struct sockaddr_in *addr) {
+  struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
+  struct AddrStateIpv4 *addrStateIpv4;
 
-  gotOne = 1;               /* our flag counter if we get a match */
-  scanDetectTrigger = TRUE; /* set to TRUE until set otherwise */
+  HASH_FIND(hh, state->addrStateIpv4, &addr_in->sin_addr.s_addr, sizeof(in_addr_t), addrStateIpv4);
 
-  if (configData.configTriggerCount > 0) {
-    for (count = 0; count < MAXSTATE; count++) {
-      /* if the array has the IP address then increment the gotOne counter and
-       */
-      /* check the trigger value. If it is exceeded break out of the loop and */
-      /* set the detecttrigger to TRUE */
-      if (strcmp(gblScanDetectHost[count], target) == 0) {
-        /* compare the number of matches to the configured trigger value */
-        /* if we've exceeded we can stop this noise */
-        if (++gotOne >= configData.configTriggerCount) {
-          scanDetectTrigger = TRUE;
-          Debug("CheckStateEngine: host: %s has exceeded trigger value: %d", gblScanDetectHost[count], configData.configTriggerCount);
-          break;
-        }
-      } else {
-        scanDetectTrigger = FALSE;
-      }
+  if (addrStateIpv4 == NULL) {
+    if (HASH_COUNT(state->addrStateIpv4) >= MAX_HASH_SIZE) {
+      addrStateIpv4 = state->addrStateIpv4;
+      HASH_DEL(state->addrStateIpv4, addrStateIpv4);
+      free(addrStateIpv4);
     }
 
-    /* now add the fresh meat into the state engine */
-    /* if our array is still less than MAXSTATE large add it to the end */
-    if (gblScanDetectCount < MAXSTATE) {
-      SafeStrncpy(gblScanDetectHost[gblScanDetectCount], target, INET6_ADDRSTRLEN);
-      gblScanDetectCount++;
-    } else {
-      /* otherwise tack it to the beginning and start overwriting older ones */
-      gblScanDetectCount = 0;
-      SafeStrncpy(gblScanDetectHost[gblScanDetectCount], target, INET6_ADDRSTRLEN);
-      gblScanDetectCount++;
+    if ((addrStateIpv4 = malloc(sizeof(struct AddrStateIpv4))) == NULL) {
+      Error("Unable to allocate new memory for AddrStateIpv4");
+      return ERROR;
+    }
+    addrStateIpv4->ip = addr_in->sin_addr.s_addr;
+    addrStateIpv4->count = 0;
+
+    HASH_ADD(hh, state->addrStateIpv4, ip, sizeof(in_addr_t), addrStateIpv4);
+  }
+
+  addrStateIpv4->count++;
+
+  if (addrStateIpv4->count >= configData.configTriggerCount) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+static int CheckStateIpv6(struct SentryState *state, struct sockaddr_in6 *addr) {
+  struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
+  struct AddrStateIpv6 *addrStateIpv6;
+
+  HASH_FIND(hh, state->addrStateIpv6, &addr_in6->sin6_addr, sizeof(struct in6_addr), addrStateIpv6);
+
+  if (addrStateIpv6 == NULL) {
+    if (HASH_COUNT(state->addrStateIpv6) >= MAX_HASH_SIZE) {
+      addrStateIpv6 = state->addrStateIpv6;
+      HASH_DEL(state->addrStateIpv6, addrStateIpv6);
+      free(addrStateIpv6);
     }
 
-    for (count = 0; count < MAXSTATE; count++)
-      Debug("CheckStateEngine: state engine host: %s -> position: %d Detected: %d", gblScanDetectHost[count], count, scanDetectTrigger);
-    /* end catch to set state if configData.configTriggerCount == 0 */
-    if (gotOne >= configData.configTriggerCount)
-      scanDetectTrigger = TRUE;
+    if ((addrStateIpv6 = malloc(sizeof(struct AddrStateIpv6))) == NULL) {
+      Error("Unable to allocate new memory for AddrStateIpv6");
+      return ERROR;
+    }
+    addrStateIpv6->ip = addr_in6->sin6_addr;
+    addrStateIpv6->count = 0;
+
+    HASH_ADD(hh, state->addrStateIpv6, ip, sizeof(struct in6_addr), addrStateIpv6);
   }
 
-  if (configData.configTriggerCount > MAXSTATE) {
-    Log("securityalert: WARNING: Trigger value %d is larger than state engine capacity of %d.", configData.configTriggerCount, MAXSTATE);
-    Log("Adjust the value lower or recompile with a larger state engine value.");
-    Log("securityalert: Blocking host anyway because of invalid trigger value");
-    scanDetectTrigger = TRUE;
+  addrStateIpv6->count++;
+
+  if (addrStateIpv6->count >= configData.configTriggerCount) {
+    return TRUE;
   }
-  return (scanDetectTrigger);
+
+  return FALSE;
+}
+
+void InitSentryState(struct SentryState *sentryState) {
+  sentryState->addrStateIpv4 = NULL;
+  sentryState->addrStateIpv6 = NULL;
+  sentryState->isInitialized = TRUE;
+}
+
+void FreeSentryState(struct SentryState *sentryState) {
+  struct AddrStateIpv4 *addrStateIpv4, *tmpAddrStateIpv4;
+  struct AddrStateIpv6 *addrStateIpv6, *tmpAddrStateIpv6;
+
+  HASH_ITER(hh, sentryState->addrStateIpv4, addrStateIpv4, tmpAddrStateIpv4) {
+    HASH_DEL(sentryState->addrStateIpv4, addrStateIpv4);
+    free(addrStateIpv4);
+  }
+
+  HASH_ITER(hh, sentryState->addrStateIpv6, addrStateIpv6, tmpAddrStateIpv6) {
+    HASH_DEL(sentryState->addrStateIpv6, addrStateIpv6);
+    free(addrStateIpv6);
+  }
+
+  sentryState->isInitialized = FALSE;
+}
+
+int CheckState(struct SentryState *state, struct sockaddr *addr) {
+  assert(state != NULL);
+  assert(addr != NULL);
+  assert(addr->sa_family == AF_INET || addr->sa_family == AF_INET6);
+  assert(state->isInitialized == TRUE);
+
+  if (state->isInitialized == FALSE) {
+    Error("Sentry state is not initialized");
+    return ERROR;
+  }
+
+  // If the trigger count is 0, we don't need to check the state
+  if (configData.configTriggerCount == 0) {
+    return TRUE;
+  }
+
+  if (addr->sa_family == AF_INET) {
+    return CheckStateIpv4(state, (struct sockaddr_in *)addr);
+  } else if (addr->sa_family == AF_INET6) {
+    return CheckStateIpv6(state, (struct sockaddr_in6 *)addr);
+  }
+
+  Error("Unsupported address family");
+  return ERROR;
 }
