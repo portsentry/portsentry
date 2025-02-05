@@ -6,5 +6,3 @@
 #cmakedefine CONFIG_FILE @CONFIG_FILE@
 
 #cmakedefine WRAPPER_HOSTS_DENY @WRAPPER_HOSTS_DENY@
-
-#cmakedefine MAXSTATE @MAXSTATE@
