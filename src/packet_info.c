@@ -81,13 +81,22 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
            nextHeader == 51 || nextHeader == 59 || nextHeader == 60 || nextHeader == 135 ||
            nextHeader == 139 || nextHeader == 140 || nextHeader == 253 || nextHeader == 254) {
       Debug("Processing IPv6 extension header %d", nextHeader);
-      if (nextHeader == 59) {
+
+      if (iplen + sizeof(struct ip6_ext) > packetLength) {
+        Error("IPv6 extension header exceeds packet length, ignoring");
+        return FALSE;
+      }
+
+      // Handle special cases that should be rejected
+      switch (nextHeader) {
+      case 59:  // IPv6-NoNxt
         Error("IPv6-NoNxt detected, ignoring packet");
         return FALSE;
-      } else if (nextHeader == 44) {
+      case 44:  // Fragment Header
         Error("Fragment Header for IPv6 detected, ignoring packet");
         return FALSE;
-      } else if (nextHeader == 253 || nextHeader == 254) {
+      case 253:  // Experimental
+      case 254:
         Error("RFC3692 Experimental/testing header detected, ignoring packet");
         return FALSE;
       }
@@ -98,7 +107,13 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
         Error("IPv6 extension header length is 0, ignoring packet");
         return FALSE;
       }
-      iplen += ip6ext->ip6e_len;
+
+      uint32_t extlen = (ip6ext->ip6e_len * 8) + 8;
+      if (iplen + extlen > packetLength) {
+        Error("IPv6 extension header length exceeds packet bounds, ignoring");
+        return FALSE;
+      }
+      iplen += extlen;
     }
 
     protocol = nextHeader;
