@@ -13,8 +13,6 @@
 struct Device {
   pcap_t *handle;
   char name[IF_NAMESIZE];
-  bpf_u_int32 mask;
-  bpf_u_int32 net;
   int fd;
 
   char **inet4_addrs;
