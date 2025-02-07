@@ -1,8 +1,13 @@
 #! env bash
 
-BUILD_TYPE="debug"
+[ -z "$BUILD_TYPE" ] && BUILD_TYPE="debug"
+if [ -n "$1" ]; then
+  REMOTE_HOSTS="$1"
+else
+  REMOTE_HOSTS="deb-portsentry netbsd freebsd openbsd"
+fi
 
-for host in $(cat remotes.txt); do
+for host in $REMOTE_HOSTS; do
   echo "Building on $host"
   ssh $host "rm -rf /tmp/portsentry"
   rsync -az -e ssh ../portsentry $host:/tmp/
