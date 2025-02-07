@@ -233,12 +233,21 @@ int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, con
 static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const size_t buflen) {
   char err[ERRNOMAXBUF];
 
+  if (sa == NULL || addr == NULL) {
+    Error("Invalid NULL parameter");
+    return ERROR;
+  }
+
   memset(sa, 0, sizeof(struct sockaddr_in));
   sa->sin_addr.s_addr = *addr;
   sa->sin_family = AF_INET;
   sa->sin_port = port;
 
-  if (buf != NULL && buflen > 0) {
+  if (buf != NULL) {
+    if (buflen < INET_ADDRSTRLEN) {
+      Error("Buffer too small for IPv4 address");
+      return ERROR;
+    }
     if (inet_ntop(AF_INET, &sa->sin_addr, buf, buflen) == NULL) {
       Error("Unable to resolve IP address: %s", ErrnoString(err, sizeof(err)));
       return ERROR;
@@ -251,12 +260,21 @@ static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uin
 static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const size_t buflen) {
   char err[ERRNOMAXBUF];
 
+  if (sa6 == NULL || addr6 == NULL) {
+    Error("Invalid NULL parameter");
+    return ERROR;
+  }
+
   memset(sa6, 0, sizeof(struct sockaddr_in6));
   memcpy(&sa6->sin6_addr, addr6, sizeof(struct in6_addr));
   sa6->sin6_family = AF_INET6;
   sa6->sin6_port = port;
 
-  if (buf != NULL && buflen > 0) {
+  if (buf != NULL) {
+    if (buflen < INET6_ADDRSTRLEN) {
+      Error("Buffer too small for IPv6 address");
+      return ERROR;
+    }
     if (inet_ntop(AF_INET6, &sa6->sin6_addr, buf, buflen) == NULL) {
       Error("Unable to resolve IPv6 address: %s", ErrnoString(err, sizeof(err)));
       return ERROR;
