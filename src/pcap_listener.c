@@ -374,12 +374,6 @@ int InitListenerModule(struct ListenerModule *lm) {
   while (current != NULL) {
     next = current->next;
 
-    if (pcap_lookupnet(current->name, &current->net, &current->mask, errbuf) < 0) {
-      Error("Unable to retrieve network/netmask for device %s: %s, skipping", current->name, errbuf);
-      RemoveDevice(lm, current);
-      goto next;
-    }
-
     if ((current->handle = PcapOpenLiveImmediate(current->name, BUFSIZ, 0, BUFFER_TIMEOUT, errbuf)) == NULL) {
       Error("Couldn't open device %s: %s", current->name, errbuf);
       RemoveDevice(lm, current);
@@ -596,7 +590,8 @@ static int SetupFilter(const struct Device *device) {
     goto exit;
   }
 
-  if (pcap_compile(device->handle, &fp, filter, 1, device->net) == PCAP_ERROR) {
+  // Using PCAP_NETMASK_UNKNOWN because we might use IPv6 and mask is only used for broadcast packets which we don't care about
+  if (pcap_compile(device->handle, &fp, filter, 1, PCAP_NETMASK_UNKNOWN) == PCAP_ERROR) {
     Error("Unable to compile pcap filter %s: %s", filter, pcap_geterr(device->handle));
     goto exit;
   }
@@ -627,7 +622,7 @@ static void PrintDevices(const struct ListenerModule *lm) {
 
   current = lm->root;
   while (current != NULL) {
-    Verbose("Ready Device: %s pcap handle: %p, fd: %d pcap net: %d, mask: %d", current->name, (void *)current->handle, current->fd, current->net, current->mask);
+    Verbose("Ready Device: %s pcap handle: %p, fd: %d", current->name, (void *)current->handle, current->fd);
 
     for (i = 0; i < current->inet4_addrs_count; i++) {
       Verbose("  inet4 addr: %s", current->inet4_addrs[i]);

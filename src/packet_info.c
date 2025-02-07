@@ -21,6 +21,30 @@
 static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const size_t buflen);
 static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const size_t buflen);
 
+// Create a lookup table for IPv6 extension headers
+static const uint8_t IPV6_EXT_HEADERS[] = {
+    0,    // Hop-by-Hop
+    43,   // Routing
+    44,   // Fragment
+    50,   // ESP
+    51,   // Auth
+    59,   // No Next
+    60,   // Dest Options
+    135,  // Mobility
+    139,  // HIP
+    140,  // Shim6
+    253,  // Experimental
+    254   // Experimental
+};
+
+static int IsIpv6ExtensionHeader(uint8_t header) {
+  for (size_t i = 0; i < sizeof(IPV6_EXT_HEADERS); i++) {
+    if (header == IPV6_EXT_HEADERS[i])
+      return TRUE;
+  }
+  return FALSE;
+}
+
 void ClearPacketInfo(struct PacketInfo *pi) {
   memset(pi, 0, sizeof(struct PacketInfo));
   pi->listenSocket = -1;
@@ -61,25 +85,7 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
     nextHeader = ip6->ip6_nxt;
     iplen = sizeof(struct ip6_hdr);
 
-    /*
-     * RFC8200
-     * 0 	IPv6 Hop-by-Hop Option 	[RFC8200]
-     * 43 	Routing Header for IPv6 	[RFC8200][RFC5095]
-     * 44 	Fragment Header for IPv6 	[RFC8200]
-     * 50 	Encapsulating Security Payload 	[RFC4303]
-     * 51 	Authentication Header 	[RFC4302]
-     * 59 	IPv6-NoNxt 	No Next Header for IPv6 		[RFC8200]
-     * 60 	Destination Options for IPv6 	[RFC8200]
-     * 135 	Mobility Header 	[RFC6275]
-     * 139 	Host Identity Protocol 	[RFC7401]
-     * 140 	Shim6 Protocol 	[RFC5533]
-     * 253 	Use for experimentation and testing 	[RFC3692][RFC4727]
-     * 254 	Use for experimentation and testing 	[RFC3692][RFC4727]
-     */
-
-    while (nextHeader == 0 || nextHeader == 43 || nextHeader == 44 || nextHeader == 50 ||
-           nextHeader == 51 || nextHeader == 59 || nextHeader == 60 || nextHeader == 135 ||
-           nextHeader == 139 || nextHeader == 140 || nextHeader == 253 || nextHeader == 254) {
+    while (IsIpv6ExtensionHeader(nextHeader)) {
       Debug("Processing IPv6 extension header %d", nextHeader);
 
       if (iplen + sizeof(struct ip6_ext) > packetLength) {
@@ -227,12 +233,21 @@ int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, con
 static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const size_t buflen) {
   char err[ERRNOMAXBUF];
 
+  if (sa == NULL || addr == NULL) {
+    Error("Invalid NULL parameter");
+    return ERROR;
+  }
+
   memset(sa, 0, sizeof(struct sockaddr_in));
   sa->sin_addr.s_addr = *addr;
   sa->sin_family = AF_INET;
   sa->sin_port = port;
 
-  if (buf != NULL && buflen > 0) {
+  if (buf != NULL) {
+    if (buflen < INET_ADDRSTRLEN) {
+      Error("Buffer too small for IPv4 address");
+      return ERROR;
+    }
     if (inet_ntop(AF_INET, &sa->sin_addr, buf, buflen) == NULL) {
       Error("Unable to resolve IP address: %s", ErrnoString(err, sizeof(err)));
       return ERROR;
@@ -245,12 +260,21 @@ static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uin
 static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const size_t buflen) {
   char err[ERRNOMAXBUF];
 
+  if (sa6 == NULL || addr6 == NULL) {
+    Error("Invalid NULL parameter");
+    return ERROR;
+  }
+
   memset(sa6, 0, sizeof(struct sockaddr_in6));
   memcpy(&sa6->sin6_addr, addr6, sizeof(struct in6_addr));
   sa6->sin6_family = AF_INET6;
   sa6->sin6_port = port;
 
-  if (buf != NULL && buflen > 0) {
+  if (buf != NULL) {
+    if (buflen < INET6_ADDRSTRLEN) {
+      Error("Buffer too small for IPv6 address");
+      return ERROR;
+    }
     if (inet_ntop(AF_INET6, &sa6->sin6_addr, buf, buflen) == NULL) {
       Error("Unable to resolve IPv6 address: %s", ErrnoString(err, sizeof(err)));
       return ERROR;
