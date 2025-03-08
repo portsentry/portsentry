@@ -16,7 +16,6 @@ void FreeListenerModule(struct ListenerModule *lm);
 int InitListenerModule(struct ListenerModule *lm);
 uint8_t AddDevice(struct ListenerModule *lm, struct Device *add);
 uint8_t RemoveDevice(struct ListenerModule *lm, const struct Device *remove);
-int SetupFilter(const struct Device *device);
 
 struct Device *FindDeviceByName(const struct ListenerModule *lm, const char *name);
 struct Device *FindDeviceByIpAddr(const struct ListenerModule *lm, const char *ip_addr);
