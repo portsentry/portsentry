@@ -30,7 +30,6 @@ static pcap_t *PcapOpenLiveImmediate(const char *source, const int snaplen, cons
 static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name);
 static int AutoPrepDevices(struct ListenerModule *lm, const uint8_t includeLo);
 static int PrepDevices(struct ListenerModule *lm);
-static int SetupFilter(const struct Device *device);
 static char *AllocAndBuildPcapFilter(const struct Device *device);
 static void PrintDevices(const struct ListenerModule *lm);
 
@@ -74,7 +73,7 @@ static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name) {
 
   assert(lm != NULL);
 
-  if (FindDeviceByName(lm, name) == TRUE) {
+  if (FindDeviceByName(lm, name) != NULL) {
     Error("Device %s appears twice", name);
     return FALSE;
   }
@@ -448,7 +447,7 @@ uint8_t AddDevice(struct ListenerModule *lm, struct Device *add) {
     return FALSE;
   }
 
-  if (FindDeviceByName(lm, add->name) == TRUE) {
+  if (FindDeviceByName(lm, add->name) != NULL) {
     Verbose("Device %s already specified", add->name);
     return FALSE;
   }
@@ -495,27 +494,49 @@ uint8_t RemoveDevice(struct ListenerModule *lm, const struct Device *remove) {
   return FALSE;
 }
 
-uint8_t FindDeviceByName(const struct ListenerModule *lm, const char *name) {
+struct Device *FindDeviceByName(const struct ListenerModule *lm, const char *name) {
   struct Device *current;
 
-  if (lm == NULL) {
-    return FALSE;
-  }
-
-  if (strlen(name) > (IF_NAMESIZE - 1)) {
-    return FALSE;
-  }
+  assert(lm != NULL);
+  assert(name != NULL);
 
   current = lm->root;
   while (current != NULL) {
     if (strncmp(current->name, name, (IF_NAMESIZE - 1)) == 0) {
-      return TRUE;
+      return current;
     }
 
     current = current->next;
   }
 
-  return FALSE;
+  return NULL;
+}
+
+struct Device *FindDeviceByIpAddr(const struct ListenerModule *lm, const char *ip_addr) {
+  struct Device *current;
+  int i;
+
+  assert(lm != NULL);
+  assert(ip_addr != NULL);
+
+  current = lm->root;
+  while (current != NULL) {
+    for (i = 0; i < current->inet4_addrs_count; i++) {
+      if (strcmp(current->inet4_addrs[i], ip_addr) == 0) {
+        return current;
+      }
+    }
+
+    for (i = 0; i < current->inet6_addrs_count; i++) {
+      if (strcmp(current->inet6_addrs[i], ip_addr) == 0) {
+        return current;
+      }
+    }
+
+    current = current->next;
+  }
+
+  return NULL;
 }
 
 struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
@@ -540,6 +561,26 @@ struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
   *nfds = i;
 
   return fds;
+}
+
+struct pollfd *AddPollFd(struct pollfd *fds, int *nfds, const int fd) {
+  struct pollfd *newFds = NULL;
+
+  if ((newFds = malloc(sizeof(struct pollfd) * (*nfds + 1))) == NULL) {
+    Error("Unable to allocate memory for pollfd");
+    return NULL;
+  }
+
+  memcpy(newFds, fds, sizeof(struct pollfd) * (*nfds));
+
+  newFds[*nfds].fd = fd;
+  newFds[*nfds].events = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
+  newFds[*nfds].revents = 0;
+  *nfds += 1;
+
+  free(fds);
+
+  return newFds;
 }
 
 struct pollfd *RemovePollFd(struct pollfd *fds, int *nfds, const int fd) {
@@ -578,10 +619,11 @@ struct Device *GetDeviceByFd(const struct ListenerModule *lm, const int fd) {
   return NULL;
 }
 
-static int SetupFilter(const struct Device *device) {
+int SetupFilter(const struct Device *device) {
   struct bpf_program fp;
   char *filter = NULL;
   int status = FALSE;
+  uint8_t isCompiled = FALSE;
 
   assert(device != NULL);
   assert(device->handle != NULL);
@@ -596,6 +638,8 @@ static int SetupFilter(const struct Device *device) {
     goto exit;
   }
 
+  isCompiled = TRUE;
+
   if (pcap_setfilter(device->handle, &fp) == PCAP_ERROR) {
     Error("Unable to set filter %s: %s", filter, pcap_geterr(device->handle));
     goto exit;
@@ -607,6 +651,10 @@ exit:
   if (filter != NULL) {
     free(filter);
     filter = NULL;
+  }
+
+  if (isCompiled) {
+    pcap_freecode(&fp);
   }
 
   return status;
