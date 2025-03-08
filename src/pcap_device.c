@@ -12,8 +12,15 @@
 #include "util.h"
 #include "io.h"
 
+static char **RemoveElementFromArray(char **array, const int index, int *count);
+
 struct Device *CreateDevice(const char *name) {
   struct Device *new;
+
+  if (name == NULL) {
+    Error("Device name cannot be NULL");
+    return NULL;
+  }
 
   if (strlen(name) > (IF_NAMESIZE - 1)) {
     Error("Device name %s is too long", name);
@@ -103,6 +110,32 @@ int AddressExists(const struct Device *device, const char *address, const int ty
   return FALSE;
 }
 
+int GetNoAddresses(const struct Device *device) {
+  assert(device != NULL);
+  return device->inet4_addrs_count + device->inet6_addrs_count;
+}
+
+int RemoveAddress(struct Device *device, const char *address) {
+  assert(device != NULL);
+  assert(address != NULL);
+
+  for (int i = 0; i < device->inet4_addrs_count; i++) {
+    if (strcmp(device->inet4_addrs[i], address) == 0) {
+      device->inet4_addrs = RemoveElementFromArray(device->inet4_addrs, i, &device->inet4_addrs_count);
+      return TRUE;
+    }
+  }
+
+  for (int i = 0; i < device->inet6_addrs_count; i++) {
+    if (strcmp(device->inet6_addrs[i], address) == 0) {
+      device->inet6_addrs = RemoveElementFromArray(device->inet6_addrs, i, &device->inet6_addrs_count);
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
 uint8_t FreeDevice(struct Device *device) {
   int i;
 
@@ -134,4 +167,33 @@ uint8_t FreeDevice(struct Device *device) {
   free(device);
 
   return TRUE;
+}
+
+static char **RemoveElementFromArray(char **array, const int index, int *count) {
+  char **tmp = array;
+
+  assert(array != NULL);
+  assert(count != NULL);
+  assert(index >= 0);
+  assert(index < *count);
+  assert(*count > 0);
+
+  free(array[index]);
+
+  (*count)--;
+
+  for (int i = index; i < *count; i++) {
+    array[i] = array[i + 1];
+  }
+
+  if (*count > 0) {
+    if ((tmp = realloc(array, sizeof(char *) * *count)) == NULL) {
+      Crash(1, "Unable to reallocate IP address memory");
+    }
+  } else {
+    free(array);
+    tmp = NULL;
+  }
+
+  return tmp;
 }
