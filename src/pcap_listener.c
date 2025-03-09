@@ -9,7 +9,6 @@
 #include <poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <ifaddrs.h>
 #include <netinet/in.h>
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
@@ -113,61 +112,6 @@ static int PrepDevices(struct ListenerModule *lm) {
   return TRUE;
 }
 
-static int RetrieveAddresses(struct ListenerModule *lm) {
-  int status = TRUE;
-  struct ifaddrs *ifaddrs = NULL, *ifa = NULL;
-  struct Device *dev;
-  char err[ERRNOMAXBUF];
-  char host[NI_MAXHOST];
-
-  if (getifaddrs(&ifaddrs) == -1) {
-    Error("Unable to retrieve network addresses: %s", ErrnoString(err, ERRNOMAXBUF));
-    status = FALSE;
-    goto cleanup;
-  }
-
-  for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
-    if (ifa->ifa_addr == NULL) {
-      continue;
-    }
-
-    if (ifa->ifa_addr->sa_family != AF_INET && ifa->ifa_addr->sa_family != AF_INET6) {
-      continue;
-    }
-
-    for (dev = lm->root; dev != NULL; dev = dev->next) {
-      if (strncmp(dev->name, ifa->ifa_name, strlen(dev->name)) == 0) {
-        if (getnameinfo(ifa->ifa_addr, (ifa->ifa_addr->sa_family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == -1) {
-          Crash(1, "Unable to retrieve network addresses for device %s: %s", dev->name, ErrnoString(err, ERRNOMAXBUF));
-        }
-
-        if (strncmp(host, "fe80", 4) == 0) {
-          continue;
-        } else if (strncmp(host, "169.254", 7) == 0) {
-          continue;
-        }
-
-        Debug("Found address %s for device %s: %s", ifa->ifa_name, dev->name, host);
-
-        if (ifa->ifa_addr->sa_family == AF_INET) {
-          AddAddress(dev, host, AF_INET);
-        } else if (ifa->ifa_addr->sa_family == AF_INET6) {
-          AddAddress(dev, host, AF_INET6);
-        } else {
-          Error("Unknown address family %d for address %s, ignoring", ifa->ifa_addr->sa_family, host);
-        }
-      }
-    }
-  }
-
-cleanup:
-  if (ifaddrs != NULL) {
-    freeifaddrs(ifaddrs);
-  }
-
-  return status;
-}
-
 int GetNoDevices(const struct ListenerModule *lm) {
   int count;
   struct Device *current;
@@ -238,8 +182,6 @@ int InitListenerModule(struct ListenerModule *lm) {
   if (PrepDevices(lm) == FALSE) {
     return FALSE;
   }
-
-  RetrieveAddresses(lm);
 
   current = lm->root;
   while (current != NULL) {

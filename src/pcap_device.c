@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
 
 #include "portsentry.h"
 #include "pcap_device.h"
@@ -311,6 +313,92 @@ int RemoveAddress(struct Device *device, const char *address) {
   return FALSE;
 }
 
+void RemoveAllAddresses(struct Device *device) {
+  assert(device != NULL);
+
+  if (device->inet4_addrs != NULL) {
+    for (int i = 0; i < device->inet4_addrs_count; i++) {
+      free(device->inet4_addrs[i]);
+    }
+    free(device->inet4_addrs);
+    device->inet4_addrs = NULL;
+    device->inet4_addrs_count = 0;
+  }
+
+  if (device->inet6_addrs != NULL) {
+    for (int i = 0; i < device->inet6_addrs_count; i++) {
+      free(device->inet6_addrs[i]);
+    }
+    free(device->inet6_addrs);
+    device->inet6_addrs = NULL;
+    device->inet6_addrs_count = 0;
+  }
+}
+
+int SetAllAddresses(struct Device *device) {
+  int status = TRUE;
+  struct ifaddrs *ifaddrs = NULL, *ifa = NULL;
+  char err[ERRNOMAXBUF];
+  char host[NI_MAXHOST];
+
+  if (getifaddrs(&ifaddrs) == -1) {
+    Error("Unable to retrieve network addresses: %s", ErrnoString(err, ERRNOMAXBUF));
+    status = ERROR;
+    goto cleanup;
+  }
+
+  for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
+    if (ifa->ifa_addr == NULL) {
+      continue;
+    }
+
+    if (ifa->ifa_addr->sa_family != AF_INET && ifa->ifa_addr->sa_family != AF_INET6) {
+      continue;
+    }
+
+    if (strncmp(device->name, ifa->ifa_name, strlen(device->name)) != 0) {
+      continue;
+    }
+
+    // Check for and ignore link-local addresses
+    if (ifa->ifa_addr->sa_family == AF_INET6) {
+      struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+      // fe80::/10
+      if (IN6_IS_ADDR_LINKLOCAL(&addr6->sin6_addr)) {
+        continue;
+      }
+    } else if (ifa->ifa_addr->sa_family == AF_INET) {
+      struct sockaddr_in *addr4 = (struct sockaddr_in *)ifa->ifa_addr;
+      // 169.254.0.0/16
+      uint32_t addr = ntohl(addr4->sin_addr.s_addr);
+      if ((addr & 0xFFFF0000) == 0xA9FE0000) {
+        continue;
+      }
+    }
+
+    if (getnameinfo(ifa->ifa_addr, (ifa->ifa_addr->sa_family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == -1) {
+      Crash(1, "Unable to retrieve network addresses for device %s: %s", device->name, ErrnoString(err, ERRNOMAXBUF));
+    }
+
+    Debug("Found address %s for device %s: %s", ifa->ifa_name, device->name, host);
+
+    if (ifa->ifa_addr->sa_family == AF_INET) {
+      AddAddress(device, host, AF_INET);
+    } else if (ifa->ifa_addr->sa_family == AF_INET6) {
+      AddAddress(device, host, AF_INET6);
+    } else {
+      Error("Unknown address family %d for address %s, ignoring", ifa->ifa_addr->sa_family, host);
+    }
+  }
+
+cleanup:
+  if (ifaddrs != NULL) {
+    freeifaddrs(ifaddrs);
+  }
+
+  return status;
+}
+
 uint8_t FreeDevice(struct Device *device) {
   int i;
 
@@ -374,12 +462,6 @@ uint8_t StartDevice(struct Device *device) {
 
   assert(device != NULL);
 
-  if (GetNoAddresses(device) == 0) {
-    Error("Device %s has no addresses, skipping", device->name);
-    status = FALSE;
-    goto exit;
-  }
-
   if (device->state == DEVICE_STATE_RUNNING) {
     Debug("Device %s is already running, skipping", device->name);
     status = TRUE;
@@ -388,6 +470,20 @@ uint8_t StartDevice(struct Device *device) {
 
   if (device->state == DEVICE_STATE_ERROR) {
     Error("Device %s is in error state, skipping", device->name);
+    status = ERROR;
+    goto exit;
+  }
+
+  RemoveAllAddresses(device);
+
+  if (SetAllAddresses(device) == ERROR) {
+    Error("Unable to set all addresses for device %s, skipping", device->name);
+    status = ERROR;
+    goto exit;
+  }
+
+  if (GetNoAddresses(device) == 0) {
+    Error("Device %s has no addresses, skipping", device->name);
     status = ERROR;
     goto exit;
   }
