@@ -11,6 +11,7 @@ struct ListenerModule {
 };
 
 int GetNoDevices(const struct ListenerModule *lm);
+int GetNoRunningDevices(const struct ListenerModule *lm);
 struct ListenerModule *AllocListenerModule(void);
 void FreeListenerModule(struct ListenerModule *lm);
 int InitListenerModule(struct ListenerModule *lm);

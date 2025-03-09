@@ -184,6 +184,24 @@ int GetNoDevices(const struct ListenerModule *lm) {
   return count;
 }
 
+int GetNoRunningDevices(const struct ListenerModule *lm) {
+  int count;
+  struct Device *current;
+
+  assert(lm != NULL);
+
+  count = 0;
+  current = lm->root;
+  while (current != NULL) {
+    if (current->state == DEVICE_STATE_RUNNING) {
+      count++;
+    }
+    current = current->next;
+  }
+
+  return count;
+}
+
 struct ListenerModule *AllocListenerModule(void) {
   struct ListenerModule *lm;
 
@@ -345,18 +363,26 @@ struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
   struct Device *current = NULL;
   int i = 0;
 
-  if ((fds = malloc(sizeof(struct pollfd) * GetNoDevices(lm))) == NULL) {
+  if ((fds = malloc(sizeof(struct pollfd) * GetNoRunningDevices(lm))) == NULL) {
     Error("Unable to allocate memory for pollfd");
     return NULL;
   }
 
   current = lm->root;
   while (current != NULL) {
-    fds[i].fd = current->fd;
-    fds[i].events = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
-    fds[i].revents = 0;
+    if (current->state == DEVICE_STATE_RUNNING) {
+      fds[i].fd = current->fd;
+      fds[i].events = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
+      fds[i].revents = 0;
+      i++;
+    }
+
     current = current->next;
-    i++;
+  }
+
+  // Currently a redundant check, but it's here to make sure we don't have/pickup any issues
+  if (i != GetNoRunningDevices(lm)) {
+    Crash(1, "Number of running devices does not match number of pollfd");
   }
 
   *nfds = i;
