@@ -380,7 +380,7 @@ int SetAllAddresses(struct Device *device) {
       Crash(1, "Unable to retrieve network addresses for device %s: %s", device->name, ErrnoString(err, ERRNOMAXBUF));
     }
 
-    Debug("Found address %s for device %s: %s", ifa->ifa_name, device->name, host);
+    Debug("Found address %s for device %s", host, device->name);
 
     if (ifa->ifa_addr->sa_family == AF_INET) {
       AddAddress(device, host, AF_INET);
@@ -438,12 +438,12 @@ uint8_t StopDevice(struct Device *device) {
   assert(device != NULL);
 
   if (device->state == DEVICE_STATE_STOPPED) {
-    Debug("Device %s is already stopped, skipping", device->name);
+    Debug("StopDevice: Device %s is already stopped, skipping", device->name);
     return TRUE;
   }
 
   if (device->state == DEVICE_STATE_ERROR) {
-    Error("Device %s is in error state, skipping", device->name);
+    Error("StopDevice: Device %s is in error state, skipping", device->name);
     return FALSE;
   }
 
@@ -451,7 +451,7 @@ uint8_t StopDevice(struct Device *device) {
   device->handle = NULL;
   device->state = DEVICE_STATE_STOPPED;
 
-  Debug("Device %s stopped", device->name);
+  Debug("StopDevice: Device %s stopped", device->name);
 
   return TRUE;
 }
@@ -463,39 +463,33 @@ uint8_t StartDevice(struct Device *device) {
   assert(device != NULL);
 
   if (device->state == DEVICE_STATE_RUNNING) {
-    Debug("Device %s is already running, skipping", device->name);
+    Debug("StartDevice: Device %s is already running, skipping", device->name);
     status = TRUE;
-    goto exit;
-  }
-
-  if (device->state == DEVICE_STATE_ERROR) {
-    Error("Device %s is in error state, skipping", device->name);
-    status = ERROR;
     goto exit;
   }
 
   RemoveAllAddresses(device);
 
   if (SetAllAddresses(device) == ERROR) {
-    Error("Unable to set all addresses for device %s, skipping", device->name);
+    Error("StartDevice: Unable to set all addresses for device %s, skipping", device->name);
     status = ERROR;
     goto exit;
   }
 
   if (GetNoAddresses(device) == 0) {
-    Error("Device %s has no addresses, skipping", device->name);
-    status = ERROR;
+    Error("StartDevice: Device %s has no addresses, skipping", device->name);
+    status = FALSE;
     goto exit;
   }
 
   if ((device->handle = PcapOpenLiveImmediate(device->name, BUFSIZ, 0, BUFFER_TIMEOUT, errbuf)) == NULL) {
-    Error("Couldn't open device %s: %s", device->name, errbuf);
+    Error("StartDevice: Couldn't open device %s: %s", device->name, errbuf);
     status = ERROR;
     goto exit;
   }
 
   if (pcap_setnonblock(device->handle, 1, errbuf) < 0) {
-    Error("Unable to set pcap_setnonblock on %s: %s", device->name, errbuf);
+    Error("StartDevice: Unable to set pcap_setnonblock on %s: %s", device->name, errbuf);
     status = ERROR;
     goto exit;
   }
@@ -507,7 +501,7 @@ uint8_t StartDevice(struct Device *device) {
    * anyway so atleast for now, we set this to PCAP_D_INOUT on all platforms in order to avoid any potential missed packets.
    */
   if (pcap_setdirection(device->handle, PCAP_D_INOUT) < 0) {
-    Error("Couldn't set direction on %s: %s", device->name, pcap_geterr(device->handle));
+    Error("StartDevice: Couldn't set direction on %s: %s", device->name, pcap_geterr(device->handle));
     status = ERROR;
     goto exit;
   }
@@ -522,19 +516,19 @@ uint8_t StartDevice(struct Device *device) {
       && pcap_datalink(device->handle) != DLT_LOOP
 #endif
   ) {
-    Error("Device %s is unsupported (linktype: %d), skipping this device", device->name, pcap_datalink(device->handle));
+    Error("StartDevice: Device %s is unsupported (linktype: %d), skipping this device", device->name, pcap_datalink(device->handle));
     status = ERROR;
     goto exit;
   }
 
   if ((device->fd = pcap_get_selectable_fd(device->handle)) < 0) {
-    Error("Couldn't get file descriptor on device %s: %s", device->name, pcap_geterr(device->handle));
+    Error("StartDevice: Couldn't get file descriptor on device %s: %s", device->name, pcap_geterr(device->handle));
     status = ERROR;
     goto exit;
   }
 
   if (SetupFilter(device) == ERROR) {
-    Error("Unable to setup filter for device %s, skipping", device->name);
+    Error("StartDevice: Unable to setup filter for device %s, skipping", device->name);
     status = ERROR;
     goto exit;
   }
@@ -573,14 +567,14 @@ int SetupFilter(const struct Device *device) {
 
   // Using PCAP_NETMASK_UNKNOWN because we might use IPv6 and mask is only used for broadcast packets which we don't care about
   if (pcap_compile(device->handle, &fp, filter, 1, PCAP_NETMASK_UNKNOWN) == PCAP_ERROR) {
-    Error("Unable to compile pcap filter %s: %s", filter, pcap_geterr(device->handle));
+    Error("SetupFilter: Unable to compile pcap filter %s: %s", filter, pcap_geterr(device->handle));
     goto exit;
   }
 
   isCompiled = TRUE;
 
   if (pcap_setfilter(device->handle, &fp) == PCAP_ERROR) {
-    Error("Unable to set filter %s: %s", filter, pcap_geterr(device->handle));
+    Error("SetupFilter: Unable to set filter %s: %s", filter, pcap_geterr(device->handle));
     goto exit;
   }
 
