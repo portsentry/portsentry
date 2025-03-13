@@ -533,7 +533,7 @@ uint8_t StartDevice(struct Device *device) {
     goto exit;
   }
 
-  if (SetupFilter(device) == FALSE) {
+  if (SetupFilter(device) == ERROR) {
     Error("Unable to setup filter for device %s, skipping", device->name);
     status = ERROR;
     goto exit;
@@ -561,7 +561,7 @@ exit:
 int SetupFilter(const struct Device *device) {
   struct bpf_program fp;
   char *filter = NULL;
-  int status = FALSE;
+  int status = ERROR;
   uint8_t isCompiled = FALSE;
 
   assert(device != NULL);
