@@ -408,11 +408,6 @@ uint8_t FreeDevice(struct Device *device) {
 
   StopDevice(device);
 
-  if (device->handle != NULL) {
-    pcap_close(device->handle);
-    device->handle = NULL;
-  }
-
   if (device->inet4_addrs != NULL) {
     for (i = 0; i < device->inet4_addrs_count; i++) {
       free(device->inet4_addrs[i]);
@@ -450,6 +445,7 @@ uint8_t StopDevice(struct Device *device) {
   pcap_close(device->handle);
   device->handle = NULL;
   device->state = DEVICE_STATE_STOPPED;
+  device->fd = -1;
 
   Debug("StopDevice: Device %s stopped", device->name);
 
@@ -536,15 +532,19 @@ uint8_t StartDevice(struct Device *device) {
   status = TRUE;
 
 exit:
-  if (status == ERROR) {
+  if (status == ERROR || status == FALSE) {
     if (device->handle != NULL) {
       pcap_close(device->handle);
       device->handle = NULL;
     }
 
-    device->state = DEVICE_STATE_ERROR;
-  } else if (status == FALSE) {
-    device->state = DEVICE_STATE_STOPPED;
+    device->fd = -1;
+
+    if (status == ERROR) {
+      device->state = DEVICE_STATE_ERROR;
+    } else {
+      device->state = DEVICE_STATE_STOPPED;
+    }
   } else {
     device->state = DEVICE_STATE_RUNNING;
   }
