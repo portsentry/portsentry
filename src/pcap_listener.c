@@ -306,8 +306,7 @@ struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
   int i = 0;
 
   if ((fds = malloc(sizeof(struct pollfd) * GetNoRunningDevices(lm))) == NULL) {
-    Error("Unable to allocate memory for pollfd");
-    return NULL;
+    Crash(1, "Unable to allocate memory for pollfd");
   }
 
   current = lm->root;
@@ -336,8 +335,7 @@ struct pollfd *AddPollFd(struct pollfd *fds, int *nfds, const int fd) {
   struct pollfd *newFds = NULL;
 
   if ((newFds = malloc(sizeof(struct pollfd) * (*nfds + 1))) == NULL) {
-    Error("Unable to allocate memory for pollfd");
-    return NULL;
+    Crash(1, "Unable to allocate memory for pollfd");
   }
 
   memcpy(newFds, fds, sizeof(struct pollfd) * (*nfds));
@@ -357,8 +355,7 @@ struct pollfd *RemovePollFd(struct pollfd *fds, int *nfds, const int fd) {
   struct pollfd *newFds = NULL;
 
   if ((newFds = malloc(sizeof(struct pollfd) * (*nfds - 1))) == NULL) {
-    Error("Unable to allocate memory for pollfd");
-    return NULL;
+    Crash(1, "Unable to allocate memory for pollfd");
   }
 
   for (i = 0, j = 0; i < *nfds; i++) {
