@@ -27,6 +27,7 @@ static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name);
 static int AutoPrepDevices(struct ListenerModule *lm, const uint8_t includeLo);
 static int PrepDevices(struct ListenerModule *lm);
 static void PrintDevices(const struct ListenerModule *lm);
+static void SetFdParams(struct pollfd *pollfd, const int fd);
 
 static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name) {
   struct Device *dev;
@@ -300,6 +301,16 @@ struct Device *FindDeviceByIpAddr(const struct ListenerModule *lm, const char *i
   return NULL;
 }
 
+static void SetFdParams(struct pollfd *pollfd, const int fd) {
+  assert(pollfd != NULL);
+  assert(fd >= 0);
+  memset(pollfd, 0, sizeof(struct pollfd));
+
+  pollfd->fd = fd;
+  pollfd->events = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
+  pollfd->revents = 0;
+}
+
 struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
   struct pollfd *fds = NULL;
   struct Device *current = NULL;
@@ -312,9 +323,7 @@ struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
   current = lm->root;
   while (current != NULL) {
     if (current->state == DEVICE_STATE_RUNNING) {
-      fds[i].fd = current->fd;
-      fds[i].events = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
-      fds[i].revents = 0;
+      SetFdParams(&fds[i], current->fd);
       i++;
     }
 
@@ -334,18 +343,19 @@ struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
 struct pollfd *AddPollFd(struct pollfd *fds, int *nfds, const int fd) {
   struct pollfd *newFds = NULL;
 
-  if ((newFds = malloc(sizeof(struct pollfd) * (*nfds + 1))) == NULL) {
+  // Already in the list?
+  for (int i = 0; i < *nfds; i++) {
+    if (fds[i].fd == fd) {
+      return fds;
+    }
+  }
+
+  if ((newFds = realloc(fds, sizeof(struct pollfd) * (*nfds + 1))) == NULL) {
     Crash(1, "Unable to allocate memory for pollfd");
   }
 
-  memcpy(newFds, fds, sizeof(struct pollfd) * (*nfds));
-
-  newFds[*nfds].fd = fd;
-  newFds[*nfds].events = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
-  newFds[*nfds].revents = 0;
+  SetFdParams(&newFds[*nfds], fd);
   *nfds += 1;
-
-  free(fds);
 
   return newFds;
 }
@@ -353,6 +363,17 @@ struct pollfd *AddPollFd(struct pollfd *fds, int *nfds, const int fd) {
 struct pollfd *RemovePollFd(struct pollfd *fds, int *nfds, const int fd) {
   int i, j;
   struct pollfd *newFds = NULL;
+
+  // Find the index of the fd to remove
+  for (i = 0; i < *nfds; i++) {
+    if (fds[i].fd == fd) {
+      break;
+    }
+  }
+
+  if (i == *nfds) {
+    return fds;
+  }
 
   if ((newFds = malloc(sizeof(struct pollfd) * (*nfds - 1))) == NULL) {
     Crash(1, "Unable to allocate memory for pollfd");
