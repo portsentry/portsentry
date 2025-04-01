@@ -2,7 +2,11 @@
 #include <sys/types.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+
+#ifdef __linux__
 #include <linux/netlink.h>
+#include <linux/rtnetlink.h>
+#endif
 
 #include "pcap_listener.h"
 #include "pcap_device.h"
@@ -37,4 +41,3 @@ struct KernelMessage {
 int ListenKernel(void);
 int ParseKernelMessage(const struct nlmsghdr *nh, struct KernelMessage *kernelMessage);
 struct Device *GetDeviceByKernelMessage(struct ListenerModule *lm, struct KernelMessage *kernelMessage);
-void TestHandleKernelMessage(void);

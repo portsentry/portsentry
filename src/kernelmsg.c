@@ -1,6 +1,4 @@
 #include <arpa/inet.h>
-#include <linux/netlink.h>
-#include <linux/rtnetlink.h>
 #include <net/if.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,41 +117,4 @@ static int ParseAddress(const struct nlmsghdr *nh, struct KernelMessage *kernelM
   }
 
   return FALSE;
-}
-
-void TestHandleKernelMessage(void) {
-  struct nlmsghdr *nh;
-  struct KernelMessage kernelMessage;
-  int socket;
-
-  if ((socket = ListenKernel()) < 0) {
-    Error("Failed to listen kernel message");
-    return;
-  }
-
-  while (1) {
-    char buf[4096];
-    struct iovec iov = {buf, sizeof(buf)};
-    struct sockaddr_nl sa;
-    struct msghdr msg = {.msg_name = &sa,
-                         .msg_namelen = sizeof(sa),
-                         .msg_iov = &iov,
-                         .msg_iovlen = 1};
-
-    ssize_t len = recvmsg(socket, &msg, 0);
-    for (nh = (struct nlmsghdr *)buf; NLMSG_OK(nh, len);
-         nh = NLMSG_NEXT(nh, len)) {
-      if (ParseKernelMessage(nh, &kernelMessage) == TRUE) {
-        Debug("%s %s: %s on %s",
-              kernelMessage.type == KMT_INTERFACE ? "Interface" : "Address",
-              kernelMessage.action == KMA_ADD ? "Added" : "Removed",
-              kernelMessage.type == KMT_INTERFACE ? kernelMessage.interface.ifName : kernelMessage.address.ipAddr,
-              kernelMessage.type == KMT_INTERFACE ? "" : kernelMessage.address.ifName);
-      } else {
-        Debug("Nothing to handle in message");
-      }
-    }
-
-    Debug("--- End of netlink message for now ---");
-  }
 }
