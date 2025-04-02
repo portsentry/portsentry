@@ -77,4 +77,4 @@ Tag v1.2 is the release from 2003, before the project was orphaned and uses a di
 - Linux
 - OpenBSD
 - FreeBSD
-- NetBSD
+- NetBSD >= 8.0
