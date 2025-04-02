@@ -36,15 +36,15 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
     struct if_announcemsghdr *ifan = (struct if_announcemsghdr *)buf;
     switch (ifan->ifan_what) {
     case IFAN_ARRIVAL:
-      printf("Created interface %s (index %d)\n", ifan->ifan_name,
-             ifan->ifan_index);
+      Debug("Created interface %s (index %d)", ifan->ifan_name,
+            ifan->ifan_index);
       kernelMessage->type = KMT_INTERFACE;
       kernelMessage->action = KMA_ADD;
       strncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
       break;
     case IFAN_DEPARTURE:
-      printf("Removed interface %s (index %d)\n", ifan->ifan_name,
-             ifan->ifan_index);
+      Debug("Removed interface %s (index %d)", ifan->ifan_name,
+            ifan->ifan_index);
       kernelMessage->type = KMT_INTERFACE;
       kernelMessage->action = KMA_DEL;
       strncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
