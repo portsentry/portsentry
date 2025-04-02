@@ -62,20 +62,6 @@ int ParseKernelMessage(const struct nlmsghdr *nh, struct KernelMessage *kernelMe
   return FALSE;
 }
 
-struct Device *GetDeviceByKernelMessage(struct ListenerModule *lm, struct KernelMessage *kernelMessage) {
-  if (kernelMessage->type == KMT_ADDRESS) {
-    if (kernelMessage->action == KMA_ADD) {
-      return FindDeviceByName(lm, kernelMessage->address.ifName);
-    } else if (kernelMessage->action == KMA_DEL) {
-      return FindDeviceByIpAddr(lm, kernelMessage->address.ipAddr);
-    }
-  } else if (kernelMessage->type == KMT_INTERFACE) {
-    return FindDeviceByName(lm, kernelMessage->interface.ifName);
-  }
-
-  return NULL;
-}
-
 static int ParseInterface(const struct nlmsghdr *nh, struct KernelMessage *kernelMessage) {
   struct ifinfomsg *ifi = NLMSG_DATA(nh);
   struct rtattr *rta;
