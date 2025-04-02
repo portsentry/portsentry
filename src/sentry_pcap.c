@@ -29,6 +29,8 @@
 static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet, const uint32_t packetLength);
 static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, int *nfds);
+static void ExecKernelMessageLogic(struct ListenerModule *lm, struct pollfd **fds, int *nfds, struct KernelMessage *kernelMessage);
+static struct Device *GetDeviceByKernelMessage(struct ListenerModule *lm, struct KernelMessage *kernelMessage);
 static void StartDeviceAndAddPollFd(struct Device *device, struct pollfd **fds, int *nfds);
 static void StopDeviceAndRemovePollFd(struct Device *device, struct pollfd **fds, int *nfds);
 static void HandleAddressAdded(struct Device *device, struct KernelMessage *kernelMessage, struct pollfd **fds, int *nfds);
@@ -216,8 +218,8 @@ static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const 
   return SetPacketInfoFromPacket(pi, (unsigned char *)packet + ipOffset, packetLength - ipOffset);
 }
 
+#ifdef __linux__
 static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, int *nfds) {
-  struct Device *device = NULL;
   struct nlmsghdr *nh;
   struct KernelMessage kernelMessage;
   char buf[4096];
@@ -235,31 +237,71 @@ static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule 
       continue;
     }
 
-    Debug("ProcessKernelMessage - Message Parse: %s %s: %s", kernelMessage.type == KMT_INTERFACE ? "Interface" : "Address",
-          kernelMessage.action == KMA_ADD ? "Added" : "Removed",
-          kernelMessage.type == KMT_INTERFACE ? kernelMessage.interface.ifName : kernelMessage.address.ipAddr);
+    ExecKernelMessageLogic(lm, fds, nfds, &kernelMessage);
+  }
+}
 
-    if ((device = GetDeviceByKernelMessage(lm, &kernelMessage)) == NULL) {
-      Debug("ProcessKernelMessage - Device not found: %s %s: %s", kernelMessage.type == KMT_INTERFACE ? "Interface" : "Address",
-            kernelMessage.action == KMA_ADD ? "Added" : "Removed",
-            kernelMessage.type == KMT_INTERFACE ? kernelMessage.interface.ifName : kernelMessage.address.ipAddr);
-      continue;
+#elif defined(__NetBSD__)
+static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, int *nfds) {
+  char buf[4096];
+  char err[ERRNOMAXBUF];
+  struct KernelMessage kernelMessage;
+  ssize_t len;
+
+  if ((len = read(kernel_socket, buf, sizeof(buf))) < 0) {
+    Error("Failed to receive routing message: %s", ErrnoString(err, sizeof(err)));
+    return;
+  }
+
+  if (ParseKernelMessage(buf, &kernelMessage) != TRUE) {
+    return;
+  }
+
+  ExecKernelMessageLogic(lm, fds, nfds, &kernelMessage);
+}
+#endif
+
+static void ExecKernelMessageLogic(struct ListenerModule *lm, struct pollfd **fds, int *nfds, struct KernelMessage *kernelMessage) {
+  struct Device *device = NULL;
+
+  Debug("ProcessKernelMessage - Message Parse: %s %s: %s", kernelMessage->type == KMT_INTERFACE ? "Interface" : "Address",
+        kernelMessage->action == KMA_ADD ? "Added" : "Removed",
+        kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
+
+  if ((device = GetDeviceByKernelMessage(lm, kernelMessage)) == NULL) {
+    Debug("ProcessKernelMessage - Device not found: %s %s: %s", kernelMessage->type == KMT_INTERFACE ? "Interface" : "Address",
+          kernelMessage->action == KMA_ADD ? "Added" : "Removed",
+          kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
+    return;
+  }
+
+  if (kernelMessage->type == KMT_ADDRESS) {
+    if (kernelMessage->action == KMA_ADD) {
+      HandleAddressAdded(device, kernelMessage, fds, nfds);
+    } else if (kernelMessage->action == KMA_DEL) {
+      HandleAddressRemoved(device, kernelMessage, fds, nfds);
     }
-
-    if (kernelMessage.type == KMT_ADDRESS) {
-      if (kernelMessage.action == KMA_ADD) {
-        HandleAddressAdded(device, &kernelMessage, fds, nfds);
-      } else if (kernelMessage.action == KMA_DEL) {
-        HandleAddressRemoved(device, &kernelMessage, fds, nfds);
-      }
-    } else if (kernelMessage.type == KMT_INTERFACE) {
-      if (kernelMessage.action == KMA_ADD) {
-        HandleInterfaceAdded(device, fds, nfds);
-      } else if (kernelMessage.action == KMA_DEL) {
-        HandleInterfaceRemoved(device, fds, nfds);
-      }
+  } else if (kernelMessage->type == KMT_INTERFACE) {
+    if (kernelMessage->action == KMA_ADD) {
+      HandleInterfaceAdded(device, fds, nfds);
+    } else if (kernelMessage->action == KMA_DEL) {
+      HandleInterfaceRemoved(device, fds, nfds);
     }
   }
+}
+
+static struct Device *GetDeviceByKernelMessage(struct ListenerModule *lm, struct KernelMessage *kernelMessage) {
+  if (kernelMessage->type == KMT_ADDRESS) {
+    if (kernelMessage->action == KMA_ADD) {
+      return FindDeviceByName(lm, kernelMessage->address.ifName);
+    } else if (kernelMessage->action == KMA_DEL) {
+      return FindDeviceByIpAddr(lm, kernelMessage->address.ipAddr);
+    }
+  } else if (kernelMessage->type == KMT_INTERFACE) {
+    return FindDeviceByName(lm, kernelMessage->interface.ifName);
+  }
+
+  return NULL;
 }
 
 static void StartDeviceAndAddPollFd(struct Device *device, struct pollfd **fds, int *nfds) {
