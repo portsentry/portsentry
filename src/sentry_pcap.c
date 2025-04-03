@@ -108,7 +108,10 @@ int PortSentryPcap(void) {
           ret = pcap_dispatch(current->handle, -1, HandlePacket, (u_char *)current);
 
           if (ret == PCAP_ERROR) {
-            Error("pcap_dispatch() failed %s, ignoring", pcap_geterr(current->handle));
+            Error("pcap_dispatch() failed %s", pcap_geterr(current->handle));
+            if (strncmp("The interface disappeared", pcap_geterr(current->handle), 25) == 0) {
+              StopDeviceAndRemovePollFd(current, &fds, &nfds);
+            }
           } else if (ret == PCAP_ERROR_BREAK) {
             Error("Got PCAP_ERROR_BREAK, ignoring");
           }
@@ -241,7 +244,7 @@ static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule 
   }
 }
 
-#elif defined(__NetBSD__)
+#elif defined(__NetBSD__) || defined(__FreeBSD__)
 static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, int *nfds) {
   char buf[4096];
   char err[ERRNOMAXBUF];
