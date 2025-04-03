@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Marcus Hufvudsson <mh@protohuf.com>
+//
+// SPDX-License-Identifier: CPL-1.0
+
 #pragma once
 #include <sys/types.h>
 #include <net/if.h>
@@ -41,6 +45,6 @@ struct KernelMessage {
 int ListenKernel(void);
 #ifdef __linux__
 int ParseKernelMessage(const struct nlmsghdr *nh, struct KernelMessage *kernelMessage);
-#elif defined(__NetBSD__)
+#elif defined(__NetBSD__) || defined(__FreeBSD__)
 int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage);
 #endif
