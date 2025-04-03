@@ -1,4 +1,9 @@
+// SPDX-FileCopyrightText: 2024 Marcus Hufvudsson <mh@protohuf.com>
+//
+// SPDX-License-Identifier: CPL-1.0
+
 #include <arpa/inet.h>
+#include <net/if.h>
 #include <net/if_dl.h>
 #include <net/route.h>
 #include <netinet/in.h>
@@ -69,6 +74,7 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
   // Walk through addresses using the address bitmask
   for (int i = 0; i < RTAX_MAX; i++) {
     if (addrs & (1 << i)) {
+#ifdef __NetBSD__
       unsigned char *bytes = (unsigned char *)sa;
 
       if (i == RTAX_IFA) {
@@ -92,11 +98,23 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
         int len = (sa->sa_len > 0) ? sa->sa_len : 16;
         sa = (struct sockaddr *)((char *)sa + RT_ROUNDUP2(len, 4));
       }
+#elif __FreeBSD__
+      if (i == RTAX_IFA) {
+        if (sa->sa_family == AF_INET) {
+          ifa_addr_v4 = &((struct sockaddr_in *)sa)->sin_addr;
+        } else if (sa->sa_family == AF_INET6) {
+          ifa_addr_v6 = &((struct sockaddr_in6 *)sa)->sin6_addr;
+        }
+      }
+
+      sa = (struct sockaddr *)((char *)sa + SA_SIZE(sa));
+#endif
     }
   }
 
   if (ifa_addr_v4 || ifa_addr_v6) {
-    if ((const char *name = if_indextoname(ifam->ifam_index, kernelMessage->address.ifName)) == NULL) {
+    const char *name;
+    if ((name = if_indextoname(ifam->ifam_index, kernelMessage->address.ifName)) == NULL) {
       Debug("if_indextoname returned NULL for interface index %d", ifam->ifam_index);
     }
 
@@ -112,8 +130,11 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
     }
 
     Debug("%s IPv%d address %s on interface %s index %d",
-          (rtm->rtm_type == RTM_NEWADDR) ? "Added" : "Removed", kernelMessage->address.family == AF_INET ? 4 : 6, kernelMessage->address.ipAddr,
-          name ? kernelMessage->address.ifName : "", ifam->ifam_index);
+          (rtm->rtm_type == RTM_NEWADDR) ? "Added" : "Removed",
+          kernelMessage->address.family == AF_INET ? 4 : 6,
+          kernelMessage->address.ipAddr,
+          name ? kernelMessage->address.ifName : "",
+          ifam->ifam_index);
     return TRUE;
   }
 
