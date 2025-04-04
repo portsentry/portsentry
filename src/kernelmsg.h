@@ -45,6 +45,6 @@ struct KernelMessage {
 int ListenKernel(void);
 #ifdef __linux__
 int ParseKernelMessage(const struct nlmsghdr *nh, struct KernelMessage *kernelMessage);
-#elif defined(__NetBSD__) || defined(__FreeBSD__)
+#elif defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage);
 #endif

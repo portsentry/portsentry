@@ -19,6 +19,10 @@
 #include "util.h"
 #include "kernelmsg.h"
 
+#ifdef __OpenBSD__
+#define ROUNDUP(a) ((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
+#endif
+
 int ListenKernel(void) {
   char err[ERRNOMAXBUF];
   int sockFd;
@@ -98,7 +102,7 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
         int len = (sa->sa_len > 0) ? sa->sa_len : 16;
         sa = (struct sockaddr *)((char *)sa + RT_ROUNDUP2(len, 4));
       }
-#elif __FreeBSD__
+#elif __FreeBSD__ || __OpenBSD__
       if (i == RTAX_IFA) {
         if (sa->sa_family == AF_INET) {
           ifa_addr_v4 = &((struct sockaddr_in *)sa)->sin_addr;
@@ -106,8 +110,11 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
           ifa_addr_v6 = &((struct sockaddr_in6 *)sa)->sin6_addr;
         }
       }
-
+#endif
+#ifdef __FreeBSD__
       sa = (struct sockaddr *)((char *)sa + SA_SIZE(sa));
+#elif __OpenBSD__
+      sa = (struct sockaddr *)((char *)sa + ROUNDUP(sa->sa_len ? sa->sa_len : sizeof(struct sockaddr)));
 #endif
     }
   }
