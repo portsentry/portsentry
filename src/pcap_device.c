@@ -227,6 +227,30 @@ int AddAddress(struct Device *device, const char *address, const int type) {
   }
 
   if (type == AF_INET) {
+    struct sockaddr_in addr4;
+    if (inet_pton(AF_INET, address, &addr4.sin_addr) != 1) {
+      Error("Invalid IPv4 address format: %s", address);
+      return FALSE;
+    }
+    // Check for IPv4 link-local (169.254.0.0/16)
+    uint32_t addr = ntohl(addr4.sin_addr.s_addr);
+    if ((addr & 0xFFFF0000) == 0xA9FE0000) {
+      Debug("Ignoring IPv4 link-local address %s on %s", address, device->name);
+      return TRUE;
+    }
+  } else if (type == AF_INET6) {
+    struct sockaddr_in6 addr6;
+    if (inet_pton(AF_INET6, address, &addr6.sin6_addr) != 1) {
+      Error("Invalid IPv6 address format: %s", address);
+      return FALSE;
+    }
+    if (IN6_IS_ADDR_LINKLOCAL(&addr6.sin6_addr)) {
+      Debug("Ignoring IPv6 link-local address %s on %s", address, device->name);
+      return TRUE;
+    }
+  }
+
+  if (type == AF_INET) {
     addresses = device->inet4_addrs;
     addresses_count = device->inet4_addrs_count;
   } else if (type == AF_INET6) {
@@ -360,16 +384,14 @@ int SetAllAddresses(struct Device *device) {
       continue;
     }
 
-    // Check for and ignore link-local addresses
+    // Ignore link-local addresses before calling getnameinfo() since Linux and BSD have different link-local address formats. Linux includes the scope id, BSD doesn't
     if (ifa->ifa_addr->sa_family == AF_INET6) {
       struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)ifa->ifa_addr;
-      // fe80::/10
       if (IN6_IS_ADDR_LINKLOCAL(&addr6->sin6_addr)) {
         continue;
       }
     } else if (ifa->ifa_addr->sa_family == AF_INET) {
       struct sockaddr_in *addr4 = (struct sockaddr_in *)ifa->ifa_addr;
-      // 169.254.0.0/16
       uint32_t addr = ntohl(addr4->sin_addr.s_addr);
       if ((addr & 0xFFFF0000) == 0xA9FE0000) {
         continue;
