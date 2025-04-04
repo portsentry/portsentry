@@ -9,7 +9,6 @@
 #include <poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <ifaddrs.h>
 #include <netinet/in.h>
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
@@ -24,57 +23,18 @@
 #include "util.h"
 #include "pcap_device.h"
 
-#define BUFFER_TIMEOUT 2000
-
-static pcap_t *PcapOpenLiveImmediate(const char *source, const int snaplen, const int promisc, const int to_ms, char *errbuf);
 static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name);
 static int AutoPrepDevices(struct ListenerModule *lm, const uint8_t includeLo);
 static int PrepDevices(struct ListenerModule *lm);
-static int SetupFilter(const struct Device *device);
-static char *AllocAndBuildPcapFilter(const struct Device *device);
 static void PrintDevices(const struct ListenerModule *lm);
-
-/* Heavily inspired by src/lib/libpcap/pcap-bpf.c from OpenBSD's pcap implementation.
- * We must use pcap_create() and pcap_activate() instead of pcap_open_live() because
- * we need to set the immediate mode flag, which can only be done on an unactivated
- * pcap_t.
- *
- * OpenBSD's libpcap implementation require immediate mode and non-blocking socket
- * in order for poll() (and select()/kevent()) to work properly. This approach works
- * for other Unixes as well, so it's no harm in doing it this way. Using immediate mode
- * with a non-blocking fd makes pcap a bit snappier anyway so it's a win-win.
- * See: https://marc.info/?l=openbsd-tech&m=169878430118943&w=2 for more information.
- * */
-static pcap_t *PcapOpenLiveImmediate(const char *source, const int snaplen, const int promisc, const int to_ms, char *errbuf) {
-  pcap_t *p;
-  int status;
-
-  if ((p = pcap_create(source, errbuf)) == NULL)
-    return (NULL);
-  if ((status = pcap_set_snaplen(p, snaplen)) < 0)
-    goto fail;
-  if ((status = pcap_set_promisc(p, promisc)) < 0)
-    goto fail;
-  if ((status = pcap_set_timeout(p, to_ms)) < 0)
-    goto fail;
-  if ((status = pcap_set_immediate_mode(p, 1)) < 0)
-    goto fail;
-
-  if ((status = pcap_activate(p)) < 0)
-    goto fail;
-  return (p);
-fail:
-  SafeStrncpy(errbuf, pcap_geterr(p), PCAP_ERRBUF_SIZE);
-  pcap_close(p);
-  return (NULL);
-}
+static void SetFdParams(struct pollfd *pollfd, const int fd);
 
 static uint8_t CreateAndAddDevice(struct ListenerModule *lm, const char *name) {
   struct Device *dev;
 
   assert(lm != NULL);
 
-  if (FindDeviceByName(lm, name) == TRUE) {
+  if (FindDeviceByName(lm, name) != NULL) {
     Error("Device %s appears twice", name);
     return FALSE;
   }
@@ -153,167 +113,6 @@ static int PrepDevices(struct ListenerModule *lm) {
   return TRUE;
 }
 
-static int RetrieveAddresses(struct ListenerModule *lm) {
-  int status = TRUE;
-  struct ifaddrs *ifaddrs = NULL, *ifa = NULL;
-  struct Device *dev;
-  char err[ERRNOMAXBUF];
-  char host[NI_MAXHOST];
-
-  if (getifaddrs(&ifaddrs) == -1) {
-    Error("Unable to retrieve network addresses: %s", ErrnoString(err, ERRNOMAXBUF));
-    status = FALSE;
-    goto cleanup;
-  }
-
-  for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
-    if (ifa->ifa_addr == NULL) {
-      continue;
-    }
-
-    if (ifa->ifa_addr->sa_family != AF_INET && ifa->ifa_addr->sa_family != AF_INET6) {
-      continue;
-    }
-
-    for (dev = lm->root; dev != NULL; dev = dev->next) {
-      if (strncmp(dev->name, ifa->ifa_name, strlen(dev->name)) == 0) {
-        if (getnameinfo(ifa->ifa_addr, (ifa->ifa_addr->sa_family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == -1) {
-          Crash(1, "Unable to retrieve network addresses for device %s: %s", dev->name, ErrnoString(err, ERRNOMAXBUF));
-        }
-
-        if (strncmp(host, "fe80", 4) == 0) {
-          continue;
-        } else if (strncmp(host, "169.254", 7) == 0) {
-          continue;
-        }
-
-        Debug("Found address %s for device %s: %s", ifa->ifa_name, dev->name, host);
-
-        if (ifa->ifa_addr->sa_family == AF_INET) {
-          AddAddress(dev, host, AF_INET);
-        } else if (ifa->ifa_addr->sa_family == AF_INET6) {
-          AddAddress(dev, host, AF_INET6);
-        } else {
-          Error("Unknown address family %d for address %s, ignoring", ifa->ifa_addr->sa_family, host);
-        }
-      }
-    }
-  }
-
-cleanup:
-  if (ifaddrs != NULL) {
-    freeifaddrs(ifaddrs);
-  }
-
-  return status;
-}
-
-static char *AllocAndBuildPcapFilter(const struct Device *device) {
-  int i;
-  int filterLen = 0;
-  char *filter = NULL;
-
-  assert(device != NULL);
-
-  if (device->inet4_addrs_count > 0 || device->inet6_addrs_count > 0) {
-    filter = ReallocAndAppend(filter, &filterLen, "(");
-  }
-
-  for (i = 0; i < device->inet4_addrs_count; i++) {
-    if (i > 0) {
-      filter = ReallocAndAppend(filter, &filterLen, " or ");
-    }
-    filter = ReallocAndAppend(filter, &filterLen, "ip dst host %s", device->inet4_addrs[i]);
-  }
-
-  if (device->inet4_addrs_count > 0 && device->inet6_addrs_count > 0) {
-    filter = ReallocAndAppend(filter, &filterLen, " or ");
-  }
-
-  for (i = 0; i < device->inet6_addrs_count; i++) {
-    if (i > 0) {
-      filter = ReallocAndAppend(filter, &filterLen, " or ");
-    }
-    filter = ReallocAndAppend(filter, &filterLen, "ip6 dst host %s", device->inet6_addrs[i]);
-  }
-
-  if (device->inet4_addrs_count > 0 || device->inet6_addrs_count > 0) {
-    filter = ReallocAndAppend(filter, &filterLen, ")");
-  }
-
-  filter = ReallocAndAppend(filter, &filterLen, " and (");
-
-  if (configData.tcpPortsLength > 0) {
-    if (configData.tcpPortsLength > 0 && configData.udpPortsLength > 0) {
-      filter = ReallocAndAppend(filter, &filterLen, "(");
-    }
-
-    for (i = 0; i < configData.tcpPortsLength; i++) {
-      if (i > 0) {
-        filter = ReallocAndAppend(filter, &filterLen, " or ");
-      }
-
-      if (IsPortSingle(&configData.tcpPorts[i])) {
-        filter = ReallocAndAppend(filter, &filterLen, "tcp dst port %d", configData.tcpPorts[i].single);
-      } else {
-        /* OpenBSD's libpcap doesn't support portrange */
-#ifdef __OpenBSD__
-        for (int j = configData.tcpPorts[i].range.start; j <= configData.tcpPorts[i].range.end; j++) {
-          filter = ReallocAndAppend(filter, &filterLen, "tcp dst port %d", j);
-          if (j < configData.tcpPorts[i].range.end) {
-            filter = ReallocAndAppend(filter, &filterLen, " or ");
-          }
-        }
-#else
-        filter = ReallocAndAppend(filter, &filterLen, "tcp dst portrange %d-%d", configData.tcpPorts[i].range.start, configData.tcpPorts[i].range.end);
-#endif
-      }
-    }
-
-    if (configData.tcpPortsLength > 0 && configData.udpPortsLength > 0) {
-      filter = ReallocAndAppend(filter, &filterLen, ")");
-    }
-  }
-
-  if (configData.udpPortsLength > 0) {
-    if (configData.tcpPortsLength > 0 && configData.udpPortsLength > 0) {
-      filter = ReallocAndAppend(filter, &filterLen, " or (");
-    }
-
-    for (i = 0; i < configData.udpPortsLength; i++) {
-      if (i > 0) {
-        filter = ReallocAndAppend(filter, &filterLen, " or ");
-      }
-
-      if (IsPortSingle(&configData.udpPorts[i])) {
-        filter = ReallocAndAppend(filter, &filterLen, "udp dst port %d", configData.udpPorts[i].single);
-      } else {
-        /* OpenBSD's libpcap doesn't support portrange */
-#ifdef __OpenBSD__
-        for (int j = configData.udpPorts[i].range.start; j <= configData.udpPorts[i].range.end; j++) {
-          filter = ReallocAndAppend(filter, &filterLen, "udp dst port %d", j);
-          if (j < configData.udpPorts[i].range.end) {
-            filter = ReallocAndAppend(filter, &filterLen, " or ");
-          }
-        }
-#else
-        filter = ReallocAndAppend(filter, &filterLen, "udp dst portrange %d-%d", configData.udpPorts[i].range.start, configData.udpPorts[i].range.end);
-#endif
-      }
-    }
-
-    if (configData.tcpPortsLength > 0 && configData.udpPortsLength > 0) {
-      filter = ReallocAndAppend(filter, &filterLen, ")");
-    }
-  }
-
-  filter = ReallocAndAppend(filter, &filterLen, ")");
-
-  Debug("Device: %s pcap filter len %d: [%s]", device->name, filterLen, filter);
-
-  return filter;
-}
-
 int GetNoDevices(const struct ListenerModule *lm) {
   int count;
   struct Device *current;
@@ -324,6 +123,24 @@ int GetNoDevices(const struct ListenerModule *lm) {
   current = lm->root;
   while (current != NULL) {
     count++;
+    current = current->next;
+  }
+
+  return count;
+}
+
+int GetNoRunningDevices(const struct ListenerModule *lm) {
+  int count;
+  struct Device *current;
+
+  assert(lm != NULL);
+
+  count = 0;
+  current = lm->root;
+  while (current != NULL) {
+    if (current->state == DEVICE_STATE_RUNNING) {
+      count++;
+    }
     current = current->next;
   }
 
@@ -361,72 +178,16 @@ void FreeListenerModule(struct ListenerModule *lm) {
 }
 
 int InitListenerModule(struct ListenerModule *lm) {
-  char errbuf[PCAP_ERRBUF_SIZE];
-  struct Device *current, *next;
+  struct Device *current;
 
   if (PrepDevices(lm) == FALSE) {
     return FALSE;
   }
 
-  RetrieveAddresses(lm);
-
   current = lm->root;
   while (current != NULL) {
-    next = current->next;
-
-    if ((current->handle = PcapOpenLiveImmediate(current->name, BUFSIZ, 0, BUFFER_TIMEOUT, errbuf)) == NULL) {
-      Error("Couldn't open device %s: %s", current->name, errbuf);
-      RemoveDevice(lm, current);
-      goto next;
-    }
-
-    if (pcap_setnonblock(current->handle, 1, errbuf) < 0) {
-      Error("Unable to set pcap_setnonblock on %s: %s", current->name, errbuf);
-      RemoveDevice(lm, current);
-      goto next;
-    }
-
-    /*
-     * OpenBSD and NetBSD has some quirks with pcap_setdirection(). Neither one of them will detect packets on the loopback interface
-     * if direction is set to PCAP_D_IN for example. There are some other inconsistencies as well and I might not have found all of them.
-     * By setting direction to PCAP_D_INOUT we make sure to capture as much as possible. The BPF filter will take care of most unwanted packets
-     * anyway so atleast for now, we set this to PCAP_D_INOUT on all platforms in order to avoid any potential missed packets.
-     */
-    if (pcap_setdirection(current->handle, PCAP_D_INOUT) < 0) {
-      Error("Couldn't set direction on %s: %s", current->name, pcap_geterr(current->handle));
-      RemoveDevice(lm, current);
-      goto next;
-    }
-
-    // We assume that since pcap_lookupnet() succeeded, we have a valid link type
-    if (pcap_datalink(current->handle) != DLT_EN10MB &&
-        pcap_datalink(current->handle) != DLT_RAW &&
-        pcap_datalink(current->handle) != DLT_NULL
-#ifdef __linux__
-        && pcap_datalink(current->handle) != DLT_LINUX_SLL
-#elif __OpenBSD__
-        && pcap_datalink(current->handle) != DLT_LOOP
-#endif
-    ) {
-      Error("Device %s is unsupported (linktype: %d), skipping this device", current->name, pcap_datalink(current->handle));
-      RemoveDevice(lm, current);
-      goto next;
-    }
-
-    if ((current->fd = pcap_get_selectable_fd(current->handle)) < 0) {
-      Error("Couldn't get file descriptor on device %s: %s", current->name, pcap_geterr(current->handle));
-      RemoveDevice(lm, current);
-      goto next;
-    }
-
-    if (SetupFilter(current) == FALSE) {
-      Error("Unable to setup filter for device %s, skipping", current->name);
-      RemoveDevice(lm, current);
-      goto next;
-    }
-
-  next:
-    current = next;
+    StartDevice(current);
+    current = current->next;
   }
 
   if (lm->root == NULL) {
@@ -448,7 +209,7 @@ uint8_t AddDevice(struct ListenerModule *lm, struct Device *add) {
     return FALSE;
   }
 
-  if (FindDeviceByName(lm, add->name) == TRUE) {
+  if (FindDeviceByName(lm, add->name) != NULL) {
     Verbose("Device %s already specified", add->name);
     return FALSE;
   }
@@ -495,27 +256,59 @@ uint8_t RemoveDevice(struct ListenerModule *lm, const struct Device *remove) {
   return FALSE;
 }
 
-uint8_t FindDeviceByName(const struct ListenerModule *lm, const char *name) {
+struct Device *FindDeviceByName(const struct ListenerModule *lm, const char *name) {
   struct Device *current;
 
-  if (lm == NULL) {
-    return FALSE;
-  }
-
-  if (strlen(name) > (IF_NAMESIZE - 1)) {
-    return FALSE;
-  }
+  assert(lm != NULL);
+  assert(name != NULL);
 
   current = lm->root;
   while (current != NULL) {
     if (strncmp(current->name, name, (IF_NAMESIZE - 1)) == 0) {
-      return TRUE;
+      return current;
     }
 
     current = current->next;
   }
 
-  return FALSE;
+  return NULL;
+}
+
+struct Device *FindDeviceByIpAddr(const struct ListenerModule *lm, const char *ip_addr) {
+  struct Device *current;
+  int i;
+
+  assert(lm != NULL);
+  assert(ip_addr != NULL);
+
+  current = lm->root;
+  while (current != NULL) {
+    for (i = 0; i < current->inet4_addrs_count; i++) {
+      if (strcmp(current->inet4_addrs[i], ip_addr) == 0) {
+        return current;
+      }
+    }
+
+    for (i = 0; i < current->inet6_addrs_count; i++) {
+      if (strcmp(current->inet6_addrs[i], ip_addr) == 0) {
+        return current;
+      }
+    }
+
+    current = current->next;
+  }
+
+  return NULL;
+}
+
+static void SetFdParams(struct pollfd *pollfd, const int fd) {
+  assert(pollfd != NULL);
+  assert(fd >= 0);
+  memset(pollfd, 0, sizeof(struct pollfd));
+
+  pollfd->fd = fd;
+  pollfd->events = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
+  pollfd->revents = 0;
 }
 
 struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
@@ -523,18 +316,23 @@ struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
   struct Device *current = NULL;
   int i = 0;
 
-  if ((fds = malloc(sizeof(struct pollfd) * GetNoDevices(lm))) == NULL) {
-    Error("Unable to allocate memory for pollfd");
-    return NULL;
+  if ((fds = malloc(sizeof(struct pollfd) * GetNoRunningDevices(lm))) == NULL) {
+    Crash(1, "Unable to allocate memory for pollfd");
   }
 
   current = lm->root;
   while (current != NULL) {
-    fds[i].fd = current->fd;
-    fds[i].events = POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI;
-    fds[i].revents = 0;
+    if (current->state == DEVICE_STATE_RUNNING) {
+      SetFdParams(&fds[i], current->fd);
+      i++;
+    }
+
     current = current->next;
-    i++;
+  }
+
+  // Currently a redundant check, but it's here to make sure we don't have/pickup any issues
+  if (i != GetNoRunningDevices(lm)) {
+    Crash(1, "Number of running devices does not match number of pollfd");
   }
 
   *nfds = i;
@@ -542,13 +340,43 @@ struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
   return fds;
 }
 
+struct pollfd *AddPollFd(struct pollfd *fds, int *nfds, const int fd) {
+  struct pollfd *newFds = NULL;
+
+  // Already in the list?
+  for (int i = 0; i < *nfds; i++) {
+    if (fds[i].fd == fd) {
+      return fds;
+    }
+  }
+
+  if ((newFds = realloc(fds, sizeof(struct pollfd) * (*nfds + 1))) == NULL) {
+    Crash(1, "Unable to allocate memory for pollfd");
+  }
+
+  SetFdParams(&newFds[*nfds], fd);
+  *nfds += 1;
+
+  return newFds;
+}
+
 struct pollfd *RemovePollFd(struct pollfd *fds, int *nfds, const int fd) {
   int i, j;
   struct pollfd *newFds = NULL;
 
+  // Find the index of the fd to remove
+  for (i = 0; i < *nfds; i++) {
+    if (fds[i].fd == fd) {
+      break;
+    }
+  }
+
+  if (i == *nfds) {
+    return fds;
+  }
+
   if ((newFds = malloc(sizeof(struct pollfd) * (*nfds - 1))) == NULL) {
-    Error("Unable to allocate memory for pollfd");
-    return NULL;
+    Crash(1, "Unable to allocate memory for pollfd");
   }
 
   for (i = 0, j = 0; i < *nfds; i++) {
@@ -576,40 +404,6 @@ struct Device *GetDeviceByFd(const struct ListenerModule *lm, const int fd) {
   }
 
   return NULL;
-}
-
-static int SetupFilter(const struct Device *device) {
-  struct bpf_program fp;
-  char *filter = NULL;
-  int status = FALSE;
-
-  assert(device != NULL);
-  assert(device->handle != NULL);
-
-  if ((filter = AllocAndBuildPcapFilter(device)) == NULL) {
-    goto exit;
-  }
-
-  // Using PCAP_NETMASK_UNKNOWN because we might use IPv6 and mask is only used for broadcast packets which we don't care about
-  if (pcap_compile(device->handle, &fp, filter, 1, PCAP_NETMASK_UNKNOWN) == PCAP_ERROR) {
-    Error("Unable to compile pcap filter %s: %s", filter, pcap_geterr(device->handle));
-    goto exit;
-  }
-
-  if (pcap_setfilter(device->handle, &fp) == PCAP_ERROR) {
-    Error("Unable to set filter %s: %s", filter, pcap_geterr(device->handle));
-    goto exit;
-  }
-
-  status = TRUE;
-
-exit:
-  if (filter != NULL) {
-    free(filter);
-    filter = NULL;
-  }
-
-  return status;
 }
 
 static void PrintDevices(const struct ListenerModule *lm) {

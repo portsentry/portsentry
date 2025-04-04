@@ -19,6 +19,14 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(CORE_SOURCE_FILES ${CORE_SOURCE_FILES} src/sentry_stealth.c)
 endif()
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(CORE_SOURCE_FILES ${CORE_SOURCE_FILES} src/kernelmsg_linux.c)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "NetBSD" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+  set(CORE_SOURCE_FILES ${CORE_SOURCE_FILES} src/kernelmsg_bsd.c)
+else()
+  message(FATAL_ERROR "Unsupported operating system ${CMAKE_SYSTEM_NAME}")
+endif()
+
 configure_file(config.h.in config.h)
 
 

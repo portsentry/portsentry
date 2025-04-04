@@ -1,4 +1,4 @@
-#! env bash
+#!/usr/bin/env bash
 
 [ -z "$BUILD_TYPE" ] && BUILD_TYPE="debug"
 if [ -n "$1" ]; then
