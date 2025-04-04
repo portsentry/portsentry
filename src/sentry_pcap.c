@@ -336,10 +336,7 @@ static void HandleAddressRemoved(struct Device *device, struct KernelMessage *ke
     Debug("ProcessKernelMessage[KMT_ADDRESS DEL]: No addresses left on %s, stopping device", device->name);
     StopDeviceAndRemovePollFd(device, fds, nfds);
   } else {
-    if (device->state != DEVICE_STATE_RUNNING) {
-      Debug("ProcessKernelMessage[KMT_ADDRESS DEL]: %s has addresses left and was not running, starting", device->name);
-      StartDeviceAndAddPollFd(device, fds, nfds);
-    } else {
+    if (device->state == DEVICE_STATE_RUNNING) {
       Debug("ProcessKernelMessage[KMT_ADDRESS DEL]: %s has addresses left, refiltering", device->name);
       SetupFilter(device);
     }
