@@ -244,7 +244,7 @@ static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule 
   }
 }
 
-#elif defined(__NetBSD__) || defined(__FreeBSD__)
+#elif defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, int *nfds) {
   char buf[4096];
   char err[ERRNOMAXBUF];
