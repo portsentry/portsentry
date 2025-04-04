@@ -325,8 +325,9 @@ static void HandleAddressAdded(struct Device *device, struct KernelMessage *kern
     StartDeviceAndAddPollFd(device, fds, nfds);
   } else {
     Debug("ProcessKernelMessage[KMT_ADDRESS ADD]: %s is already running, adding address and refiltering", device->name);
-    AddAddress(device, kernelMessage->address.ipAddr, kernelMessage->address.family);
-    SetupFilter(device);
+    if (AddAddress(device, kernelMessage->address.ipAddr, kernelMessage->address.family) == TRUE) {
+      SetupFilter(device);
+    }
   }
 }
 

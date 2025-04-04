@@ -223,30 +223,31 @@ int AddAddress(struct Device *device, const char *address, const int type) {
   assert(type == AF_INET || type == AF_INET6);
 
   if (AddressExists(device, address, type) == TRUE) {
-    return TRUE;
+    Debug("AddAddress: Address %s already exists on %s, skipping", address, device->name);
+    return FALSE;
   }
 
   if (type == AF_INET) {
     struct sockaddr_in addr4;
     if (inet_pton(AF_INET, address, &addr4.sin_addr) != 1) {
       Error("Invalid IPv4 address format: %s", address);
-      return FALSE;
+      return ERROR;
     }
     // Check for IPv4 link-local (169.254.0.0/16)
     uint32_t addr = ntohl(addr4.sin_addr.s_addr);
     if ((addr & 0xFFFF0000) == 0xA9FE0000) {
       Debug("Ignoring IPv4 link-local address %s on %s", address, device->name);
-      return TRUE;
+      return FALSE;
     }
   } else if (type == AF_INET6) {
     struct sockaddr_in6 addr6;
     if (inet_pton(AF_INET6, address, &addr6.sin6_addr) != 1) {
       Error("Invalid IPv6 address format: %s", address);
-      return FALSE;
+      return ERROR;
     }
     if (IN6_IS_ADDR_LINKLOCAL(&addr6.sin6_addr)) {
       Debug("Ignoring IPv6 link-local address %s on %s", address, device->name);
-      return TRUE;
+      return FALSE;
     }
   }
 
