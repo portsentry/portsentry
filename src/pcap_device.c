@@ -7,7 +7,10 @@
 #include <string.h>
 #include <assert.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <ifaddrs.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 
 #include "portsentry.h"
 #include "pcap_device.h"
