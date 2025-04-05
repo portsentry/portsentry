@@ -1,6 +1,9 @@
 #!/bin/sh
 . ./testlib.sh
 
+rm /etc/hosts.deny
+touch /etc/hosts.deny
+
 cat > $TEST_DIR/routesim.sh <<EOF
 #!/bin/sh
 

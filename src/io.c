@@ -316,11 +316,13 @@ int KillRunCmd(const char *target, const int port, const char *killString, const
  * all access. The drop route metod is preferred as this stops UDP attacks as well
  * as TCP. You may find though that host.deny will be a more permanent home.. */
 int KillHostsDeny(const char *target, const int port, const char *killString, const char *detectionType) {
-  FILE *output;
+  FILE *output = NULL;
   char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
   int substStatus = ERROR;
+  struct stat st;
+  char err[ERRNOMAXBUF];
 
   if (strlen(killString) == 0)
     return FALSE;
@@ -329,8 +331,7 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
 
   Debug("KillHostsDeny: parsing string for block: %s", killString);
 
-  substStatus =
-      SubstString(target, "$TARGET$", killString, commandStringTemp, MAXBUF);
+  substStatus = SubstString(target, "$TARGET$", killString, commandStringTemp, MAXBUF);
   if (substStatus == 0) {
     Log("No target variable specified in KILL_HOSTS_DENY option. Skipping.");
     return ERROR;
@@ -351,21 +352,128 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
 
   Debug("KillHostsDeny: result string for block: %s", commandStringFinal);
 
-  if ((output = fopen(WRAPPER_HOSTS_DENY, "a")) == NULL) {
-    Log("Cannot open hosts.deny file: %s for blocking.", WRAPPER_HOSTS_DENY);
-    Error("securityalert: There was an error trying to block host %s", target);
+  if (stat(WRAPPER_HOSTS_DENY, &st) == -1) {
+    Error("Cannot stat file %s: %s", WRAPPER_HOSTS_DENY, ErrnoString(err, sizeof(err)));
     return ERROR;
   }
 
-  if ((size_t)fprintf(output, "%s\n", commandStringFinal) != (strlen(commandStringFinal) + 1)) {  // +1 for newline
-    Error("There was an error writing to hosts.deny file: %s", WRAPPER_HOSTS_DENY);
+  if (S_ISLNK(st.st_mode)) {
+    Error("File %s is a symbolic link, refusing to modify", WRAPPER_HOSTS_DENY);
+    return ERROR;
+  }
+
+  if ((st.st_mode & S_IWOTH) != 0) {
+    Error("File %s is world-writable, refusing to modify", WRAPPER_HOSTS_DENY);
+    return ERROR;
+  }
+
+  if (FindInFile(commandStringFinal, WRAPPER_HOSTS_DENY) == TRUE) {
+    Log("Host %s already in hosts.deny file, skipping.", target);
+    return TRUE;
+  }
+
+  char tempFile[MAXBUF];
+  snprintf(tempFile, sizeof(tempFile), "%s.tmp", WRAPPER_HOSTS_DENY);
+
+  if ((output = fopen(tempFile, "w")) == NULL) {
+    Error("Cannot create temporary file %s: %s", tempFile, ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  FILE *input = fopen(WRAPPER_HOSTS_DENY, "r");
+  if (input != NULL) {
+    char line[MAXBUF];
+    while (fgets(line, sizeof(line), input) != NULL) {
+      fputs(line, output);
+    }
+    fclose(input);
+  }
+
+  if (fprintf(output, "%s\n", commandStringFinal) < 0) {
+    Error("Error writing to temporary file %s", tempFile);
     fclose(output);
+    unlink(tempFile);
     return ERROR;
   }
 
   fclose(output);
+
+  if (rename(tempFile, WRAPPER_HOSTS_DENY) == -1) {
+    Error("Cannot rename temporary file %s to %s: %s", tempFile, WRAPPER_HOSTS_DENY, ErrnoString(err, sizeof(err)));
+    unlink(tempFile);
+    return ERROR;
+  }
+
   Log("attackalert: Host %s has been blocked via wrappers with string: \"%s\"", target, commandStringFinal);
   return TRUE;
+}
+
+int FindInFile(const char *searchString, const char *filename) {
+  FILE *fp = NULL;
+  char line[MAXBUF];
+  size_t searchLen;
+  int status = ERROR;
+  char err[ERRNOMAXBUF];
+  struct stat st;
+
+  if (searchString == NULL || filename == NULL) {
+    Error("Invalid parameters to FindInFile");
+    goto exit;
+  }
+
+  if ((fp = fopen(filename, "r")) == NULL) {
+    Error("Unable to open file %s for reading: %s", filename, ErrnoString(err, sizeof(err)));
+    goto exit;
+  }
+
+  if (fstat(fileno(fp), &st) == -1) {
+    Error("Cannot stat file %s: %s", filename, ErrnoString(err, sizeof(err)));
+    goto exit;
+  }
+
+  if (S_ISLNK(st.st_mode)) {
+    Error("File %s is a symbolic link, refusing to read", filename);
+    goto exit;
+  }
+
+  if ((st.st_mode & S_IWOTH) != 0) {
+    Error("File %s is world-writable, refusing to read", filename);
+    goto exit;
+  }
+
+  searchLen = strlen(searchString);
+  if (searchLen == 0 || searchLen >= MAXBUF) {
+    Error("Invalid search string length");
+    goto exit;
+  }
+
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    size_t lineLen = strlen(line);
+
+    if (lineLen == sizeof(line) - 1 && line[lineLen - 1] != '\n') {
+      Error("Line too long in file %s", filename);
+      status = ERROR;
+      goto exit;
+    }
+
+    if (lineLen > 0 && line[lineLen - 1] == '\n') {
+      line[lineLen - 1] = '\0';
+      lineLen--;
+    }
+
+    if (lineLen == searchLen && strcmp(line, searchString) == 0) {
+      status = TRUE;
+      goto exit;
+    }
+  }
+
+  status = FALSE;
+
+exit:
+  if (fp != NULL) {
+    fclose(fp);
+  }
+  return status;
 }
 
 /*********************************************************************************
@@ -380,14 +488,27 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
  * It returns the number of substitutions made during the operation.
  **********************************************************************************/
 int SubstString(const char *replaceToken, const char *findToken, const char *source, char *dest, const int destSize) {
-  int remainDestSize = destSize, chunkSize, numberOfSubst = 0;
-  const char *srcToken, *srcStart = source;
+  // Input validation
+  if (!replaceToken || !findToken || !source || !dest || destSize <= 0) {
+    return ERROR;
+  }
+
+  // Check for empty findToken to prevent infinite loop
+  if (findToken[0] == '\0') {
+    return ERROR;
+  }
+
+  int remainDestSize = destSize;
+  int chunkSize;
+  int numberOfSubst = 0;
+  const char *srcToken;
+  const char *srcStart = source;
   char *destPtr = dest;
 
   while ((srcToken = strstr(srcStart, findToken)) != NULL) {
     // Copy data leading up to the findToken
     chunkSize = srcToken - srcStart;
-    if (remainDestSize <= chunkSize) {
+    if (chunkSize < 0 || remainDestSize <= chunkSize) {
       return ERROR;
     }
     memcpy(destPtr, srcStart, chunkSize);
@@ -397,7 +518,7 @@ int SubstString(const char *replaceToken, const char *findToken, const char *sou
 
     // Copy the replaceToken where the findToken was
     chunkSize = strlen(replaceToken);
-    if (remainDestSize <= chunkSize) {
+    if (chunkSize < 0 || remainDestSize <= chunkSize) {
       return ERROR;
     }
     memcpy(destPtr, replaceToken, chunkSize);
@@ -409,13 +530,14 @@ int SubstString(const char *replaceToken, const char *findToken, const char *sou
 
   // Copy the remaining data
   chunkSize = strlen(srcStart);
-  if (remainDestSize <= chunkSize) {
+  if (chunkSize < 0 || remainDestSize <= chunkSize) {
     return ERROR;
   }
   memcpy(destPtr, srcStart, chunkSize);
   destPtr += chunkSize;
   remainDestSize -= chunkSize;
 
+  // Ensure we have space for null terminator
   if (remainDestSize <= 0) {
     return ERROR;
   }
