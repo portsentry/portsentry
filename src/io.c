@@ -329,8 +329,7 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
 
   Debug("KillHostsDeny: parsing string for block: %s", killString);
 
-  substStatus =
-      SubstString(target, "$TARGET$", killString, commandStringTemp, MAXBUF);
+  substStatus = SubstString(target, "$TARGET$", killString, commandStringTemp, MAXBUF);
   if (substStatus == 0) {
     Log("No target variable specified in KILL_HOSTS_DENY option. Skipping.");
     return ERROR;
@@ -351,6 +350,11 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
 
   Debug("KillHostsDeny: result string for block: %s", commandStringFinal);
 
+  if (FindInFile(commandStringFinal, WRAPPER_HOSTS_DENY) == TRUE) {
+    Log("Host %s already in hosts.deny file, skipping.", target);
+    return TRUE;
+  }
+
   if ((output = fopen(WRAPPER_HOSTS_DENY, "a")) == NULL) {
     Log("Cannot open hosts.deny file: %s for blocking.", WRAPPER_HOSTS_DENY);
     Error("securityalert: There was an error trying to block host %s", target);
@@ -366,6 +370,50 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
   fclose(output);
   Log("attackalert: Host %s has been blocked via wrappers with string: \"%s\"", target, commandStringFinal);
   return TRUE;
+}
+
+int FindInFile(const char *searchString, const char *filename) {
+  FILE *fp = NULL;
+  char line[MAXBUF];
+  size_t searchLen;
+  int status = ERROR;
+  char err[ERRNOMAXBUF];
+
+  if (searchString == NULL || filename == NULL) {
+    goto exit;
+  }
+
+  searchLen = strlen(searchString);
+  if (searchLen == 0) {
+    goto exit;
+  }
+
+  if ((fp = fopen(filename, "r")) == NULL) {
+    Error("Unable to open file %s for reading: %s", filename, ErrnoString(err, sizeof(err)));
+    goto exit;
+  }
+
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    size_t lineLen = strlen(line);
+
+    if (lineLen > 0 && line[lineLen - 1] == '\n') {
+      line[lineLen - 1] = '\0';
+      lineLen--;
+    }
+
+    if (lineLen == searchLen && strcmp(line, searchString) == 0) {
+      status = TRUE;
+      goto exit;
+    }
+  }
+
+  status = FALSE;
+
+exit:
+  if (fp != NULL) {
+    fclose(fp);
+  }
+  return status;
 }
 
 /*********************************************************************************
@@ -402,6 +450,64 @@ int SubstString(const char *replaceToken, const char *findToken, const char *sou
     chunkSize = srcToken - srcStart;
     if (chunkSize < 0 || remainDestSize <= chunkSize) {
       return ERROR;
+    }
+    int SubstString(const char *replaceToken, const char *findToken, const char *source, char *dest, const int destSize) {
+      // Input validation
+      if (!replaceToken || !findToken || !source || !dest || destSize <= 0) {
+        return ERROR;
+      }
+
+      // Check for empty findToken to prevent infinite loop
+      if (findToken[0] == '\0') {
+        return ERROR;
+      }
+
+      int remainDestSize = destSize;
+      int chunkSize;
+      int numberOfSubst = 0;
+      const char *srcToken;
+      const char *srcStart = source;
+      char *destPtr = dest;
+
+      while ((srcToken = strstr(srcStart, findToken)) != NULL) {
+        // Copy data leading up to the findToken
+        chunkSize = srcToken - srcStart;
+        if (chunkSize < 0 || remainDestSize <= chunkSize) {
+          return ERROR;
+        }
+        memcpy(destPtr, srcStart, chunkSize);
+        destPtr += chunkSize;
+        remainDestSize -= chunkSize;
+        srcStart = srcToken + strlen(findToken);
+
+        // Copy the replaceToken where the findToken was
+        chunkSize = strlen(replaceToken);
+        if (chunkSize < 0 || remainDestSize <= chunkSize) {
+          return ERROR;
+        }
+        memcpy(destPtr, replaceToken, chunkSize);
+        destPtr += chunkSize;
+        remainDestSize -= chunkSize;
+
+        numberOfSubst++;
+      }
+
+      // Copy the remaining data
+      chunkSize = strlen(srcStart);
+      if (chunkSize < 0 || remainDestSize <= chunkSize) {
+        return ERROR;
+      }
+      memcpy(destPtr, srcStart, chunkSize);
+      destPtr += chunkSize;
+      remainDestSize -= chunkSize;
+
+      // Ensure we have space for null terminator
+      if (remainDestSize <= 0) {
+        return ERROR;
+      }
+      *destPtr = '\0';
+
+      return numberOfSubst;
     }
     memcpy(destPtr, srcStart, chunkSize);
     destPtr += chunkSize;
