@@ -451,64 +451,6 @@ int SubstString(const char *replaceToken, const char *findToken, const char *sou
     if (chunkSize < 0 || remainDestSize <= chunkSize) {
       return ERROR;
     }
-    int SubstString(const char *replaceToken, const char *findToken, const char *source, char *dest, const int destSize) {
-      // Input validation
-      if (!replaceToken || !findToken || !source || !dest || destSize <= 0) {
-        return ERROR;
-      }
-
-      // Check for empty findToken to prevent infinite loop
-      if (findToken[0] == '\0') {
-        return ERROR;
-      }
-
-      int remainDestSize = destSize;
-      int chunkSize;
-      int numberOfSubst = 0;
-      const char *srcToken;
-      const char *srcStart = source;
-      char *destPtr = dest;
-
-      while ((srcToken = strstr(srcStart, findToken)) != NULL) {
-        // Copy data leading up to the findToken
-        chunkSize = srcToken - srcStart;
-        if (chunkSize < 0 || remainDestSize <= chunkSize) {
-          return ERROR;
-        }
-        memcpy(destPtr, srcStart, chunkSize);
-        destPtr += chunkSize;
-        remainDestSize -= chunkSize;
-        srcStart = srcToken + strlen(findToken);
-
-        // Copy the replaceToken where the findToken was
-        chunkSize = strlen(replaceToken);
-        if (chunkSize < 0 || remainDestSize <= chunkSize) {
-          return ERROR;
-        }
-        memcpy(destPtr, replaceToken, chunkSize);
-        destPtr += chunkSize;
-        remainDestSize -= chunkSize;
-
-        numberOfSubst++;
-      }
-
-      // Copy the remaining data
-      chunkSize = strlen(srcStart);
-      if (chunkSize < 0 || remainDestSize <= chunkSize) {
-        return ERROR;
-      }
-      memcpy(destPtr, srcStart, chunkSize);
-      destPtr += chunkSize;
-      remainDestSize -= chunkSize;
-
-      // Ensure we have space for null terminator
-      if (remainDestSize <= 0) {
-        return ERROR;
-      }
-      *destPtr = '\0';
-
-      return numberOfSubst;
-    }
     memcpy(destPtr, srcStart, chunkSize);
     destPtr += chunkSize;
     remainDestSize -= chunkSize;
