@@ -421,7 +421,12 @@ int FindInFile(const char *searchString, const char *filename) {
     goto exit;
   }
 
-  if (stat(filename, &st) == -1) {
+  if ((fp = fopen(filename, "r")) == NULL) {
+    Error("Unable to open file %s for reading: %s", filename, ErrnoString(err, sizeof(err)));
+    goto exit;
+  }
+
+  if (fstat(fileno(fp), &st) == -1) {
     Error("Cannot stat file %s: %s", filename, ErrnoString(err, sizeof(err)));
     goto exit;
   }
@@ -439,11 +444,6 @@ int FindInFile(const char *searchString, const char *filename) {
   searchLen = strlen(searchString);
   if (searchLen == 0 || searchLen >= MAXBUF) {
     Error("Invalid search string length");
-    goto exit;
-  }
-
-  if ((fp = fopen(filename, "r")) == NULL) {
-    Error("Unable to open file %s for reading: %s", filename, ErrnoString(err, sizeof(err)));
     goto exit;
   }
 
