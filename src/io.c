@@ -380,14 +380,27 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
  * It returns the number of substitutions made during the operation.
  **********************************************************************************/
 int SubstString(const char *replaceToken, const char *findToken, const char *source, char *dest, const int destSize) {
-  int remainDestSize = destSize, chunkSize, numberOfSubst = 0;
-  const char *srcToken, *srcStart = source;
+  // Input validation
+  if (!replaceToken || !findToken || !source || !dest || destSize <= 0) {
+    return ERROR;
+  }
+
+  // Check for empty findToken to prevent infinite loop
+  if (findToken[0] == '\0') {
+    return ERROR;
+  }
+
+  int remainDestSize = destSize;
+  int chunkSize;
+  int numberOfSubst = 0;
+  const char *srcToken;
+  const char *srcStart = source;
   char *destPtr = dest;
 
   while ((srcToken = strstr(srcStart, findToken)) != NULL) {
     // Copy data leading up to the findToken
     chunkSize = srcToken - srcStart;
-    if (remainDestSize <= chunkSize) {
+    if (chunkSize < 0 || remainDestSize <= chunkSize) {
       return ERROR;
     }
     memcpy(destPtr, srcStart, chunkSize);
@@ -397,7 +410,7 @@ int SubstString(const char *replaceToken, const char *findToken, const char *sou
 
     // Copy the replaceToken where the findToken was
     chunkSize = strlen(replaceToken);
-    if (remainDestSize <= chunkSize) {
+    if (chunkSize < 0 || remainDestSize <= chunkSize) {
       return ERROR;
     }
     memcpy(destPtr, replaceToken, chunkSize);
@@ -409,13 +422,14 @@ int SubstString(const char *replaceToken, const char *findToken, const char *sou
 
   // Copy the remaining data
   chunkSize = strlen(srcStart);
-  if (remainDestSize <= chunkSize) {
+  if (chunkSize < 0 || remainDestSize <= chunkSize) {
     return ERROR;
   }
   memcpy(destPtr, srcStart, chunkSize);
   destPtr += chunkSize;
   remainDestSize -= chunkSize;
 
+  // Ensure we have space for null terminator
   if (remainDestSize <= 0) {
     return ERROR;
   }
