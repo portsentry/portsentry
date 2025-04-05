@@ -316,11 +316,13 @@ int KillRunCmd(const char *target, const int port, const char *killString, const
  * all access. The drop route metod is preferred as this stops UDP attacks as well
  * as TCP. You may find though that host.deny will be a more permanent home.. */
 int KillHostsDeny(const char *target, const int port, const char *killString, const char *detectionType) {
-  FILE *output;
+  FILE *output = NULL;
   char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
   char portString[MAXBUF];
   int substStatus = ERROR;
+  struct stat st;
+  char err[ERRNOMAXBUF];
 
   if (strlen(killString) == 0)
     return FALSE;
@@ -350,24 +352,58 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
 
   Debug("KillHostsDeny: result string for block: %s", commandStringFinal);
 
+  if (stat(WRAPPER_HOSTS_DENY, &st) == -1) {
+    Error("Cannot stat file %s: %s", WRAPPER_HOSTS_DENY, ErrnoString(err, sizeof(err)));
+    return ERROR;
+  }
+
+  if (S_ISLNK(st.st_mode)) {
+    Error("File %s is a symbolic link, refusing to modify", WRAPPER_HOSTS_DENY);
+    return ERROR;
+  }
+
+  if ((st.st_mode & S_IWOTH) != 0) {
+    Error("File %s is world-writable, refusing to modify", WRAPPER_HOSTS_DENY);
+    return ERROR;
+  }
+
   if (FindInFile(commandStringFinal, WRAPPER_HOSTS_DENY) == TRUE) {
     Log("Host %s already in hosts.deny file, skipping.", target);
     return TRUE;
   }
 
-  if ((output = fopen(WRAPPER_HOSTS_DENY, "a")) == NULL) {
-    Log("Cannot open hosts.deny file: %s for blocking.", WRAPPER_HOSTS_DENY);
-    Error("securityalert: There was an error trying to block host %s", target);
+  char tempFile[MAXBUF];
+  snprintf(tempFile, sizeof(tempFile), "%s.tmp", WRAPPER_HOSTS_DENY);
+
+  if ((output = fopen(tempFile, "w")) == NULL) {
+    Error("Cannot create temporary file %s: %s", tempFile, ErrnoString(err, sizeof(err)));
     return ERROR;
   }
 
-  if ((size_t)fprintf(output, "%s\n", commandStringFinal) != (strlen(commandStringFinal) + 1)) {  // +1 for newline
-    Error("There was an error writing to hosts.deny file: %s", WRAPPER_HOSTS_DENY);
+  FILE *input = fopen(WRAPPER_HOSTS_DENY, "r");
+  if (input != NULL) {
+    char line[MAXBUF];
+    while (fgets(line, sizeof(line), input) != NULL) {
+      fputs(line, output);
+    }
+    fclose(input);
+  }
+
+  if (fprintf(output, "%s\n", commandStringFinal) < 0) {
+    Error("Error writing to temporary file %s", tempFile);
     fclose(output);
+    unlink(tempFile);
     return ERROR;
   }
 
   fclose(output);
+
+  if (rename(tempFile, WRAPPER_HOSTS_DENY) == -1) {
+    Error("Cannot rename temporary file %s to %s: %s", tempFile, WRAPPER_HOSTS_DENY, ErrnoString(err, sizeof(err)));
+    unlink(tempFile);
+    return ERROR;
+  }
+
   Log("attackalert: Host %s has been blocked via wrappers with string: \"%s\"", target, commandStringFinal);
   return TRUE;
 }
