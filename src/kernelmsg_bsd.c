@@ -49,14 +49,14 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
             ifan->ifan_index);
       kernelMessage->type = KMT_INTERFACE;
       kernelMessage->action = KMA_ADD;
-      strncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
+      SafeStrncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
       break;
     case IFAN_DEPARTURE:
       Debug("Removed interface %s (index %d)", ifan->ifan_name,
             ifan->ifan_index);
       kernelMessage->type = KMT_INTERFACE;
       kernelMessage->action = KMA_DEL;
-      strncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
+      SafeStrncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
       break;
     default:
       return FALSE;
