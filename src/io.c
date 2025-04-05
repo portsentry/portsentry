@@ -378,13 +378,31 @@ int FindInFile(const char *searchString, const char *filename) {
   size_t searchLen;
   int status = ERROR;
   char err[ERRNOMAXBUF];
+  struct stat st;
 
   if (searchString == NULL || filename == NULL) {
+    Error("Invalid parameters to FindInFile");
+    goto exit;
+  }
+
+  if (stat(filename, &st) == -1) {
+    Error("Cannot stat file %s: %s", filename, ErrnoString(err, sizeof(err)));
+    goto exit;
+  }
+
+  if (S_ISLNK(st.st_mode)) {
+    Error("File %s is a symbolic link, refusing to read", filename);
+    goto exit;
+  }
+
+  if ((st.st_mode & S_IWOTH) != 0) {
+    Error("File %s is world-writable, refusing to read", filename);
     goto exit;
   }
 
   searchLen = strlen(searchString);
-  if (searchLen == 0) {
+  if (searchLen == 0 || searchLen >= MAXBUF) {
+    Error("Invalid search string length");
     goto exit;
   }
 
@@ -395,6 +413,12 @@ int FindInFile(const char *searchString, const char *filename) {
 
   while (fgets(line, sizeof(line), fp) != NULL) {
     size_t lineLen = strlen(line);
+
+    if (lineLen == sizeof(line) - 1 && line[lineLen - 1] != '\n') {
+      Error("Line too long in file %s", filename);
+      status = ERROR;
+      goto exit;
+    }
 
     if (lineLen > 0 && line[lineLen - 1] == '\n') {
       line[lineLen - 1] = '\0';
