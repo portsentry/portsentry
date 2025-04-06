@@ -314,8 +314,9 @@ static void StartDeviceAndAddPollFd(struct Device *device, struct pollfd **fds, 
 }
 
 static void StopDeviceAndRemovePollFd(struct Device *device, struct pollfd **fds, int *nfds) {
+  int fd = device->fd;
   StopDevice(device);
-  *fds = RemovePollFd(*fds, nfds, device->fd);
+  *fds = RemovePollFd(*fds, nfds, fd);
 }
 
 static void HandleAddressAdded(struct Device *device, struct KernelMessage *kernelMessage, struct pollfd **fds, int *nfds) {
