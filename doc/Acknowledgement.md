@@ -1,11 +1,8 @@
 # Credits
 
-$Id: CREDITS,v 1.31 2003/05/23 16:15:45 crowland Exp crowland $
-
 Craig Rowland - Inventor, Main developer and Maintainer of Portsentry from its inception in 1997 to its end in 2003
 
-Thanks to the following people who offered testing and bug fixes/suggestions. I 
-apologize if I've forgotten anyone. (No particular order on this list either):
+Thanks to the following people who offered testing and bug fixes/suggestions. I apologize if I've forgotten anyone. (No particular order on this list either):
 
 Jeff Johnson <trn@flinet.com> - Initial tester. Recommended ipfwadm addition.
 
