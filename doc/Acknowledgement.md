@@ -1,4 +1,8 @@
+# Credits
+
 $Id: CREDITS,v 1.31 2003/05/23 16:15:45 crowland Exp crowland $
+
+Craig Rowland - Inventor, Main developer and Maintainer of Portsentry from its inception in 1997 to its end in 2003
 
 Thanks to the following people who offered testing and bug fixes/suggestions. I 
 apologize if I've forgotten anyone. (No particular order on this list either):
@@ -163,7 +167,7 @@ Dino A Amato <Dino.A.Amato@lerc.nasa.gov> - Sent in Makefile strings for Irix
 
 Scott McCrory <scott@mccrory.com> - Sent in common DDOS daemon ports
 
-Per Jönsson <pt98pjo@student.hk-r.se> - Sent in changes to allow for
+Per Jï¿½nsson <pt98pjo@student.hk-r.se> - Sent in changes to allow for
 ignoring networks/ports.
 
 Flower <floweros@golia.ro> - Sent in request to disable DNS lookups.
