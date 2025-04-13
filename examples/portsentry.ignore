@@ -1,6 +1,5 @@
 # Put hosts in here you never want blocked. This includes the IP addresses
 # of all local interfaces on the protected host (i.e virtual host, mult-home)
-# Keep 127.0.0.1 and 0.0.0.0 to keep people from playing games.
 #
 # PortSentry can support full netmasks for networks as well. Format is:
 #
@@ -15,7 +14,5 @@
 #
 # If you don't supply a netmask it is assumed to be 32 bits.
 #
-#
 
 127.0.0.1/32
-0.0.0.0
