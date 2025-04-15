@@ -1,10 +1,10 @@
 services:
   portsentry:
     container_name: portsentry
-    image: portsentry
+    image: portsentry/portsentry:latest
     restart: unless-stopped
     network_mode: host
-    command: ["-v", "-i", "ALL"]
+    command: ["-i", "ALL"]
 #    volumes:
 # Add a custom config file
 #      - type: bind
