@@ -4,6 +4,6 @@ filter = portsentry
 maxretry = 0
 bantime	= 31536000
 findtime = 10m
-logpath = /var/run/portsentry/portsentry.history
+logpath = /var/log/portsentry.log
 banaction	= iptables-ipset-proto6-allports
 action		= iptables-ipset-proto6-allports[name=portsentry, chain=INPUT, blocktype=DROP]

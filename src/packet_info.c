@@ -304,6 +304,26 @@ socklen_t GetSourceSockaddrLenFromPacketInfo(const struct PacketInfo *pi) {
   return 0;
 }
 
+struct sockaddr *GetDestSockaddrFromPacketInfo(const struct PacketInfo *pi) {
+  if (pi->version == 6 && pi->sa6_daddr.sin6_family == AF_INET6) {
+    return (struct sockaddr *)&pi->sa6_daddr;
+  } else if (pi->version == 4 && pi->sa_daddr.sin_family == AF_INET) {
+    return (struct sockaddr *)&pi->sa_daddr;
+  }
+
+  return NULL;
+}
+
+socklen_t GetDestSockaddrLenFromPacketInfo(const struct PacketInfo *pi) {
+  if (pi->version == 6 && pi->sa6_daddr.sin6_family == AF_INET6) {
+    return sizeof(struct sockaddr_in6);
+  } else if (pi->version == 4 && pi->sa_daddr.sin_family == AF_INET) {
+    return sizeof(struct sockaddr_in);
+  }
+
+  return 0;
+}
+
 struct sockaddr *GetClientSockaddrFromPacketInfo(const struct PacketInfo *pi) {
   if (pi->client4 != NULL) {
     return (struct sockaddr *)pi->client4;
@@ -322,4 +342,13 @@ socklen_t GetClientSockaddrLenFromPacketInfo(const struct PacketInfo *pi) {
   }
 
   return 0;
+}
+
+int IsSameSourceAndDestAddress(const struct PacketInfo *pi) {
+  if ((pi->version == 4 && pi->sa_saddr.sin_addr.s_addr == pi->sa_daddr.sin_addr.s_addr) ||
+      (pi->version == 6 && IN6_ARE_ADDR_EQUAL(&pi->sa6_saddr.sin6_addr, &pi->sa6_daddr.sin6_addr))) {
+    return TRUE;
+  }
+
+  return FALSE;
 }
