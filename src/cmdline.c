@@ -26,6 +26,7 @@
 #define CMDLINE_VERSION 'V'
 #define CMDLINE_INTERFACE 'i'
 #define CMDLINE_METHOD 'm'
+#define CMDLINE_DISABLE_LOCAL_CHECK 'L'
 
 static void Usage(void);
 static void Version(void);
@@ -44,6 +45,7 @@ void ParseCmdline(const int argc, char **argv) {
       {"configfile", required_argument, 0, CMDLINE_CONFIGFILE},
       {"daemon", no_argument, 0, CMDLINE_DAEMON},
       {"method", required_argument, 0, CMDLINE_METHOD},
+      {"disable-local-check", no_argument, 0, CMDLINE_DISABLE_LOCAL_CHECK},
       {"debug", no_argument, 0, CMDLINE_DEBUG},
       {"verbose", no_argument, 0, CMDLINE_VERBOSE},
       {"help", no_argument, 0, CMDLINE_HELP},
@@ -54,7 +56,7 @@ void ParseCmdline(const int argc, char **argv) {
 
   while (1) {
     int option_index = 0;
-    opt = getopt_long(argc, argv, "l:c:t:s:a:u:i:m:DdvhV", long_options, &option_index);
+    opt = getopt_long(argc, argv, "l:c:t:s:a:u:i:m:DLdvhV", long_options, &option_index);
 
     if (opt >= CMDLINE_CONNECT && opt <= CMDLINE_STEALTH && flagModeSet == TRUE) {
       fprintf(stderr, "Error: Only one mode can be specified, Use only one of --stealth or --connect\n");
@@ -116,6 +118,9 @@ void ParseCmdline(const int argc, char **argv) {
         Exit(EXIT_FAILURE);
       }
       break;
+    case CMDLINE_DISABLE_LOCAL_CHECK:
+      cmdlineConfig.disableLocalCheck = TRUE;
+      break;
     case CMDLINE_DAEMON:
       cmdlineConfig.daemon = TRUE;
       break;
@@ -167,6 +172,7 @@ static void Usage(void) {
   printf("--logoutput, -l [stdout|syslog] - Set Log output (default to stdout)\n");
   printf("--configfile, -c <path> - Set config file path\n");
   printf("--method, -m\t[pcap|raw] - Set sentry method to use the stealth mode. Use libpcap or linux raw sockets (only available on linux) (default: pcap)\n");
+  printf("--disable-local-check, -L\tIf source and destination address are the same we don't do any actions. This option disables this check\n");
   printf("--daemon, -D\tRun as a daemon\n");
   printf("--debug, -d\tEnable debugging output\n");
   printf("--verbose, -v\tEnable verbose output\n");

@@ -47,6 +47,7 @@ struct ConfigData {
   int runCmdFirst;
   int resolveHost;
   int configTriggerCount;
+  int disableLocalCheck;
 
   enum SentryMode sentryMode;
   enum SentryMethod sentryMethod;
