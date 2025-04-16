@@ -2,7 +2,7 @@
 
 # Docker compose
 
-The reposiroty contains a template docker-compose.yaml file
+The repository contains a template docker-compose.yaml file
 
 ## Tags
 
