@@ -52,14 +52,14 @@ Required flag is: **CMAKE_BUILD_TYPE**. It should be set to either **Debug** or 
 
 **Compiling for release**
 ```
-  cmake -B debug -D CMAKE_BUILD_TYPE=Release
-  cmake --build debug -v
+  cmake -B release -D CMAKE_BUILD_TYPE=Release
+  cmake --build release -v
 ```
 
 **Compiling with debug symbols**
 ```
-  cmake -B release -D CMAKE_BUILD_TYPE=Debug
-  cmake --build release -v
+  cmake -B debug -D CMAKE_BUILD_TYPE=Debug
+  cmake --build debug -v
 ```
 
 **Compiling without LIBPCAP**
