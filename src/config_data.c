@@ -57,6 +57,8 @@ void PrintConfigData(const struct ConfigData cd) {
   printf("debug: killHostsDeny: %s\n", cd.killHostsDeny);
   printf("debug: killRunCmd: %s\n", cd.killRunCmd);
 
+  printf("debug: disableLocalCheck: %d\n", cd.disableLocalCheck);
+
   if (GetNoInterfaces(&cd) > 0) {
     i = 0;
     while (cd.interfaces[i] != NULL) {

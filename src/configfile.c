@@ -266,6 +266,7 @@ static void mergeToConfigData(struct ConfigData *fileConfig) {
   configData.logFlags = temp.logFlags;
   configData.daemon = temp.daemon;
   configData.interfaces = temp.interfaces;
+  configData.disableLocalCheck = temp.disableLocalCheck;
   memcpy(configData.configFile, temp.configFile, sizeof(configData.configFile));
 }
 
