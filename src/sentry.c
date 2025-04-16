@@ -175,6 +175,14 @@ void RunSentry(const struct PacketInfo *pi) {
     goto sentry_exit;
   }
 
+  if (configData.disableLocalCheck == FALSE && IsSameSourceAndDestAddress(pi) == TRUE) {
+    Debug("Source address %s same as destination address %s, skipping", pi->saddr, pi->daddr);
+    flagIgnored = TRUE;
+    flagDontBlock = TRUE;
+    flagBlockSuccessful = FALSE;
+    goto sentry_exit;
+  }
+
   if (configData.sentryMode == SENTRY_MODE_CONNECT && pi->protocol == IPPROTO_TCP) {
     XmitBannerIfConfigured(IPPROTO_TCP, pi->tcpAcceptSocket, NULL, 0);
   } else if (configData.sentryMode == SENTRY_MODE_CONNECT && pi->protocol == IPPROTO_UDP) {
