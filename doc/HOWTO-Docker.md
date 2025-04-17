@@ -1,21 +1,20 @@
 # Using portsentry with Docker
 
-# Docker compose
+Visit the official Portsentry Docker Hub page for detailed and up to date information on how to run portsentry with docker [https://hub.docker.com/r/portsentry/portsentry](https://hub.docker.com/r/portsentry/portsentry).
 
-The repository contains a template docker-compose.yaml file
+## Docker compose
+
+In this repository, a template ``docker-compose.yaml`` file exists, it will run portsentry with sensible options.
 
 ## Tags
 
-It's recommended to use the **latest** (stable) version when deploying a docker container. The latest/stable version corresponds to the latest released version.
+As of right now (when portsentry 2.0 is in beta) it is highly recommended to use the ``:unstable`` tag. This version has been stable for a few months
 
 These are the available tags
 
 | Tag Name | Description |
 | -------- | ----------- |
+| unstable | Follows the master branch, unreleased versions |
 | latest | Follows the latest stable release version |
 | stable | Same as latest |
-| 2.0 | Follows the 2.0 branch |
-| unstable | Follows the master branch, unreleased versions |
 | v1.2 | The old **legacy/unmaintained** version |
-
-
