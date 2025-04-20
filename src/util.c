@@ -54,7 +54,7 @@ void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int reso
   Debug("ResolveAddr: Resolved: %s", resolvedHost);
 }
 
-long getLong(const char *buffer) {
+long GetLong(const char *buffer) {
   long value = 0;
   char *endptr = NULL;
 
@@ -278,7 +278,7 @@ int CreateDateTime(char *buf, const int size) {
   return TRUE;
 }
 
-int ntohstr(char *buf, const int bufSize, const uint32_t addr) {
+int Ntohstr(char *buf, const int bufSize, const uint32_t addr) {
   struct in_addr saddr;
 
   if (bufSize < 16)

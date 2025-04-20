@@ -14,16 +14,16 @@
 #include "util.h"
 #include "port.h"
 
-static void setConfiguration(const char *buffer, const size_t keySize, char *ptr, const ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
-static void validateConfig(struct ConfigData *fileConfig);
-static void mergeToConfigData(struct ConfigData *fileConfig);
-static char *skipSpaceAndTab(char *buffer);
-static size_t getKeySize(char *buffer);
-static void stripTrailingSpace(char *buffer);
-static ssize_t getSizeToQuote(const char *buffer);
-static int parsePortsList(char *str, struct Port **ports, int *portsLength);
+static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr, const ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
+static void ValidateConfig(struct ConfigData *fileConfig);
+static void MergeToConfigData(struct ConfigData *fileConfig);
+static char *SkipSpaceAndTab(char *buffer);
+static size_t GetKeySize(char *buffer);
+static void StripTrailingSpace(char *buffer);
+static ssize_t GetSizeToQuote(const char *buffer);
+static int ParsePortsList(char *str, struct Port **ports, int *portsLength);
 
-void readConfigFile(void) {
+void ReadConfigFile(void) {
   struct ConfigData fileConfig;
   FILE *config;
   char buffer[MAXBUF], *ptr;
@@ -44,16 +44,16 @@ void readConfigFile(void) {
       continue;
     }
 
-    stripTrailingSpace(buffer);
+    StripTrailingSpace(buffer);
 
-    if ((keySize = getKeySize(buffer)) == 0) {
+    if ((keySize = GetKeySize(buffer)) == 0) {
       fprintf(stderr, "Invalid config file entry at line %lu\n", line);
       fclose(config);
       Exit(EXIT_FAILURE);
     }
 
     ptr = buffer + keySize;
-    ptr = skipSpaceAndTab(ptr);
+    ptr = SkipSpaceAndTab(ptr);
 
     if (*ptr != '=') {
       fprintf(stderr, "Invalid character found after config key. Require equals (=) after key. Line %lu\n", line);
@@ -62,7 +62,7 @@ void readConfigFile(void) {
     }
     ptr++;
 
-    ptr = skipSpaceAndTab(ptr);
+    ptr = SkipSpaceAndTab(ptr);
 
     if (*ptr != '"') {
       fprintf(stderr, "Invalid value on line %lu, require quote character (\") to start value\n", line);
@@ -71,7 +71,7 @@ void readConfigFile(void) {
     }
     ptr++;
 
-    if ((valueSize = getSizeToQuote(ptr)) == ERROR) {
+    if ((valueSize = GetSizeToQuote(ptr)) == ERROR) {
       fprintf(stderr, "Invalid value at line %lu, require an end quote character (\") at end of value\n", line);
       fclose(config);
       Exit(EXIT_FAILURE);
@@ -79,20 +79,20 @@ void readConfigFile(void) {
 
     *(ptr + valueSize) = '\0';  // Remove trailing quote
 
-    setConfiguration(buffer, keySize, ptr, valueSize, line, &fileConfig);
+    SetConfiguration(buffer, keySize, ptr, valueSize, line, &fileConfig);
   }
 
   fclose(config);
 
   /* Make sure config is valid */
-  validateConfig(&fileConfig);
+  ValidateConfig(&fileConfig);
 
-  mergeToConfigData(&fileConfig);
+  MergeToConfigData(&fileConfig);
 }
 
-static void setConfiguration(const char *buffer, const size_t keySize, char *ptr, const ssize_t valueSize, const size_t line, struct ConfigData *fileConfig) {
+static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr, const ssize_t valueSize, const size_t line, struct ConfigData *fileConfig) {
   char err[ERRNOMAXBUF];
-  Debug("setConfiguration: %s keySize: %lu valueSize: %ld sentryMode: %s", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
+  Debug("SetConfiguration: %s keySize: %lu valueSize: %ld sentryMode: %s", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
 
   if (strncmp(buffer, "BLOCK_TCP", keySize) == 0) {
     if (strncmp(ptr, "0", valueSize) == 0) {
@@ -126,7 +126,7 @@ static void setConfiguration(const char *buffer, const size_t keySize, char *ptr
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "SCAN_TRIGGER", keySize) == 0) {
-    fileConfig->configTriggerCount = getLong(ptr);
+    fileConfig->configTriggerCount = GetLong(ptr);
 
     if (fileConfig->configTriggerCount < 0) {
       fprintf(stderr, "Invalid config file entry for SCAN_TRIGGER\n");
@@ -162,7 +162,7 @@ static void setConfiguration(const char *buffer, const size_t keySize, char *ptr
       Exit(EXIT_FAILURE);
     }
 
-    if (testFileAccess(fileConfig->blockedFile, "a", TRUE) == FALSE) {
+    if (TestFileAccess(fileConfig->blockedFile, "a", TRUE) == FALSE) {
       fprintf(stderr, "Unable to open block file for writing %s: %s\n", fileConfig->blockedFile, ErrnoString(err, sizeof(err)));
       Exit(EXIT_FAILURE);
     }
@@ -172,7 +172,7 @@ static void setConfiguration(const char *buffer, const size_t keySize, char *ptr
       Exit(EXIT_FAILURE);
     }
 
-    if (testFileAccess(fileConfig->historyFile, "w", TRUE) == FALSE) {
+    if (TestFileAccess(fileConfig->historyFile, "w", TRUE) == FALSE) {
       fprintf(stderr, "Unable to open history file for writing %s: %s\n", fileConfig->historyFile, ErrnoString(err, sizeof(err)));
       Exit(EXIT_FAILURE);
     }
@@ -182,12 +182,12 @@ static void setConfiguration(const char *buffer, const size_t keySize, char *ptr
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "TCP_PORTS", keySize) == 0) {
-    if (parsePortsList(ptr, &fileConfig->tcpPorts, &fileConfig->tcpPortsLength) == FALSE) {
+    if (ParsePortsList(ptr, &fileConfig->tcpPorts, &fileConfig->tcpPortsLength) == FALSE) {
       fprintf(stderr, "Unable to parse TCP_PORTS directive in config file\n");
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "UDP_PORTS", keySize) == 0) {
-    if (parsePortsList(ptr, &fileConfig->udpPorts, &fileConfig->udpPortsLength) == FALSE) {
+    if (ParsePortsList(ptr, &fileConfig->udpPorts, &fileConfig->udpPortsLength) == FALSE) {
       fprintf(stderr, "Unable to parse UDP_PORTS directive in config file\n");
       Exit(EXIT_FAILURE);
     }
@@ -203,7 +203,7 @@ static void setConfiguration(const char *buffer, const size_t keySize, char *ptr
   }
 }
 
-static void validateConfig(struct ConfigData *fileConfig) {
+static void ValidateConfig(struct ConfigData *fileConfig) {
   if (configData.sentryMode == SENTRY_MODE_STEALTH && fileConfig->tcpPortsLength == 0 && fileConfig->udpPortsLength == 0) {
     fprintf(stderr, "Selected mode: %s, but no TCP_PORTS or UDP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
     Exit(EXIT_FAILURE);
@@ -240,7 +240,7 @@ static void validateConfig(struct ConfigData *fileConfig) {
   }
 }
 
-static void mergeToConfigData(struct ConfigData *fileConfig) {
+static void MergeToConfigData(struct ConfigData *fileConfig) {
   struct ConfigData temp;
 
   /*
@@ -270,7 +270,7 @@ static void mergeToConfigData(struct ConfigData *fileConfig) {
   memcpy(configData.configFile, temp.configFile, sizeof(configData.configFile));
 }
 
-static char *skipSpaceAndTab(char *buffer) {
+static char *SkipSpaceAndTab(char *buffer) {
   char *ptr = buffer;
 
   while (*ptr == ' ' || *ptr == '\t') {
@@ -280,7 +280,7 @@ static char *skipSpaceAndTab(char *buffer) {
   return ptr;
 }
 
-static size_t getKeySize(char *buffer) {
+static size_t GetKeySize(char *buffer) {
   char *ptr = buffer;
   size_t keySize = 0;
 
@@ -292,7 +292,7 @@ static size_t getKeySize(char *buffer) {
   return keySize;
 }
 
-static void stripTrailingSpace(char *buffer) {
+static void StripTrailingSpace(char *buffer) {
   char *ptr = buffer + strlen(buffer) - 1;
 
   if (ptr < buffer) {
@@ -308,7 +308,7 @@ static void stripTrailingSpace(char *buffer) {
   }
 }
 
-static ssize_t getSizeToQuote(const char *buffer) {
+static ssize_t GetSizeToQuote(const char *buffer) {
   char *ptr;
   ssize_t valueSize = 0;
 
@@ -325,7 +325,7 @@ static ssize_t getSizeToQuote(const char *buffer) {
   return valueSize;
 }
 
-static int parsePortsList(char *str, struct Port **ports, int *portsLength) {
+static int ParsePortsList(char *str, struct Port **ports, int *portsLength) {
   int count = 0;
   char *temp, *saveptr, *p = str;
 

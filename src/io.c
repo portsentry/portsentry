@@ -546,7 +546,7 @@ int SubstString(const char *replaceToken, const char *findToken, const char *sou
   return numberOfSubst;
 }
 
-int testFileAccess(const char *filename, const char *mode, const uint8_t createDir) {
+int TestFileAccess(const char *filename, const char *mode, const uint8_t createDir) {
   FILE *testFile = NULL;
   char *pathCopy = NULL, *dirPath;
   int status = FALSE;

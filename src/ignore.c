@@ -39,7 +39,7 @@ static int IgnoreParse(const char *buffer, struct IgnoreIp *ignoreIp) {
     *separator = '\0';
     separator++;
 
-    if ((mask = getLong(separator)) == ERROR) {
+    if ((mask = GetLong(separator)) == ERROR) {
       separator--;
       *separator = '/';
       Error("Invalid netmask in ignore file: %s", buffer);

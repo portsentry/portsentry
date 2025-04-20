@@ -4,4 +4,4 @@
 
 #pragma once
 
-void readConfigFile(void);
+void ReadConfigFile(void);
