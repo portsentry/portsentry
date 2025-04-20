@@ -126,7 +126,7 @@ static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "SCAN_TRIGGER", keySize) == 0) {
-    fileConfig->configTriggerCount = getLong(ptr);
+    fileConfig->configTriggerCount = GetLong(ptr);
 
     if (fileConfig->configTriggerCount < 0) {
       fprintf(stderr, "Invalid config file entry for SCAN_TRIGGER\n");
