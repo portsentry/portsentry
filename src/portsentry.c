@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     goto exit;
   }
 
-  readConfigFile();
+  ReadConfigFile();
 
   if (configData.logFlags & LOGFLAG_DEBUG) {
     printf("debug: Final Configuration:\n");
