@@ -162,7 +162,7 @@ static void setConfiguration(const char *buffer, const size_t keySize, char *ptr
       Exit(EXIT_FAILURE);
     }
 
-    if (testFileAccess(fileConfig->blockedFile, "a", TRUE) == FALSE) {
+    if (TestFileAccess(fileConfig->blockedFile, "a", TRUE) == FALSE) {
       fprintf(stderr, "Unable to open block file for writing %s: %s\n", fileConfig->blockedFile, ErrnoString(err, sizeof(err)));
       Exit(EXIT_FAILURE);
     }
@@ -172,7 +172,7 @@ static void setConfiguration(const char *buffer, const size_t keySize, char *ptr
       Exit(EXIT_FAILURE);
     }
 
-    if (testFileAccess(fileConfig->historyFile, "w", TRUE) == FALSE) {
+    if (TestFileAccess(fileConfig->historyFile, "w", TRUE) == FALSE) {
       fprintf(stderr, "Unable to open history file for writing %s: %s\n", fileConfig->historyFile, ErrnoString(err, sizeof(err)));
       Exit(EXIT_FAILURE);
     }
