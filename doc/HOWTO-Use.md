@@ -16,9 +16,9 @@ Let's assume your small organisation consist of:
 * WIFI network
 * Internal server network
 
-You could put a dedicated instance (server, a virtual machine or a container) running portsentry on all of these networks and listening to a wide range of ports.
+You could put a dedicated instance (server, a virtual machine or a container) running Portsentry on all of these networks and listening to a wide range of ports.
 
-Since this node is not part of the organization, no legitimate traffic should be directed towards it. However, an attacker inside your network will most certainly want to probe your network as part of their reconnaissance and lateral movement. When they do, they will trigger the portsentry and you will be alerted to a potential intruder in your network.
+Since this node is not part of the organization, no legitimate traffic should be directed towards it. However, an attacker inside your network will most certainly want to probe your network as part of their reconnaissance and lateral movement. When they do, they will trigger Portsentry and you will be alerted to a potential intruder in your network.
 
 ![PortSentry Inside Internal Organization](images/PS-Int-Org.png)
 
