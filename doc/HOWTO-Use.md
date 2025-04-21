@@ -1,6 +1,6 @@
 # How to use Portsentry
 
-Portsentry does **three** main things:
+At a high level overview, Portsentry does **three** main things:
 
 * It listens to TCP and/or UDP ports you specify.
 * It stealthily (or visibly) logs connection attempts to the ports you have specified.
