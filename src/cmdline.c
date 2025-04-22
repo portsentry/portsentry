@@ -15,6 +15,10 @@
 #include "portsentry.h"
 #include "util.h"
 
+#ifndef GIT_COMMIT_HASH
+#define GIT_COMMIT_HASH "-"
+#endif
+
 #define CMDLINE_CONNECT 0
 #define CMDLINE_STEALTH 1
 #define CMDLINE_LOGOUTPUT 'l'
@@ -183,5 +187,5 @@ static void Usage(void) {
 }
 
 static void Version(void) {
-  printf("Portsentry %d.%d.%d\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR, PORTSENTRY_VERSION_PATCH);
+  printf("Portsentry %d.%d.%d (%s)\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR, PORTSENTRY_VERSION_PATCH, GIT_COMMIT_HASH);
 }

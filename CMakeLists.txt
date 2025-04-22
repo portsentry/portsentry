@@ -12,6 +12,9 @@ set(STANDARD_COMPILE_OPTS -Wall -Wextra -pedantic -Werror -Wformat -Wformat-secu
 set(STANDARD_LINK_OPTS -pie -Wl,-z,noexecstack -Wl,-z,now -Wl,-z,relro -Wl,-z,defs -Wl,--no-undefined)
 set(CORE_SOURCE_FILES src/config_data.c src/configfile.c src/io.c src/util.c src/state_machine.c src/cmdline.c src/sentry_connect.c src/sighandler.c src/port.c src/packet_info.c src/ignore.c src/sentry.c src/block.c)
 
+execute_process(COMMAND git log -1 --format=%h WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE GIT_COMMIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
+add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+
 if (USE_PCAP)
   set(CORE_SOURCE_FILES ${CORE_SOURCE_FILES} src/pcap_listener.c src/pcap_device.c src/sentry_pcap.c)
   set(STANDARD_COMPILE_OPTS ${STANDARD_COMPILE_OPTS} -DUSE_PCAP)
