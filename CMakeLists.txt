@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(Portsentry VERSION 2.0)
+project(Portsentry VERSION 2.0.0)
 
 option(BUILD_FUZZER "Build fuzzer tests" OFF)
 option(USE_PCAP "Build with pcap code and link with libpcap" ON)
