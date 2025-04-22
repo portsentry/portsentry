@@ -27,7 +27,6 @@ uint8_t g_isRunning = TRUE;
 
 int main(int argc, char *argv[]) {
   int status = EXIT_FAILURE;
-  printf("PortSentry %d.%d\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR);
 
   ParseCmdline(argc, argv);
 
