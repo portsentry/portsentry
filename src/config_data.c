@@ -191,6 +191,8 @@ static int IsInterfacePresent(const struct ConfigData *cd, const char *interface
     if (strncmp(cd->interfaces[i], interface, strlen(cd->interfaces[i])) == 0) {
       return TRUE;
     }
+
+    i++;
   }
 
   return FALSE;
