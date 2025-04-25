@@ -28,6 +28,8 @@ uint8_t g_isRunning = TRUE;
 int main(int argc, char *argv[]) {
   int status = EXIT_FAILURE;
 
+  Version();
+
   ParseCmdline(argc, argv);
 
   if (SetupSignalHandlers() != TRUE) {

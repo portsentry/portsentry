@@ -5,3 +5,4 @@
 #pragma once
 
 void ParseCmdline(const int argc, char **argv);
+void Version(void);
