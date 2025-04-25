@@ -33,7 +33,6 @@
 #define CMDLINE_DISABLE_LOCAL_CHECK 'L'
 
 static void Usage(void);
-static void Version(void);
 
 void ParseCmdline(const int argc, char **argv) {
   int opt;
@@ -138,7 +137,6 @@ void ParseCmdline(const int argc, char **argv) {
       Usage();
       break;
     case CMDLINE_VERSION:
-      Version();
       exit(EXIT_SUCCESS);
       break;
     default:
@@ -186,6 +184,6 @@ static void Usage(void) {
   Exit(EXIT_SUCCESS);
 }
 
-static void Version(void) {
+void Version(void) {
   printf("Portsentry %d.%d.%d (%s)\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR, PORTSENTRY_VERSION_PATCH, GIT_COMMIT_HASH);
 }
