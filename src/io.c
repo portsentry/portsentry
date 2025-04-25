@@ -145,7 +145,7 @@ int BindSocket(const int sockfd, const int family, const int port, const int pro
     sin6.sin6_addr = in6addr_any;
     sin6.sin6_port = htons(port);
     if (bind(sockfd, (struct sockaddr *)&sin6, sizeof(sin6)) == -1) {
-      Error("Binding %s %s %d failed: %s", GetFamilyString(family), GetProtocolString(proto), port, ErrnoString(err, sizeof(err)));
+      Verbose("Binding %s %s %d failed: %s", GetFamilyString(family), GetProtocolString(proto), port, ErrnoString(err, sizeof(err)));
       return ERROR;
     }
   } else {
@@ -154,7 +154,7 @@ int BindSocket(const int sockfd, const int family, const int port, const int pro
     sin4.sin_addr.s_addr = htonl(INADDR_ANY);
     sin4.sin_port = htons(port);
     if (bind(sockfd, (struct sockaddr *)&sin4, sizeof(sin4)) == -1) {
-      Error("Binding %s %s %d failed: %s", GetFamilyString(family), GetProtocolString(proto), port, ErrnoString(err, sizeof(err)));
+      Verbose("Binding %s %s %d failed: %s", GetFamilyString(family), GetProtocolString(proto), port, ErrnoString(err, sizeof(err)));
       return ERROR;
     }
   }
