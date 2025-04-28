@@ -114,7 +114,7 @@ run_portsentry() {
   timeout=5
   while [ $timeout -gt 0 ]; do
     debug "waiting for portsentry to report ready in $PORTSENTRY_STDOUT"
-    if grep -q "PortSentry is now active and listening." $PORTSENTRY_STDOUT; then
+    if grep -q "Portsentry is now active and listening." $PORTSENTRY_STDOUT; then
       return
     fi
     sleep 1
@@ -138,7 +138,7 @@ stop_portsentry() {
   timeout=5
   while [ $timeout -gt 0 ]; do
     debug "waiting for portsentry to stop $PORTSENTRY_STDOUT"
-    if grep -q "PortSentry is shutting down" $PORTSENTRY_STDOUT; then
+    if grep -q "Portsentry is shutting down" $PORTSENTRY_STDOUT; then
       return
     fi
     sleep 1

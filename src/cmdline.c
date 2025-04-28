@@ -165,7 +165,7 @@ void ParseCmdline(const int argc, char **argv) {
 }
 
 static void Usage(void) {
-  printf("PortSentry - Port Scan Detector.\n");
+  printf("Portsentry - Port Scan Detector.\n");
   printf("Usage: portsentry [--stealth, --connect] <options>\n\n");
   printf("--stealth\tUse Stealth mode (default)\n");
   printf("--connect\tUse Connect mode\n");
