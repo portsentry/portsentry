@@ -112,7 +112,7 @@ void Crash(const int errCode, const char *logentry, ...) {
 }
 
 void Exit(const int status) {
-  Log("PortSentry is shutting down");
+  Log("Portsentry is shutting down");
 
   if (isSyslogOpen == TRUE) {
     closelog();

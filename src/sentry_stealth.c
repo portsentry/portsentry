@@ -76,7 +76,7 @@ int PortSentryStealthMode(void) {
     return ERROR;
   }
 
-  Log("PortSentry is now active and listening.");
+  Log("Portsentry is now active and listening.");
 
   while (g_isRunning == TRUE) {
     result = poll(fds, nfds, -1);

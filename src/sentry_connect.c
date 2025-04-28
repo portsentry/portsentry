@@ -75,7 +75,7 @@ int PortSentryConnectMode(void) {
     fds[count].revents = 0;
   }
 
-  Log("PortSentry is now active and listening.");
+  Log("Portsentry is now active and listening.");
 
   while (g_isRunning == TRUE) {
     result = poll(fds, connectionDataSize, -1);

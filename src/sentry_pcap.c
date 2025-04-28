@@ -77,7 +77,7 @@ int PortSentryPcap(void) {
 
   fds = AddPollFd(fds, &nfds, kernel_socket);
 
-  Log("PortSentry is now active and listening.");
+  Log("Portsentry is now active and listening.");
 
   while (g_isRunning == TRUE) {
     ret = poll(fds, nfds, POLL_TIMEOUT);
