@@ -366,8 +366,10 @@ struct pollfd *RemovePollFd(struct pollfd *fds, int *nfds, const int fd) {
 
   assert(fds != NULL);
   assert(nfds != NULL);
-  assert(*nfds > 0);
-  assert(fd >= 0);
+
+  if (fd == -1) {
+    return fds;
+  }
 
   // Find the index of the fd to remove
   for (i = 0; i < *nfds; i++) {
