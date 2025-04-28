@@ -38,6 +38,7 @@ int ListenKernel(void) {
 int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
   struct rt_msghdr *rtm = (struct rt_msghdr *)buf;
   struct sockaddr *sa;
+  char *cp;
 
   memset(kernelMessage, 0, sizeof(struct KernelMessage));
 
@@ -70,39 +71,17 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
 
   struct ifa_msghdr *ifam = (struct ifa_msghdr *)rtm;
   sa = (struct sockaddr *)(ifam + 1);
+  cp = ((char *)(ifam + 1));
 
   struct in_addr *ifa_addr_v4 = NULL;
   struct in6_addr *ifa_addr_v6 = NULL;
   int addrs = ifam->ifam_addrs;
 
-  // Walk through addresses using the address bitmask
   for (int i = 0; i < RTAX_MAX; i++) {
     if (addrs & (1 << i)) {
 #ifdef __NetBSD__
-      unsigned char *bytes = (unsigned char *)sa;
-
-      if (i == RTAX_IFA) {
-        // Check for IPv4 (0x10 (length), 0x02 (AF_INET)) on offset 4, 5 since
-        // version 8+ of netbsd uses some padding before the address. Not sure
-        // why this is the case. Please help
-        if (bytes[4] == 0x10 && bytes[5] == AF_INET) {
-          ifa_addr_v4 = (struct in_addr *)(bytes + 8);
-          sa = (struct sockaddr *)((char *)sa + 16);
-        }
-        // Check for IPv6 (0x1c (length), 0x18 (AF_INET6)) on offset 12,13
-        // Again, since version 8+ of netbsd uses some padding before the
-        // address. Not sure why this is the case. Please help
-        else if (bytes[12] == 0x1c && bytes[13] == AF_INET6) {
-          ifa_addr_v6 = (struct in6_addr *)(bytes + 20);
-          sa = (struct sockaddr *)((char *)sa + 32);
-        } else {
-          sa = (struct sockaddr *)((char *)sa + 16);
-        }
-      } else {
-        int len = (sa->sa_len > 0) ? sa->sa_len : 16;
-        sa = (struct sockaddr *)((char *)sa + RT_ROUNDUP2(len, 4));
-      }
-#elif __FreeBSD__ || __OpenBSD__
+      sa = (struct sockaddr *)cp;
+#endif
       if (i == RTAX_IFA) {
         if (sa->sa_family == AF_INET) {
           ifa_addr_v4 = &((struct sockaddr_in *)sa)->sin_addr;
@@ -110,11 +89,12 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
           ifa_addr_v6 = &((struct sockaddr_in6 *)sa)->sin6_addr;
         }
       }
-#endif
 #ifdef __FreeBSD__
       sa = (struct sockaddr *)((char *)sa + SA_SIZE(sa));
 #elif __OpenBSD__
       sa = (struct sockaddr *)((char *)sa + ROUNDUP(sa->sa_len ? sa->sa_len : sizeof(struct sockaddr)));
+#elif __NetBSD__
+      RT_ADVANCE(cp, sa);
 #endif
     }
   }
