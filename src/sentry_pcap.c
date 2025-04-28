@@ -370,6 +370,10 @@ static void HandleInterfaceAdded(struct Device *device, struct pollfd **fds, int
 }
 
 static void HandleInterfaceRemoved(struct Device *device, struct pollfd **fds, int *nfds) {
-  Debug("ProcessKernelMessage[KMT_INTERFACE DOWN]: Device %s is running, stopping it", device->name);
-  StopDeviceAndRemovePollFd(device, fds, nfds);
+  if (device->state == DEVICE_STATE_RUNNING) {
+    Debug("ProcessKernelMessage[KMT_INTERFACE DOWN]: Device %s is running, stopping it", device->name);
+    StopDeviceAndRemovePollFd(device, fds, nfds);
+  } else {
+    Debug("ProcessKernelMessage[KMT_INTERFACE DOWN]: Device %s is not running, skipping", device->name);
+  }
 }
