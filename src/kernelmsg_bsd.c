@@ -20,7 +20,9 @@
 #include "kernelmsg.h"
 
 #ifdef __OpenBSD__
-#define ROUNDUP(a) ((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
+#define ROUNDUP(a) \
+  ((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
+#define RT_ADVANCE(x, n) (x += ROUNDUP((n)->sa_len))
 #endif
 
 int ListenKernel(void) {
@@ -66,23 +68,27 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
     return TRUE;
   }
 
-  if (rtm->rtm_type != RTM_NEWADDR && rtm->rtm_type != RTM_DELADDR)
+  if (!rtm->rtm_addrs) {
+    Debug("Ignoring RTM message without addresses");
     return FALSE;
+  }
 
-  struct ifa_msghdr *ifam = (struct ifa_msghdr *)rtm;
-  sa = (struct sockaddr *)(ifam + 1);
-  cp = ((char *)(ifam + 1));
+  if (rtm->rtm_type != RTM_ADD && rtm->rtm_type != RTM_DELETE) {
+    Debug("Ignoring non RTM_ADD || RTM_DELETE");
+    return FALSE;
+  }
 
+  cp = ((char *)(rtm + 1));
   struct in_addr *ifa_addr_v4 = NULL;
   struct in6_addr *ifa_addr_v6 = NULL;
-  int addrs = ifam->ifam_addrs;
+  int addrs = rtm->rtm_addrs;
 
   for (int i = 0; i < RTAX_MAX; i++) {
     if (addrs & (1 << i)) {
-#ifdef __NetBSD__
       sa = (struct sockaddr *)cp;
-#endif
+
       if (i == RTAX_IFA) {
+        Debug("RTAX_IFA found on rtm_type: %d", rtm->rtm_type);
         if (sa->sa_family == AF_INET) {
           ifa_addr_v4 = &((struct sockaddr_in *)sa)->sin_addr;
         } else if (sa->sa_family == AF_INET6) {
@@ -90,10 +96,8 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
         }
       }
 #ifdef __FreeBSD__
-      sa = (struct sockaddr *)((char *)sa + SA_SIZE(sa));
-#elif __OpenBSD__
-      sa = (struct sockaddr *)((char *)sa + ROUNDUP(sa->sa_len ? sa->sa_len : sizeof(struct sockaddr)));
-#elif __NetBSD__
+      cp = cp + SA_SIZE(sa);
+#elif __OpenBSD__ || __NetBSD__
       RT_ADVANCE(cp, sa);
 #endif
     }
@@ -101,12 +105,29 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
 
   if (ifa_addr_v4 || ifa_addr_v6) {
     const char *name;
-    if ((name = if_indextoname(ifam->ifam_index, kernelMessage->address.ifName)) == NULL) {
-      Debug("if_indextoname returned NULL for interface index %d", ifam->ifam_index);
+    if ((name = if_indextoname(rtm->rtm_index, kernelMessage->address.ifName)) == NULL) {
+      Debug("if_indextoname returned NULL for interface index %d", rtm->rtm_index);
     }
 
     kernelMessage->type = KMT_ADDRESS;
-    kernelMessage->action = (rtm->rtm_type == RTM_NEWADDR) ? KMA_ADD : KMA_DEL;
+    switch (rtm->rtm_type) {
+    case RTM_NEWADDR:
+      kernelMessage->action = KMA_ADD;
+      break;
+    case RTM_DELADDR:
+      kernelMessage->action = KMA_DEL;
+      break;
+    case RTM_ADD:
+      kernelMessage->action = KMA_ADD;
+      break;
+    case RTM_DELETE:
+      kernelMessage->action = KMA_DEL;
+      break;
+    default:
+      Debug("Unknown RTM_TYPE: %d", rtm->rtm_type);
+      kernelMessage->action = KMA_UNKNOWN;
+      break;
+    }
 
     if (ifa_addr_v4) {
       kernelMessage->address.family = AF_INET;
@@ -116,12 +137,12 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
       inet_ntop(AF_INET6, ifa_addr_v6, kernelMessage->address.ipAddr, sizeof(kernelMessage->address.ipAddr));
     }
 
-    Debug("%s IPv%d address %s on interface %s index %d",
-          (rtm->rtm_type == RTM_NEWADDR) ? "Added" : "Removed",
+    Debug("Final kernel message: %s IPv%d address %s on interface %s index %d",
+          kernelMessage->action == KMA_ADD ? "Added" : "Removed",
           kernelMessage->address.family == AF_INET ? 4 : 6,
           kernelMessage->address.ipAddr,
           name ? kernelMessage->address.ifName : "",
-          ifam->ifam_index);
+          rtm->rtm_index);
     return TRUE;
   }
 
