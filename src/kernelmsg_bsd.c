@@ -19,11 +19,16 @@
 #include "util.h"
 #include "kernelmsg.h"
 
-#ifdef __OpenBSD__
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
 #define ROUNDUP(a) \
   ((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
 #define RT_ADVANCE(x, n) (x += ROUNDUP((n)->sa_len))
 #endif
+
+static int HandleInterfaceAnnounce(const char *buf, struct KernelMessage *kernelMessage);
+static int HandleAddressChange(const char *buf, struct KernelMessage *kernelMessage);
+static int HandleRTAX_IFA(const struct sockaddr *sa, struct KernelMessage *kernelMessage);
+static int HandleRTAX_IFP(const struct sockaddr *sa, struct KernelMessage *kernelMessage);
 
 int ListenKernel(void) {
   char err[ERRNOMAXBUF];
@@ -39,112 +44,109 @@ int ListenKernel(void) {
 
 int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
   struct rt_msghdr *rtm = (struct rt_msghdr *)buf;
-  struct sockaddr *sa;
-  char *cp;
 
   memset(kernelMessage, 0, sizeof(struct KernelMessage));
 
   if (rtm->rtm_type == RTM_IFANNOUNCE) {
-    struct if_announcemsghdr *ifan = (struct if_announcemsghdr *)buf;
-    switch (ifan->ifan_what) {
-    case IFAN_ARRIVAL:
-      Debug("Created interface %s (index %d)", ifan->ifan_name,
-            ifan->ifan_index);
-      kernelMessage->type = KMT_INTERFACE;
-      kernelMessage->action = KMA_ADD;
-      SafeStrncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
-      break;
-    case IFAN_DEPARTURE:
-      Debug("Removed interface %s (index %d)", ifan->ifan_name,
-            ifan->ifan_index);
-      kernelMessage->type = KMT_INTERFACE;
-      kernelMessage->action = KMA_DEL;
-      SafeStrncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
-      break;
-    default:
-      return FALSE;
-    }
-
-    return TRUE;
-  }
-
-  if (!rtm->rtm_addrs) {
-    Debug("Ignoring RTM message without addresses");
-    return FALSE;
-  }
-
-  if (rtm->rtm_type != RTM_ADD && rtm->rtm_type != RTM_DELETE) {
-    Debug("Ignoring non RTM_ADD || RTM_DELETE");
-    return FALSE;
-  }
-
-  cp = ((char *)(rtm + 1));
-  struct in_addr *ifa_addr_v4 = NULL;
-  struct in6_addr *ifa_addr_v6 = NULL;
-  int addrs = rtm->rtm_addrs;
-
-  for (int i = 0; i < RTAX_MAX; i++) {
-    if (addrs & (1 << i)) {
-      sa = (struct sockaddr *)cp;
-
-      if (i == RTAX_IFA) {
-        Debug("RTAX_IFA found on rtm_type: %d", rtm->rtm_type);
-        if (sa->sa_family == AF_INET) {
-          ifa_addr_v4 = &((struct sockaddr_in *)sa)->sin_addr;
-        } else if (sa->sa_family == AF_INET6) {
-          ifa_addr_v6 = &((struct sockaddr_in6 *)sa)->sin6_addr;
-        }
-      }
-#ifdef __FreeBSD__
-      cp = cp + SA_SIZE(sa);
-#elif __OpenBSD__ || __NetBSD__
-      RT_ADVANCE(cp, sa);
-#endif
-    }
-  }
-
-  if (ifa_addr_v4 || ifa_addr_v6) {
-    const char *name;
-    if ((name = if_indextoname(rtm->rtm_index, kernelMessage->address.ifName)) == NULL) {
-      Debug("if_indextoname returned NULL for interface index %d", rtm->rtm_index);
-    }
-
-    kernelMessage->type = KMT_ADDRESS;
-    switch (rtm->rtm_type) {
-    case RTM_NEWADDR:
-      kernelMessage->action = KMA_ADD;
-      break;
-    case RTM_DELADDR:
-      kernelMessage->action = KMA_DEL;
-      break;
-    case RTM_ADD:
-      kernelMessage->action = KMA_ADD;
-      break;
-    case RTM_DELETE:
-      kernelMessage->action = KMA_DEL;
-      break;
-    default:
-      Debug("Unknown RTM_TYPE: %d", rtm->rtm_type);
-      kernelMessage->action = KMA_UNKNOWN;
-      break;
-    }
-
-    if (ifa_addr_v4) {
-      kernelMessage->address.family = AF_INET;
-      inet_ntop(AF_INET, ifa_addr_v4, kernelMessage->address.ipAddr, sizeof(kernelMessage->address.ipAddr));
-    } else if (ifa_addr_v6) {
-      kernelMessage->address.family = AF_INET6;
-      inet_ntop(AF_INET6, ifa_addr_v6, kernelMessage->address.ipAddr, sizeof(kernelMessage->address.ipAddr));
-    }
-
-    Debug("Final kernel message: %s IPv%d address %s on interface %s index %d",
-          kernelMessage->action == KMA_ADD ? "Added" : "Removed",
-          kernelMessage->address.family == AF_INET ? 4 : 6,
-          kernelMessage->address.ipAddr,
-          name ? kernelMessage->address.ifName : "",
-          rtm->rtm_index);
-    return TRUE;
+    return HandleInterfaceAnnounce(buf, kernelMessage);
+  } else if ((rtm->rtm_type == RTM_NEWADDR || rtm->rtm_type == RTM_DELADDR) && rtm->rtm_addrs > 0) {
+    return HandleAddressChange(buf, kernelMessage);
   }
 
   return FALSE;
+}
+
+static int HandleInterfaceAnnounce(const char *buf, struct KernelMessage *kernelMessage) {
+  struct if_announcemsghdr *ifan = (struct if_announcemsghdr *)buf;
+
+  kernelMessage->type = KMT_INTERFACE;
+
+  switch (ifan->ifan_what) {
+  case IFAN_ARRIVAL:
+    Debug("Created interface %s (index %d)", ifan->ifan_name,
+          ifan->ifan_index);
+    kernelMessage->action = KMA_ADD;
+    SafeStrncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
+    break;
+  case IFAN_DEPARTURE:
+    Debug("Removed interface %s (index %d)", ifan->ifan_name,
+          ifan->ifan_index);
+    kernelMessage->action = KMA_DEL;
+    SafeStrncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
+    break;
+  default:
+    Error("Unknown interface announce type: IFAN_WHAT: %d, ignoring", ifan->ifan_what);
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+static int HandleAddressChange(const char *buf, struct KernelMessage *kernelMessage) {
+  struct ifa_msghdr *ifam = (struct ifa_msghdr *)buf;
+  struct sockaddr *sa;
+  char *cp;
+
+  cp = ((char *)(ifam + 1));
+  kernelMessage->type = KMT_ADDRESS;
+  kernelMessage->action = ifam->ifam_type == RTM_NEWADDR ? KMA_ADD : KMA_DEL;
+
+  for (int i = 0; i < RTAX_MAX; i++) {
+    if (ifam->ifam_addrs & (1 << i)) {
+      sa = (struct sockaddr *)cp;
+
+      if (i == RTAX_IFA) {
+        if (HandleRTAX_IFA(sa, kernelMessage) == FALSE) {
+          return FALSE;
+        }
+      } else if (i == RTAX_IFP) {
+        if (HandleRTAX_IFP(sa, kernelMessage) == FALSE) {
+          return FALSE;
+        }
+      }
+
+      RT_ADVANCE(cp, sa);
+    }
+  }
+
+  Debug("Final kernel message: %s IPv%d address %s on interface %s index %d",
+        kernelMessage->action == KMA_ADD ? "Added" : "Removed",
+        kernelMessage->address.family == AF_INET ? 4 : 6,
+        kernelMessage->address.ipAddr,
+        kernelMessage->address.ifName,
+        ifam->ifam_index);
+
+  return TRUE;
+}
+
+static int HandleRTAX_IFA(const struct sockaddr *sa, struct KernelMessage *kernelMessage) {
+  if (sa->sa_family == AF_INET) {
+    inet_ntop(AF_INET, &((struct sockaddr_in *)sa)->sin_addr, kernelMessage->address.ipAddr, sizeof(kernelMessage->address.ipAddr));
+  } else if (sa->sa_family == AF_INET6) {
+    inet_ntop(AF_INET6, &((struct sockaddr_in6 *)sa)->sin6_addr, kernelMessage->address.ipAddr, sizeof(kernelMessage->address.ipAddr));
+  } else {
+    Error("Unexpected address family: %d for RTAX_IFA. Unable to parse address", sa->sa_family);
+    return FALSE;
+  }
+
+  kernelMessage->address.family = sa->sa_family;
+
+  return TRUE;
+}
+
+static int HandleRTAX_IFP(const struct sockaddr *sa, struct KernelMessage *kernelMessage) {
+  if (sa->sa_family != AF_LINK) {
+    Error("Unexpected address family: %d for RTAX_IFP. Unable to parse interface name", sa->sa_family);
+    return FALSE;
+  }
+
+  struct sockaddr_dl *sdl = (struct sockaddr_dl *)sa;
+  if (sdl->sdl_nlen >= IF_NAMESIZE) {
+    Error("Unexpected interface length %d (IF_NAMESIZE: %d) on RTAX_IFP", sdl->sdl_nlen, IF_NAMESIZE);
+    return FALSE;
+  } else {
+    SafeStrncpy(kernelMessage->address.ifName, sdl->sdl_data, sdl->sdl_nlen + 1);
+  }
+
+  return TRUE;
 }
