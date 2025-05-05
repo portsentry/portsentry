@@ -26,7 +26,6 @@ int IsPortInUse(struct PacketInfo *pi);
 char *ReportPacketType(const struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
 int CreateDateTime(char *buf, const int size);
-int Ntohstr(char *buf, const int bufSize, const uint32_t addr);
 int StrToUint16_t(const char *str, uint16_t *val);
 __attribute__((format(printf, 3, 4))) char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);
 
