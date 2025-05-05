@@ -140,7 +140,7 @@ static char *GetSentryMethodString(const enum SentryMethod sentryMethod) {
 int AddInterface(struct ConfigData *cd, const char *interface) {
   int noInterfaces;
 
-  if (strlen(interface) > (IF_NAMESIZE - 1)) {
+  if (strlen(interface) >= IF_NAMESIZE) {
     fprintf(stderr, "Error: Interface name %s too long\n", interface);
     Exit(EXIT_FAILURE);
   }
