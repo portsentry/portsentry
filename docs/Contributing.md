@@ -23,6 +23,7 @@ Before submitting a pull request, please make sure that you do the following:
 + Make sure the code compiles without Warnings or Errors
 + Run the fuzzers: ``./build.sh build_fuzz ; ./build.sh run_fuzz``
 + Run the integration tests: ``cd system_test ; ./run_all_tests.sh``. Consider running the tests in a VM. It would be greatly appreciated if you could run the tests on Linux, NetBSD, FreeBSD and OpenBSD but it's not a requirement.
+  - Note; The shell script build_and_test.sh can be used in order to build and run the tests on several VM's at the same time
 
 ## Issue Reporting
 

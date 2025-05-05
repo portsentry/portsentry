@@ -23,6 +23,7 @@
 #include "packet_info.h"
 #include "sentry.h"
 #include "kernelmsg.h"
+#include "config_data.h"
 
 #define POLL_TIMEOUT 500
 
@@ -268,15 +269,31 @@ static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule 
 static void ExecKernelMessageLogic(struct ListenerModule *lm, struct pollfd **fds, int *nfds, struct KernelMessage *kernelMessage) {
   struct Device *device = NULL;
 
-  Debug("ProcessKernelMessage - Message Parse: %s %s: %s", kernelMessage->type == KMT_INTERFACE ? "Interface" : "Address",
-        kernelMessage->action == KMA_ADD ? "Added" : "Removed",
-        kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
-
   if ((device = GetDeviceByKernelMessage(lm, kernelMessage)) == NULL) {
-    Debug("ProcessKernelMessage - Device not found: %s %s: %s", kernelMessage->type == KMT_INTERFACE ? "Interface" : "Address",
-          kernelMessage->action == KMA_ADD ? "Added" : "Removed",
-          kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
-    return;
+    if ((IsInterfacePresent(&configData, "ALL") || IsInterfacePresent(&configData, "ALL_NLO")) && kernelMessage->action == KMA_ADD) {
+      struct Device *newDevice;
+      const char *ifName = kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ifName;
+
+      Debug("ExecKernelMessageLogic - Device not found: %s - attempting bringup", ifName);
+      if ((newDevice = CreateDevice(ifName)) == NULL) {
+        Error("ExecKernelMessageLogic - Device %s not found, and not able to create it", ifName);
+        return;
+      }
+
+      if (AddDevice(lm, newDevice) == FALSE) {
+        Error("ExecKernelMessageLogic - Device %s not found, and not able to add it", ifName);
+        FreeDevice(newDevice);
+        newDevice = NULL;
+        return;
+      }
+
+      device = newDevice;
+    } else {
+      Debug("ExecKernelMessageLogic - Device not found: %s %s: %s", kernelMessage->type == KMT_INTERFACE ? "Interface" : "Address",
+            kernelMessage->action == KMA_ADD ? "Added" : "Removed",
+            kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
+      return;
+    }
   }
 
   if (kernelMessage->type == KMT_ADDRESS) {
