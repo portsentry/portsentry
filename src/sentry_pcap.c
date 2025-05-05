@@ -269,10 +269,6 @@ static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule 
 static void ExecKernelMessageLogic(struct ListenerModule *lm, struct pollfd **fds, int *nfds, struct KernelMessage *kernelMessage) {
   struct Device *device = NULL;
 
-  Debug("ProcessKernelMessage - Message Parse: %s %s: %s", kernelMessage->type == KMT_INTERFACE ? "Interface" : "Address",
-        kernelMessage->action == KMA_ADD ? "Added" : "Removed",
-        kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
-
   if ((device = GetDeviceByKernelMessage(lm, kernelMessage)) == NULL) {
     if ((IsInterfacePresent(&configData, "ALL") || IsInterfacePresent(&configData, "ALL_NLO")) &&
         kernelMessage->action == KMA_ADD) {
