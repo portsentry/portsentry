@@ -15,7 +15,6 @@
 
 struct ConfigData configData;
 
-static int IsInterfacePresent(const struct ConfigData *cd, const char *interface);
 static char *GetSentryMethodString(const enum SentryMethod sentryMethod);
 
 void ResetConfigData(struct ConfigData *cd) {
@@ -175,7 +174,7 @@ int GetNoInterfaces(const struct ConfigData *cd) {
   return i;
 }
 
-static int IsInterfacePresent(const struct ConfigData *cd, const char *interface) {
+int IsInterfacePresent(const struct ConfigData *cd, const char *interface) {
   int i = 0;
 
   if (cd->interfaces == NULL) {

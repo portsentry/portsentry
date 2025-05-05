@@ -67,3 +67,4 @@ void SetConfigData(const struct ConfigData *fileConfig, const struct ConfigData 
 int AddInterface(struct ConfigData *cd, const char *interface);
 int GetNoInterfaces(const struct ConfigData *cd);
 void FreeConfigData(struct ConfigData *cd);
+int IsInterfacePresent(const struct ConfigData *cd, const char *interface);

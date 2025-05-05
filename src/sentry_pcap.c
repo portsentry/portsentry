@@ -23,6 +23,7 @@
 #include "packet_info.h"
 #include "sentry.h"
 #include "kernelmsg.h"
+#include "config_data.h"
 
 #define POLL_TIMEOUT 500
 
@@ -273,10 +274,29 @@ static void ExecKernelMessageLogic(struct ListenerModule *lm, struct pollfd **fd
         kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
 
   if ((device = GetDeviceByKernelMessage(lm, kernelMessage)) == NULL) {
-    Debug("ProcessKernelMessage - Device not found: %s %s: %s", kernelMessage->type == KMT_INTERFACE ? "Interface" : "Address",
-          kernelMessage->action == KMA_ADD ? "Added" : "Removed",
-          kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
-    return;
+    if ((IsInterfacePresent(&configData, "ALL") || IsInterfacePresent(&configData, "ALL_NLO")) &&
+        kernelMessage->action == KMA_ADD) {
+      struct Device *newDevice;
+
+      Debug("ProcessKernelMessage - Device not found: %s - attempting bringup", kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
+      if ((newDevice = CreateDevice(kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ifName)) == NULL) {
+        Error("ProcessKernelMessage - Device %s not found, and not able to create it", kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ifName);
+        return;
+      }
+
+      if (AddDevice(lm, newDevice) == FALSE) {
+        Error("ProcessKernelMessage - Device %s not found, and not able to add it", kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ifName);
+        FreeDevice(newDevice);
+        return;
+      }
+
+      device = newDevice;
+    } else {
+      Debug("ProcessKernelMessage - Device not found: %s %s: %s", kernelMessage->type == KMT_INTERFACE ? "Interface" : "Address",
+            kernelMessage->action == KMA_ADD ? "Added" : "Removed",
+            kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
+      return;
+    }
   }
 
   if (kernelMessage->type == KMT_ADDRESS) {
