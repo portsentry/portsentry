@@ -270,25 +270,26 @@ static void ExecKernelMessageLogic(struct ListenerModule *lm, struct pollfd **fd
   struct Device *device = NULL;
 
   if ((device = GetDeviceByKernelMessage(lm, kernelMessage)) == NULL) {
-    if ((IsInterfacePresent(&configData, "ALL") || IsInterfacePresent(&configData, "ALL_NLO")) &&
-        kernelMessage->action == KMA_ADD) {
+    if ((IsInterfacePresent(&configData, "ALL") || IsInterfacePresent(&configData, "ALL_NLO")) && kernelMessage->action == KMA_ADD) {
       struct Device *newDevice;
+      const char *ifName = kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ifName;
 
-      Debug("ProcessKernelMessage - Device not found: %s - attempting bringup", kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
-      if ((newDevice = CreateDevice(kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ifName)) == NULL) {
-        Error("ProcessKernelMessage - Device %s not found, and not able to create it", kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ifName);
+      Debug("ExecKernelMessageLogic - Device not found: %s - attempting bringup", ifName);
+      if ((newDevice = CreateDevice(ifName)) == NULL) {
+        Error("ExecKernelMessageLogic - Device %s not found, and not able to create it", ifName);
         return;
       }
 
       if (AddDevice(lm, newDevice) == FALSE) {
-        Error("ProcessKernelMessage - Device %s not found, and not able to add it", kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ifName);
+        Error("ExecKernelMessageLogic - Device %s not found, and not able to add it", ifName);
         FreeDevice(newDevice);
+        newDevice = NULL;
         return;
       }
 
       device = newDevice;
     } else {
-      Debug("ProcessKernelMessage - Device not found: %s %s: %s", kernelMessage->type == KMT_INTERFACE ? "Interface" : "Address",
+      Debug("ExecKernelMessageLogic - Device not found: %s %s: %s", kernelMessage->type == KMT_INTERFACE ? "Interface" : "Address",
             kernelMessage->action == KMA_ADD ? "Added" : "Removed",
             kernelMessage->type == KMT_INTERFACE ? kernelMessage->interface.ifName : kernelMessage->address.ipAddr);
       return;
