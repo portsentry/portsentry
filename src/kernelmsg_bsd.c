@@ -63,13 +63,21 @@ static int HandleInterfaceAnnounce(const char *buf, struct KernelMessage *kernel
 
   switch (ifan->ifan_what) {
   case IFAN_ARRIVAL:
-    Debug("Created interface %s (index %d)", ifan->ifan_name,
+    if (strlen(ifan->ifan_name) >= IF_NAMESIZE) {
+      Error("Interface name %s is too long", ifan->ifan_name);
+      return FALSE;
+    }
+    Debug("Interface %s (index %d) arrived", ifan->ifan_name,
           ifan->ifan_index);
     kernelMessage->action = KMA_ADD;
     SafeStrncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
     break;
   case IFAN_DEPARTURE:
-    Debug("Removed interface %s (index %d)", ifan->ifan_name,
+    if (strlen(ifan->ifan_name) >= IF_NAMESIZE) {
+      Error("Interface name %s is too long", ifan->ifan_name);
+      return FALSE;
+    }
+    Debug("Interface %s (index %d) departed", ifan->ifan_name,
           ifan->ifan_index);
     kernelMessage->action = KMA_DEL;
     SafeStrncpy(kernelMessage->interface.ifName, ifan->ifan_name, IF_NAMESIZE);
