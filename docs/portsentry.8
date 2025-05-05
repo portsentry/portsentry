@@ -1,0 +1,93 @@
+.TH PORTSENTRY 8 "2025-05-05" "portsentry" "System Manager's Manual"
+.SH NAME
+portsentry \- Detect and respond to port scans against a target host in real-time
+.SH SYNOPSIS
+.B portsentry
+.IR [options]
+.SH DESCRIPTION
+.B portsentry
+.sp
+At a high level overview, Portsentry does three main things:
+.sp
+.IP \[bu] 3n
+It listens to TCP and/or UDP ports you specify.
+.IP \[bu] 3n
+It stealthily (or visibly) logs connection attempts to the ports you have specified.
+.IP \[bu] 3n
+It can optionally execute scripts or applications when connection attempts are made.
+.SH OPTIONS
+.TP
+.BR \-\-stealth
+Stealth mode 
+.B (default)
+uses libpcap (or raw sockets on Linux if desired, see the 
+.B \-m
+option) in order to quietly listen for incoming packets on the network.
+The main advantage of Stealth mode is that the system gives off no indication that it is listening for incoming packets making it very difficult (if not impossible)
+for an attacker to detect that Portsentry is running.
+.TP
+.BR \-\-connect
+Connect mode 
+.B (LEGACY) 
+uses the kernel socket API to listen for incoming packets. Connect mode is considered a legacy mode and is mainly preserved for users with very specific use-cases.
+For example, connect mode can be used to add a "port banner", thus sending a message to anyone connecting to a specified port.
+Be aware however that connect mode comes with several additional security implications which must be considered. For example:
+.sp
+.IP \[bu] 3n
+When monitoring TCP ports, Portsentry will require a three-way TCP handshake to be completed before Portsentry registers the connection attempt. Thus, a "stealth scan attack" will go unnoticed by Portsentry.
+.IP \[bu] 3n
+Additionally, other TCP protocol attacks, such as SYN floods must be taken into consideration when using Connect Mode.
+.IP \[bu] 3n
+When monitoring UDP ports in connect mode, the socket API will (most likely) cause the kernel to act differently than it would when no process is bound to a port. Thus revealing the presence of Portsentry to a potential attacker. For example: Under normal circumstances, sending a UDP packet to a closed port will result in an ICMP "port unreachable" message. However, when Portsentry is running in connect mode, the kernel will not send this message. This can be used by an attacker to detect the presence of Portsentry. Note however that if a firewall is in place which will drop all unsolicited UDP packets, this might not be an issue.
+.IP \[bu] 3n
+Connect mode will require Portsentry to bind to each port to be monitored individually. If you are monitoring a large number of ports you could potentially hit the max number of file descriptors allowed by the system and could also lead to performance issues. Most modern systems will allow you to increase the number of max opened file descriptors, but this is something to be aware of.
+.SS Stealth Mode Options
+.sp
+This section covers options only relevant when Stealth mode
+.B \-\-stealth
+is used.
+.INDENT 0.0
+.TP
+.BR \-m ", " \-\-method =\fIpcap|raw\fR
+.B This option is only relevant on Linux.
+Sets the sentry method to use in stealth mode. Use libpcap or linux raw sockets
+.B (default: pcap)
+.TP
+.BR \-i ", " \-\-interface =\fIinterface\fR
+.B This option is only relevant when pcap mode is used.
+Set interface to listen on. Use ALL for all interfaces, ALL_NLO for all interfaces except loopback or any interface name 
+.B (e.g. \-i eth0).
+This option can be specified multiple times, 
+.B (e.g \-i eth0 \-i eth1 ...)
+.B (default: ALL_NLO)
+.UNINDENT
+.SS Generic Options
+.sp
+.INDENT 0.0
+.TP
+.BR \-L ", " \-\-disable-local-check
+If the source and destination IP address are the same, we don't take any actions or do any logging. This option disables this check.
+Be careful with this options, since you could potentially take actions on your self.
+.TP
+.BR \-l ", " \-\-logoutput =\fIstdout|syslog\fR
+Set Log output
+.B (default: stdout)
+.TP
+.BR \-c ", " \-\-configfile =\fIpath\fR
+Set config file path
+.TP
+.BR \-D ", " \-\-daemon
+Run as a daemon
+.TP
+.BR \-d ", " \-\-debug
+Enable debugging output
+.TP
+.BR \-v ", " \-\-verbose
+Enable verbose output
+.TP
+.BR \-h ", " \-\-help
+Display this help message
+.TP
+.BR \-V ", " \-\-version
+Display version information
+.UNINDENT
