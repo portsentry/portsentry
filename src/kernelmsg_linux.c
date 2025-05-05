@@ -77,7 +77,7 @@ static int ParseInterface(const struct nlmsghdr *nh, struct KernelMessage *kerne
   for (rta = IFLA_RTA(ifi); RTA_OK(rta, payload_len); rta = RTA_NEXT(rta, payload_len)) {
     if (rta->rta_type == IFLA_IFNAME) {
       if (strlen(RTA_DATA(rta)) >= IF_NAMESIZE) {
-        Error("ParseInterface: Interface name %s is too long", RTA_DATA(rta));
+        Error("ParseInterface: Interface name %s is too long", (char *)RTA_DATA(rta));
         return FALSE;
       }
       SafeStrncpy(kernelMessage->interface.ifName, RTA_DATA(rta), IF_NAMESIZE);
