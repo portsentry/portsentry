@@ -16,7 +16,7 @@ Portsentry does three main things:
 * It stealthily (or visibly) logs connection attempts to the ports you have specified.
 * It can optionally execute scripts or applications when connection attempts are made.
 
-The most common use\-case for Portsentry is to block unwanted service enumeration against your hosts. Simply listen to a wide variety of **unused** ports and block all connection attempts to those ports. Portsentry can also be deployed as a Network Intrustion Detection System (NIDS). By listening to unused ports on your internal network , you will could be notified as soon as someone is trying to enumerate your internal networks. A more detailed explination and guide of the various uses of portsentry, refer to the [HOWTO-Use](https://github.com/portsentry/portsentry/blob/master/docs/HOWTO-Use.md) guide.
+The most common use\-case for Portsentry is to block unwanted service enumeration attempts against your host. This could be accomplished by simply listening to a wide variety of **unused** ports and block all connection attempts to those ports. Portsentry can also be deployed as a Network Intrustion Detection System (NIDS). By listening to unused ports on your internal networks, you will be notified as soon as a potential attacker tries to scan for services within your organization. A more detailed explination and guide of the various uses of portsentry, refer to the [HOWTO-Use](https://github.com/portsentry/portsentry/blob/master/docs/HOWTO-Use.md) guide.
 
 # OPTIONS
 
@@ -29,7 +29,6 @@ Connect mode **(legacy option)** uses the kernel socket API to listen for incomi
 
 * When monitoring TCP ports, Portsentry will require a three\-way TCP handshake to be completed before Portsentry registers the connection attempt. Thus, a "stealth scan attack" will go unnoticed by Portsentry.
 * Additionally, other TCP protocol attacks, such as SYN floods must be taken into consideration when using Connect Mode.
-* When monitoring UDP ports in connect mode, the socket API will (most likely) cause the kernel to act differently than it would when no process is bound to a port. Thus revealing the presence of Portsentry to a potential attacker. For example: Under normal circumstances, sending a UDP packet to a closed port will result in an ICMP "port unreachable" message. However, when Portsentry is running in connect mode, the kernel will not send this message. This can be used by an attacker to detect the presence of Portsentry. Note however that if a firewall is in place which will drop all unsolicited UDP packets, this might not be an issue.
 * Connect mode will require Portsentry to bind to each port to be monitored individually. If you are monitoring a large number of ports you could potentially hit the max number of file descriptors allowed by the system and could also lead to performance issues. Most modern systems will allow you to increase the number of max opened file descriptors, but this is something to be aware of.
 
 ## Stealth Mode Options
@@ -37,7 +36,7 @@ Connect mode **(legacy option)** uses the kernel socket API to listen for incomi
 This section covers options only relevant when Stealth mode **\-\-stealth** is used.
 
 ### \-m, \-\-method=pcap|raw
-**This option is only relevant on Linux**. Sets the sentry method to use in stealth mode. Use libpcap or linux raw sockets **(default: pcap)**
+**This option is only relevant on Linux**. It sets the sentry method to use in stealth mode. Can be set to use either **pcap** or Linux **raw** sockets. **(default: pcap)**
 
 ### \-i, \-\-interface=ALL|ALL_NLO|\<interface\>
 
