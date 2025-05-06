@@ -4,3 +4,4 @@ release
 portsentry.blocked.*
 Testing/**
 remotes.txt
+docs/portsentry.8
