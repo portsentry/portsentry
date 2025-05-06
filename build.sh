@@ -47,6 +47,8 @@ elif [ "$ACTION" = "autobuild" ]; then
   done
 elif [ "$ACTION" = "docker" ]; then
   docker build -t portsentry:unstable -f docker/Dockerfile .
+elif [ "$ACTION" = "doc" ]; then
+  pandoc --standalone --to man docs/Manual.md -o docs/portsentry.8
 else
   echo "Usage: $0 <command>"
   echo "Commands:"
