@@ -18,6 +18,8 @@ Portsentry does three main things:
 
 The most common use\-case for Portsentry is to block unwanted service enumeration attempts against your host. This could be accomplished by simply listening to a wide variety of **unused** ports and block all connection attempts to those ports. Portsentry can also be deployed as a Network Intrustion Detection System (NIDS). By listening to unused ports on your internal networks, you will be notified as soon as a potential attacker tries to scan for services within your organization. A more detailed explination and guide of the various uses of portsentry, refer to the [HOWTO-Use](https://github.com/portsentry/portsentry/blob/master/docs/HOWTO-Use.md) guide.
 
+
+
 # OPTIONS
 
 ## \-\-stealth
@@ -38,9 +40,17 @@ This section covers options only relevant when Stealth mode **\-\-stealth** is u
 ### \-m, \-\-method=pcap|raw
 **This option is only relevant on Linux**. It sets the sentry method to use in stealth mode. Can be set to use either **pcap** or Linux **raw** sockets. **(default: pcap)**
 
+* **pcap**: Uses the libpcap library to listen for incoming packets. This is the default method and is recommended for most use-cases.
+* **raw**: Uses the Linux raw socket API to listen for incoming packets. This method is less efficient than pcap and is not recommended unless you have a specific use-case where pcap is not available or not desired.
+
 ### \-i, \-\-interface=ALL|ALL_NLO|\<interface\>
 
-**This option is only relevant when pcap mode is used**. Specify interface(s) to listen on. Use **ALL** for all interfaces, **ALL_NLO** for all interfaces except loopback or any interface name **(e.g. \-i eth0)**. This option can be specified multiple times, **(e.g \-i eth0 \-i eth1 ...)** **(default: ALL_NLO)**. Note: On Linux, the special psuedo pcap interface "**any**" can also be used.
+**This option is only relevant when pcap mode is used**. Specify interface(s) to listen on. You can either specify an "interface alias or a specific interface:
+
+* `ALL` - Listen on all interfaces (including the loopback interface) (Alias)
+* `ALL_NLO` - Listen on all interfaces except the loopback interface (Alias)
+* `any` - This is a special "interface" option, built-in to libpcap. The libpcap library will attempt to listen to "all" interfaces except some special interfaces when using this option.
+* `<interface>` - Listen on the specified interface. NOTE: You can specify multiple interfaces by using multipl `--interface` switches, e.g. `--interface eth0 --interface eth1`
 
 ## Generic Options
 
@@ -52,27 +62,27 @@ Under normal operations; if Portsentry detects traffic with the same source and 
 
 ### \-l, \-\-logoutput=stdout|syslog
 
-Set Log output **(default: stdout)**
+Portsentry can log to either `stdout` or `syslog`. The log output can be set using the `--logoutput` (or `-l`) command line option. The default log output is `stdout`.
 
 ### \-c, \-\-configfile=path
 
-Set config file path. See portsentry.conf(8) for more information.
+Portsentry can be configured using an alternative path for the configuration file. The configuration file can be set using the `--configfile` (or `-c`) command line option. The default configuration file is `/etc/portsentry/portsentry.conf`. See portsentry.conf(8) for more information.
 
 ### \-D, \-\-daemon
 
-Run as a daemon
+Portsentry can be run as a daemon using the `--daemon` (or `-D`) command line option. This will cause Portsentry to fork into the background and run as a daemon. By default portsentry runs in the foreground.
 
 ### \-d, \-\-debug
 
-Enable debugging output
+Enable debug output using the `--debug` (or `-d`) command line option. This will cause Portsentry to become very noisy.
 
 ### \-v, \-\-verbose
 
-Enable verbose output
+Enable verbose output using the `--verbose` (or `-v`) command line option. This will cause Portsentry to log additional information to the log output.
 
 ### \-h, \-\-help
 
-Display this help message
+Display command line help message
 
 ### \-V, \-\-version
 
