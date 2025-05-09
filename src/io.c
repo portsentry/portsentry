@@ -26,6 +26,8 @@
 #include "portsentry.h"
 #include "util.h"
 
+#define MAXPORTBUF 10
+
 static int MkdirP(const char *path);
 
 static uint8_t isSyslogOpen = FALSE;
@@ -228,13 +230,16 @@ int OpenSocket(const int family, const int type, const int protocol, const uint8
 int KillRoute(const char *target, const int port, const char *killString, const char *detectionType) {
   char commandStringTemp[MAXBUF];
   char commandStringTemp2[MAXBUF], commandStringFinal[MAXBUF];
-  char portString[MAXBUF];
+  char portString[MAXPORTBUF];
   int killStatus = ERROR, substStatus = ERROR;
 
   if (strlen(killString) == 0)
     return FALSE;
 
-  snprintf(portString, MAXBUF, "%d", port);
+  if (snprintf(portString, MAXPORTBUF, "%d", port) >= MAXPORTBUF) {
+    Error("KillRoute: Port number too large for buffer: %d", port);
+    return ERROR;
+  }
 
   substStatus = SubstString(target, "$TARGET$", killString, commandStringTemp, MAXBUF);
   if (substStatus == 0) {
@@ -283,7 +288,10 @@ int KillRunCmd(const char *target, const int port, const char *killString, const
   if (strlen(killString) == 0)
     return FALSE;
 
-  snprintf(portString, MAXBUF, "%d", port);
+  if (snprintf(portString, MAXPORTBUF, "%d", port) >= MAXPORTBUF) {
+    Error("KillRunCmd: Port number too large for buffer: %d", port);
+    return ERROR;
+  }
 
   /* Tokens are not required, but we check for an error anyway */
   if (SubstString(target, "$TARGET$", killString, commandStringTemp, MAXBUF) == ERROR) {
@@ -332,7 +340,10 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
   if (strlen(killString) == 0)
     return FALSE;
 
-  snprintf(portString, MAXBUF, "%d", port);
+  if (snprintf(portString, MAXPORTBUF, "%d", port) >= MAXPORTBUF) {
+    Error("KillHostsDeny: Port number too large for buffer: %d", port);
+    return ERROR;
+  }
 
   Debug("KillHostsDeny: parsing string for block: %s", killString);
 
@@ -377,8 +388,11 @@ int KillHostsDeny(const char *target, const int port, const char *killString, co
     return TRUE;
   }
 
-  char tempFile[MAXBUF];
-  snprintf(tempFile, sizeof(tempFile), "%s.tmp", WRAPPER_HOSTS_DENY);
+  char tempFile[PATH_MAX];
+  if (snprintf(tempFile, PATH_MAX, "%s.tmp", WRAPPER_HOSTS_DENY) >= PATH_MAX) {
+    Error("KillHostsDeny: Temp file name too large for buffer: %s", WRAPPER_HOSTS_DENY);
+    return ERROR;
+  }
 
   if ((output = fopen(tempFile, "w")) == NULL) {
     Error("Cannot create temporary file %s: %s", tempFile, ErrnoString(err, sizeof(err)));
