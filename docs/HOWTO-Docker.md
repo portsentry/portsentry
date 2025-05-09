@@ -2,17 +2,20 @@
 
 ## Versions
 
-As of right now (when portsentry 2.0 is in beta) it is highly recommended to use the ``:unstable`` tag. This version has been stable for a few months
+It's recommended to use either the **latest tag**, which corresponds to the latest stable version of Portsentry, or if you want to follow a specific branch, use a branch tag (such as v2.0).
+
+These are the tags you can use:
 
 | Tag Name | Description |
 | -------- | ----------- |
-| unstable | Follows the master branch, unreleased version |
-| latest | Follows the latest stable release version |
+| unstable | Follows the master branch, unreleased/unstable version |
+| latest | Follows the latest stable release brnach/version |
+| v2.0 | Follows the v2.0 branch (current stable branch) |
 | v1.2 | The old **legacy/unmaintained** version |
 
 ## Quickstart
 ```
-docker run -d --network=host --name portsentry portsentry/portsentry:unstable
+docker run -d --network=host --name portsentry portsentry/portsentry:latest
 ```
 
 ### Mounting important directories and files
@@ -38,7 +41,7 @@ Here is a complete example of how to run Portsentry with a custom configruation 
 docker run -d --mount type=bind,src=./portsentry.ignore,dst=/etc/portsentry/portsentry.ignore \
 --mount type=bind,src=./portsentry.conf,dst=/etc/portsentry/portsentry.conf \
 --mount type=bind,src=./logs,dst=/var/log \
---network=host --name portsentry portsentry/portsentry:unstable
+--network=host --name portsentry portsentry/portsentry:latest
 ```
 
 ## Using Docker Compose
@@ -53,7 +56,7 @@ Here is an example of how to run Portsentry with a custom configuration and igno
 services:
   portsentry:
     container_name: portsentry
-    image: portsentry/portsentry:unstable
+    image: portsentry/portsentry:latest
     restart: unless-stopped
     network_mode: host
     volumes:
