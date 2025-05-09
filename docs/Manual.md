@@ -16,7 +16,7 @@ Portsentry does three main things:
 * It stealthily (or visibly) logs connection attempts to the ports you have specified.
 * It can optionally execute scripts or applications when connection attempts are made.
 
-The most common use\-case for Portsentry is to block unwanted service enumeration attempts against your host. This could be accomplished by simply listening to a wide variety of **unused** ports and block all connection attempts to those ports. Portsentry can also be deployed as a Network Intrustion Detection System (NIDS). By listening to unused ports on your internal networks, you will be notified as soon as a potential attacker tries to scan for services within your organization. A more detailed explination and guide of the various uses of portsentry, refer to the [HOWTO-Use](https://github.com/portsentry/portsentry/blob/master/docs/HOWTO-Use.md) guide.
+The most common use\-case for Portsentry is to block unwanted service enumeration attempts against your host. This could be accomplished by simply listening to a wide variety of **unused** ports and block all connection attempts to those ports. Portsentry can also be deployed as a Network Intrusion Detection System (NIDS). By listening to unused ports on your internal networks, you will be notified as soon as a potential attacker tries to scan for services within your organization. A more detailed explanation and guide of the various uses of portsentry, refer to the [HOWTO-Use](https://github.com/portsentry/portsentry/blob/master/docs/HOWTO-Use.md) guide.
 
 
 
@@ -50,7 +50,7 @@ This section covers options only relevant when Stealth mode **\-\-stealth** is u
 * `ALL` - Listen on all interfaces (including the loopback interface) (Alias)
 * `ALL_NLO` - Listen on all interfaces except the loopback interface (Alias)
 * `any` - This is a special "interface" option, built-in to libpcap. The libpcap library will attempt to listen to "all" interfaces except some special interfaces when using this option.
-* `<interface>` - Listen on the specified interface. NOTE: You can specify multiple interfaces by using multipl `--interface` switches, e.g. `--interface eth0 --interface eth1`
+* `<interface>` - Listen on the specified interface. NOTE: You can specify multiple interfaces by using multiple `--interface` switches, e.g. `--interface eth0 --interface eth1`
 
 ## Generic Options
 
