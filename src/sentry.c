@@ -161,7 +161,10 @@ void RunSentry(const struct PacketInfo *pi) {
   if (configData.resolveHost == TRUE) {
     ResolveAddr(pi, resolvedHost, NI_MAXHOST);
   } else {
-    snprintf(resolvedHost, NI_MAXHOST, "%s", pi->saddr);
+    if (snprintf(resolvedHost, NI_MAXHOST, "%s", pi->saddr) >= NI_MAXHOST) {
+      Error("RunSentry: Host name too long for buffer: %s, truncating", pi->saddr);
+      resolvedHost[NI_MAXHOST - 1] = '\0';
+    }
   }
 
   if ((flagIgnored = IgnoreIpIsPresent(&is, GetSourceSockaddrFromPacketInfo(pi))) == ERROR) {
