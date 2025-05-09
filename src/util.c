@@ -47,8 +47,11 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
 
 void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize) {
   if (getnameinfo(GetSourceSockaddrFromPacketInfo(pi), GetSourceSockaddrLenFromPacketInfo(pi), resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
-    Error("Unable to resolve address for %s", pi->saddr);
-    snprintf(resolvedHost, resolvedHostSize, "<unknown>");
+    Error("ResolveAddr: Unable to resolve address for %s", pi->saddr);
+    if (snprintf(resolvedHost, resolvedHostSize, "<unknown>") >= resolvedHostSize) {
+      Error("ResolveAddr: <unknown> placeholder too long for buffer");
+      resolvedHost[resolvedHostSize - 1] = '\0';
+    }
   }
 
   Debug("ResolveAddr: Resolved: %s", resolvedHost);
@@ -206,22 +209,29 @@ int IsPortInUse(struct PacketInfo *pi) {
 char *ReportPacketType(const struct tcphdr *tcpPkt) {
   static char packetDesc[MAXBUF];
   static char *packetDescPtr = packetDesc;
+  int ret;
 
   if (tcpPkt->th_flags == 0)
-    snprintf(packetDesc, MAXBUF, "TCP NULL scan");
+    ret = snprintf(packetDesc, MAXBUF, "TCP NULL scan");
   else if (((tcpPkt->th_flags & TH_FIN) != 0) && ((tcpPkt->th_flags & TH_URG) != 0) && ((tcpPkt->th_flags & TH_PUSH) != 0))
-    snprintf(packetDesc, MAXBUF, "TCP XMAS scan");
+    ret = snprintf(packetDesc, MAXBUF, "TCP XMAS scan");
   else if (((tcpPkt->th_flags & TH_FIN) != 0) && ((tcpPkt->th_flags & TH_SYN) == 0) && ((tcpPkt->th_flags & TH_ACK) == 0) &&
            ((tcpPkt->th_flags & TH_PUSH) == 0) && ((tcpPkt->th_flags & TH_RST) == 0) && ((tcpPkt->th_flags & TH_URG) == 0))
-    snprintf(packetDesc, MAXBUF, "TCP FIN scan");
+    ret = snprintf(packetDesc, MAXBUF, "TCP FIN scan");
   else if (((tcpPkt->th_flags & TH_SYN) != 0) && ((tcpPkt->th_flags & TH_FIN) == 0) && ((tcpPkt->th_flags & TH_ACK) == 0) &&
            ((tcpPkt->th_flags & TH_PUSH) == 0) && ((tcpPkt->th_flags & TH_RST) == 0) && ((tcpPkt->th_flags & TH_URG) == 0))
-    snprintf(packetDesc, MAXBUF, "TCP SYN/Normal scan");
+    ret = snprintf(packetDesc, MAXBUF, "TCP SYN/Normal scan");
   else
-    snprintf(packetDesc, MAXBUF,
-             "Unknown Type: TCP Packet Flags: SYN: %d FIN: %d ACK: %d PSH: %d URG: %d RST: %d",
-             tcpPkt->th_flags & TH_SYN ? 1 : 0, tcpPkt->th_flags & TH_FIN ? 1 : 0, tcpPkt->th_flags & TH_ACK ? 1 : 0,
-             tcpPkt->th_flags & TH_PUSH ? 1 : 0, tcpPkt->th_flags & TH_URG ? 1 : 0, tcpPkt->th_flags & TH_RST ? 1 : 0);
+    ret = snprintf(packetDesc, MAXBUF,
+                   "Unknown Type: TCP Packet Flags: SYN: %d FIN: %d ACK: %d PSH: %d URG: %d RST: %d",
+                   tcpPkt->th_flags & TH_SYN ? 1 : 0, tcpPkt->th_flags & TH_FIN ? 1 : 0, tcpPkt->th_flags & TH_ACK ? 1 : 0,
+                   tcpPkt->th_flags & TH_PUSH ? 1 : 0, tcpPkt->th_flags & TH_URG ? 1 : 0, tcpPkt->th_flags & TH_RST ? 1 : 0);
+
+  if (ret >= MAXBUF) {
+    Error("ReportPacketType: Packet description too long for buffer: %s, truncating", packetDesc);
+    packetDesc[MAXBUF - 1] = '\0';
+  }
+
   return (packetDescPtr);
 }
 
