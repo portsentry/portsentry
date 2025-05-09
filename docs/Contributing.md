@@ -25,6 +25,12 @@ Before submitting a pull request, please make sure that you do the following:
 + Run the integration tests: ``cd system_test ; ./run_all_tests.sh``. Consider running the tests in a VM. It would be greatly appreciated if you could run the tests on Linux, NetBSD, FreeBSD and OpenBSD but it's not a requirement.
   - Note; The shell script build_and_test.sh can be used in order to build and run the tests on several VM's at the same time
 
+## Documentation
+
+Make sure to update the documentation when needed. All documentation is in the docs/ folder. Pay special attention to:
+
++ Keep examples/portsentry.conf in sync with docs/portsentry.conf.md
+
 ## Issue Reporting
 
 When reporting issues:
