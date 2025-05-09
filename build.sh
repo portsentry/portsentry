@@ -5,7 +5,8 @@ ACTION=$1
 if [ "$ACTION" = "clean" ]; then
   rm -rf debug release && \
   rm -f portsentry.blocked.* && \
-  rm -f portsentry.history
+  rm -f portsentry.history && \
+  rm -f portsentry*.tar.xz
 elif [ "$ACTION" = "debug" ]; then
   cmake -B debug -D CMAKE_BUILD_TYPE=Debug $CMAKE_OPTS
   cmake --build debug -v
@@ -50,6 +51,26 @@ elif [ "$ACTION" = "docker" ]; then
 elif [ "$ACTION" = "doc" ]; then
   pandoc --standalone --to man docs/Manual.md -o docs/portsentry.8
   pandoc --standalone --to man docs/portsentry.conf.md -o docs/portsentry.conf.8
+elif [ "$ACTION" = "create_src_tarball" ]; then
+  version=$(git describe --tags)
+  ./build.sh clean && \
+  git archive --format=tar --prefix=portsentry-src-${version}/ HEAD | xz > portsentry-src-${version}.tar.xz
+elif [ "$ACTION" = "create_bin_tarball" ]; then
+  version=$(git describe --tags)
+  machine=$(uname -m)
+  ./build.sh clean && \
+  ./build.sh release && \
+  rm -rf /tmp/portsentry-${version}-${machine} && \
+  mkdir -p /tmp/portsentry-${version}-${machine} && \
+  cp release/portsentry /tmp/portsentry-${version}-${machine}/ && \
+  cp -rf docs /tmp/portsentry-${version}-${machine}/ && \
+  cp -rf examples /tmp/portsentry-${version}-${machine}/ && \
+  cp -rf fail2ban /tmp/portsentry-${version}-${machine}/ && \
+  cp -rf init /tmp/portsentry-${version}-${machine}/ && \
+  cp Changes.md /tmp/portsentry-${version}-${machine}/ && \
+  cp LICENSE /tmp/portsentry-${version}-${machine}/ && \
+  cp README.md /tmp/portsentry-${version}-${machine}/ && \
+  tar -cvJf portsentry-${version}-${machine}.tar.xz -C /tmp portsentry-${version}-${machine}
 else
   echo "Usage: $0 <command>"
   echo "Commands:"
