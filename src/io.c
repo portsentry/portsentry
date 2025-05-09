@@ -40,7 +40,12 @@ static void LogEntry(const enum LogType logType, const char *logentry, va_list a
 static void LogEntry(const enum LogType logType, const char *logentry, va_list argsPtr) {
   char logbuffer[MAXBUF];
 
-  vsnprintf(logbuffer, MAXBUF, logentry, argsPtr);
+  if (vsnprintf(logbuffer, MAXBUF, logentry, argsPtr) >= MAXBUF) {
+    logbuffer[MAXBUF - 1] = '\0';
+    logbuffer[MAXBUF - 2] = '.';
+    logbuffer[MAXBUF - 3] = '.';
+    logbuffer[MAXBUF - 4] = '.';
+  }
 
   if (configData.logFlags & LOGFLAG_OUTPUT_STDOUT) {
     if (logType == LogTypeError) {
