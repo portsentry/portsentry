@@ -12,7 +12,7 @@
 </div>
 
 # Portsentry
-**Portsentry is a tool to detect and respond to port scans against a target host in real-time.**
+**Detect and respond to port scans against a target host in real\-time**
 
 Website: https://portsentry.xyz
 
@@ -21,60 +21,27 @@ Github: https://github.com/portsentry/portsentry
 Docker Hub: https://hub.docker.com/r/portsentry/portsentry
 
 ## Quickstart
-Most package managers should have a copy of Portsentry. Check with your OS/distribution.
 
-If you need to compile and install manually, review the [Building](https://github.com/portsentry/portsentry#building) section below.
+### Docker
 
-## What is this?
-This repo contains a continuation of Psionic's Portsentry tool. Portsentry was abandoned in 2003 at version 1.2. This project aim to continue developing new and improved versions of Portsentry. The initial check in (tag v1.2) is the old, original code from 2003. All other commits are the project continuation.
-
-## What's on the agenda?
-We aim to accomplish 3 things in this project:
-1. Fix the various long standing bugs in the code
-2. Modernize the code in order to make it more efficient, readable and easier to work on
-3. Implement new features
-
-## Building
-- Use a tag to build an official release
-- Use the master branch to build the latest version (not recommended for production)
-
-The build.sh script provides a convenient way to build, clean and run tests:
-
-- ./build.sh debug - Build debug version w/ reasonable defaults
-- ./build.sh release - Build release version
-- ./build.sh clean - Remove all builds
-- ./build.sh sast - Run sast scanners
-
-### Running CMake manually
-Required flag is: **CMAKE_BUILD_TYPE**. It should be set to either **Debug** or **Release**.
-
-#### Compilation Examples
-
-**Compiling for release**
 ```
-  cmake -B release -D CMAKE_BUILD_TYPE=Release
-  cmake --build release -v
+docker run -d --network=host --name portsentry portsentry/portsentry:unstable
 ```
 
-**Compiling with debug symbols**
-```
-  cmake -B debug -D CMAKE_BUILD_TYPE=Debug
-  cmake --build debug -v
-```
+More docker configuration options available in the [HOWTO-Docker.md](docs/HOWTO-Docker.md)
 
-**Compiling without LIBPCAP**
-```
-  cmake -B release -D CMAKE_BUILD_TYPE=Release -DUSE_PCAP=OFF
-  cmake --build release -v
-```
+### Linux
 
-**Compiling old version (v1.2)**
+Download the latest release from the [Release page](https://github.com/portsentry/portsentry/releases)
 
-Tag v1.2 is the release from 2003, before the project was orphaned and uses a different build method, execute _make_ in order to see compilation instructions.
+### *BSD
 
-## Supported Platforms
-### Verified
-- Linux
-- OpenBSD
-- FreeBSD
-- NetBSD >= 8.0
+OpenBSD, NetBSD and FreeBSD is supported but must currently be compiled manually, see below
+
+### Compiling the Source Code
+
+* Make sure you have: **CMake**, **gcc or clang** and **libpcap** installed.
+* git clone https://github.com/portsentry/portsentry.git
+* ./build.sh release
+
+Detailed compilation instructions can be found on the [HOWTO-Compile](docs/HOWTO-Compile.md) page.
