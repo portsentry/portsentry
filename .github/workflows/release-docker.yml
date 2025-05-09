@@ -1,0 +1,46 @@
+name: Docker Release Image Create and Push To Docker HUB
+
+on:
+  push:
+    tags:
+      - 'v2'
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build-and-push-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Install pcap
+      run: |
+        sudo apt-get update
+        sudo apt-get install libpcap-dev
+        
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/release -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      
+    - name: Build
+      run: cmake --build ${{github.workspace}}/release --config ${{env.BUILD_TYPE}}
+      
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build Docker image
+      run: |
+        docker build -t portsentry:latest -f ${{github.workspace}}/docker/Dockerfile ${{github.workspace}}
+
+    - name: Push Docker image
+      run: |
+        docker tag portsentry:latest ${{ secrets.DOCKER_USERNAME }}/portsentry:latest
+        docker tag portsentry:${{ github.ref_name }} ${{ secrets.DOCKER_USERNAME }}/portsentry:${{ github.ref_name }}
+        docker push ${{ secrets.DOCKER_USERNAME }}/portsentry:latest
+        docker push ${{ secrets.DOCKER_USERNAME }}/portsentry:${{ github.ref_name }}
+
