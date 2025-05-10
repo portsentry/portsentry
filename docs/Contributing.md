@@ -7,13 +7,11 @@
 
 ## Development Environment Setup
 
-+ Install required dependencies:
-  - CMake (version 3.10 or higher)
-  - C++ compiler (GCC or Clang)
++ Install the following formater/linting tools
   - clang-format
   - cpplint
-  - libpcap
-+ For development, you can use the provided Docker environment in the ``docker/`` directory
++ Review [HOWTO-Compile.md](HOWTO-Compile.md) for compilation requirements.
++ (optional) Install [CodeQL](https://codeql.github.com) in order to be able to run it locally.
 
 ## Pull Requests
 
@@ -21,6 +19,7 @@ Before submitting a pull request, please make sure that you do the following:
 
 + Make sure that you have run ``clang-format`` using the ``.clang-format`` config file
 + Make sure the code compiles without Warnings or Errors
++ (optional) Run [CodeQL](https://codeql.github.com) locally if you have it installed
 + Run the fuzzers: ``./build.sh build_fuzz ; ./build.sh run_fuzz``
 + Run the integration tests: ``cd system_test ; ./run_all_tests.sh``. Consider running the tests in a VM. It would be greatly appreciated if you could run the tests on Linux, NetBSD, FreeBSD and OpenBSD but it's not a requirement.
   - Note; The shell script build_and_test.sh can be used in order to build and run the tests on several VM's at the same time

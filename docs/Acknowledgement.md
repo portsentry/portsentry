@@ -164,7 +164,7 @@ Dino A Amato <Dino.A.Amato@lerc.nasa.gov> - Sent in Makefile strings for Irix
 
 Scott McCrory <scott@mccrory.com> - Sent in common DDOS daemon ports
 
-Per J�nsson <pt98pjo@student.hk-r.se> - Sent in changes to allow for
+Per Jönsson <pt98pjo@student.hk-r.se> - Sent in changes to allow for
 ignoring networks/ports.
 
 Flower <floweros@golia.ro> - Sent in request to disable DNS lookups.
