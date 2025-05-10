@@ -9,7 +9,7 @@
 
 + Install required dependencies:
   - CMake (version 3.10 or higher)
-  - C++ compiler (GCC or Clang)
+  - C compiler (GCC or Clang)
   - clang-format
   - cpplint
   - libpcap
