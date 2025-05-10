@@ -45,3 +45,7 @@ OpenBSD, NetBSD and FreeBSD is supported but must currently be compiled manually
 * ./build.sh release
 
 Detailed compilation instructions can be found on the [HOWTO-Compile](docs/HOWTO-Compile.md) page.
+
+## Documentation
+
+All documentation for portsentry is indexed in the [docs/README.md](docs/README.md).
