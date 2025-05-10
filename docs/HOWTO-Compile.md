@@ -2,7 +2,11 @@
 
 ## Requirements
 
-Portsentry requires **CMake (version 3.10 or higher)**, **GCC or Clang** and **libpcap** in order to compile
+In order to compile, Portsentry requires:
+
+* **CMake (version 3.10 or higher)**
+* **GCC or Clang**
+* **libpcap** (including headers, often packaged as libpcap-dev)
 
 ## Quickstart
 
