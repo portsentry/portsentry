@@ -70,7 +70,7 @@ elif [ "$ACTION" = "create_bin_tarball" ]; then
   cp Changes.md /tmp/portsentry-${version}-${machine}/ && \
   cp LICENSE /tmp/portsentry-${version}-${machine}/ && \
   cp README.md /tmp/portsentry-${version}-${machine}/ && \
-  tar -cvJf portsentry-${version}-${machine}.tar.xz -C /tmp portsentry-${version}-${machine}
+  tar -cvJf portsentry-${machine}-${version}.tar.xz -C /tmp portsentry-${version}-${machine}
 else
   echo "Usage: $0 <command>"
   echo "Commands:"
