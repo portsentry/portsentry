@@ -14,6 +14,8 @@
 
 #include "packet_info.h"
 
+#define MAX_SAFESTRNCMP_SIZE ((size_t)(1024 * 1024))
+
 char *SafeStrncpy(char *, const char *, size_t);
 void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize);
 long GetLong(const char *buffer);

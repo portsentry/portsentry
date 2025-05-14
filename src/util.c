@@ -29,14 +29,12 @@
 
 static char *Realloc(char *filter, int newLen);
 
-#define MAX_BUFFER_SIZE ((size_t)(1024 * 1024))
-
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
   if (dest == NULL || src == NULL) {
     return NULL;
   }
 
-  if (size < 1 || size > MAX_BUFFER_SIZE) {
+  if (size < 1 || size > MAX_SAFESTRNCMP_SIZE) {
     return NULL;
   }
 
@@ -44,8 +42,8 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
     return NULL;
   }
 
-  size_t src_len = strnlen(src, MAX_BUFFER_SIZE);
-  if (src_len >= MAX_BUFFER_SIZE) {
+  size_t src_len = strnlen(src, MAX_SAFESTRNCMP_SIZE);
+  if (src_len >= MAX_SAFESTRNCMP_SIZE) {
     return NULL;
   }
 
