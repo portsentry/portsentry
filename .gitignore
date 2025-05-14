@@ -1,6 +1,7 @@
 portsentry
 debug
 release
+build
 portsentry.blocked.*
 Testing/**
 remotes.txt

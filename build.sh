@@ -71,6 +71,15 @@ elif [ "$ACTION" = "create_bin_tarball" ]; then
   cp LICENSE /tmp/portsentry-${version}-${machine}/ && \
   cp README.md /tmp/portsentry-${version}-${machine}/ && \
   tar -cvJf portsentry-${machine}-${version}.tar.xz -C /tmp portsentry-${version}-${machine}
+elif [ "$ACTION" = "test" ]; then
+  if [ -d "debug" ]; then
+    ctest --test-dir debug
+  elif [ -d "release" ]; then
+    ctest --test-dir release
+  else
+    echo "No build directories (debug or release) found"
+    exit 1
+  fi
 else
   echo "Usage: $0 <command>"
   echo "Commands:"

@@ -14,19 +14,21 @@
 
 #include "packet_info.h"
 
+#define MAX_SAFESTRNCMP_SIZE ((size_t)(1024 * 1024))
+#define MIN_DATETIME_BUFFER 32
+
 char *SafeStrncpy(char *, const char *, size_t);
 void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize);
 long GetLong(const char *buffer);
+int StrToUint16_t(const char *str, uint16_t *val);
 int DisposeTarget(const char *, int, int);
 const char *GetProtocolString(int proto);
 const char *GetFamilyString(int family);
-const char *GetSocketTypeString(int type);
 int SetupPort(int family, uint16_t port, int proto);
 int IsPortInUse(struct PacketInfo *pi);
 char *ReportPacketType(const struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
-int CreateDateTime(char *buf, const int size);
-int StrToUint16_t(const char *str, uint16_t *val);
+int CreateDateTime(char *buf, const size_t size);
 __attribute__((format(printf, 3, 4))) char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);
 
 #ifndef NDEBUG

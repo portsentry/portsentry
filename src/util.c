@@ -29,20 +29,30 @@
 
 static char *Realloc(char *filter, int newLen);
 
-/* A replacement for strncpy that covers mistakes a little better */
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
-  if (!dest) {
-    dest = NULL;
-    return (NULL);
-  } else if (size < 1) {
-    dest = NULL;
-    return (NULL);
+  if (dest == NULL || src == NULL) {
+    return NULL;
   }
 
-  memset(dest, '\0', size);
-  strncpy(dest, src, size - 1);
+  if (size < 1 || size > MAX_SAFESTRNCMP_SIZE) {
+    return NULL;
+  }
 
-  return (dest);
+  if (size > SIZE_MAX - 1) {
+    return NULL;
+  }
+
+  size_t src_len = strnlen(src, MAX_SAFESTRNCMP_SIZE);
+  if (src_len >= MAX_SAFESTRNCMP_SIZE) {
+    return NULL;
+  }
+
+  size_t copy_size = (src_len < (size - 1)) ? src_len : (size - 1);
+
+  memmove(dest, src, copy_size);
+  dest[copy_size] = '\0';
+
+  return dest;
 }
 
 void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize) {
@@ -76,6 +86,31 @@ long GetLong(const char *buffer) {
     return ERROR;
 
   return value;
+}
+
+int StrToUint16_t(const char *str, uint16_t *val) {
+  if (str == NULL || val == NULL) {
+    return FALSE;
+  }
+
+  if (strnlen(str, 6) > 5) {  // UINT16_MAX is 65535 (5 digits)
+    return FALSE;
+  }
+
+  char *endptr;
+  errno = 0;
+  long value = strtol(str, &endptr, 10);
+
+  if (errno != 0 ||          // Conversion error
+      endptr == str ||       // No digits found
+      *endptr != '\0' ||     // Extra characters after number
+      value > UINT16_MAX ||  // Value too large
+      value <= 0) {          // Zero or negative not allowed
+    return FALSE;
+  }
+
+  *val = (uint16_t)value;
+  return TRUE;
 }
 
 int DisposeTarget(const char *target, int port, int protocol) {
@@ -159,20 +194,6 @@ const char *GetFamilyString(int family) {
   }
 }
 
-const char *GetSocketTypeString(int type) {
-  switch (type) {
-  case SOCK_STREAM:
-    return ("SOCK_STREAM");
-    break;
-  case SOCK_DGRAM:
-    return ("SOCK_DGRAM");
-    break;
-  default:
-    return ("UNKNOWN");
-    break;
-  }
-}
-
 int SetupPort(int family, uint16_t port, int proto) {
   int sock;
 
@@ -246,65 +267,61 @@ char *ErrnoString(char *buf, const size_t buflen) {
   return p;
 }
 
-int CreateDateTime(char *buf, const int size) {
+int CreateDateTime(char *buf, const size_t size) {
+  if (buf == NULL) {
+    Error("NULL buffer provided");
+    return ERROR;
+  }
+
+  if (size < MIN_DATETIME_BUFFER) {
+    Error("Buffer too small for datetime format");
+    return ERROR;
+  }
+
   char *p = buf;
-  int ret, current_size = size;
+  char err[ERRNOMAXBUF];
+  size_t remainingSize = size;
+  int ret;
   struct tm tm, *tmptr;
   struct timespec ts;
 
   if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-    Error("Unable to get current clock time");
+    Error("Unable to get current clock time: %s", ErrnoString(err, sizeof(err)));
     return ERROR;
   }
 
   tmptr = localtime_r(&ts.tv_sec, &tm);
-
   if (tmptr != &tm) {
-    Error("Unable to determine local time");
+    Error("Unable to determine local time: %s", ErrnoString(err, sizeof(err)));
     return ERROR;
   }
 
-  if ((ret = strftime(p, current_size, "%Y-%m-%dT%H:%M:%S.", tmptr)) == 0) {
-    Error("Unable to write datetime format to buffer, insufficient space");
+  ret = strftime(p, remainingSize, "%Y-%m-%dT%H:%M:%S.", tmptr);
+  if (ret == 0 || (size_t)ret >= remainingSize) {
+    Error("Buffer overflow while writing datetime format");
+    *buf = '\0';
     return ERROR;
   }
 
-  current_size -= ret;
+  remainingSize -= ret;
   p += ret;
 
-  if ((ret = snprintf(p, current_size, "%03ld", ts.tv_nsec / 1000000)) >= current_size) {
-    Error("Insufficient buffer space to write datetime");
+  ret = snprintf(p, remainingSize, "%03ld", ts.tv_nsec / 1000000);
+  if (ret < 0 || (size_t)ret >= remainingSize) {
+    Error("Buffer overflow while writing milliseconds");
+    *buf = '\0';
     return ERROR;
   }
 
-  current_size -= ret;
+  remainingSize -= ret;
   p += ret;
 
-  if ((ret = strftime(p, current_size, "%z", tmptr)) == 0) {
-    Error("Unable to fit TZ id, insufficient space\n");
+  ret = strftime(p, remainingSize, "%z", tmptr);
+  if (ret == 0) {
+    Error("Buffer overflow while writing timezone");
+    *buf = '\0';
     return ERROR;
   }
-
-  return TRUE;
-}
-
-int StrToUint16_t(const char *str, uint16_t *val) {
-  char *endptr;
-  long value;
-
-  errno = 0;
-  value = strtol(str, &endptr, 10);
-
-  // Stingy error checking
-  // errno set indicates malformed input
-  // endptr == str indicates no digits found
-  // value > UINT16_MAX indicates value is too large, since ports can only be 0-65535
-  // value <= 0: Don't allow port 0 (or negative ports)
-  if (errno != 0 || endptr == str || *endptr != '\0' || value > UINT16_MAX || value <= 0) {
-    return FALSE;
-  }
-
-  *val = (uint16_t)value;
 
   return TRUE;
 }
@@ -324,6 +341,10 @@ char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
   int neededBufferLen;
   char *p;
   va_list args;
+
+  if (filterLen == NULL || append == NULL) {
+    return NULL;
+  }
 
   // Calculate the length of the buffer needed (excluding the null terminator)
   va_start(args, append);

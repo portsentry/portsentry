@@ -94,16 +94,45 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" A
   endif()
 endif()
 
-# UNIT TEST MOCK EXEC
-add_executable(listener_test tests/listener_test.c)
-target_compile_options(listener_test PRIVATE ${STANDARD_COMPILE_OPTS})
-target_include_directories(listener_test PRIVATE "${PROJECT_BINARY_DIR}")
-target_link_options(listener_test PRIVATE ${STANDARD_LINK_OPTS})
-target_link_libraries(listener_test PRIVATE lportsentry)
-if (USE_PCAP)
-  target_link_libraries(listener_test PRIVATE pcap)
-endif()
+
+# UNIT TESTS
+
+set(UNIT_TEST_COMPILE_OPTS ${STANDARD_COMPILE_OPTS} -Wno-unused-result -Wno-unused-value -Wno-unused-variable)
+
+add_executable(test_util_safestrncpy tests/test_util_safestrncpy.c)
+target_compile_options(test_util_safestrncpy PRIVATE ${UNIT_TEST_COMPILE_OPTS})
+target_include_directories(test_util_safestrncpy PRIVATE "${PROJECT_BINARY_DIR}")
+target_link_options(test_util_safestrncpy PRIVATE ${STANDARD_LINK_OPTS})
+target_link_libraries(test_util_safestrncpy PRIVATE lportsentry)
+
+add_executable(test_util_getlong tests/test_util_getlong.c)
+target_compile_options(test_util_getlong PRIVATE ${UNIT_TEST_COMPILE_OPTS})
+target_include_directories(test_util_getlong PRIVATE "${PROJECT_BINARY_DIR}")
+target_link_options(test_util_getlong PRIVATE ${STANDARD_LINK_OPTS})
+target_link_libraries(test_util_getlong PRIVATE lportsentry)
+
+add_executable(test_util_createdatetime tests/test_util_createdatetime.c)
+target_compile_options(test_util_createdatetime PRIVATE ${UNIT_TEST_COMPILE_OPTS})
+target_include_directories(test_util_createdatetime PRIVATE "${PROJECT_BINARY_DIR}")
+target_link_options(test_util_createdatetime PRIVATE ${STANDARD_LINK_OPTS})
+target_link_libraries(test_util_createdatetime PRIVATE lportsentry)
+
+add_executable(test_util_strtouint16 tests/test_util_strtouint16.c)
+target_compile_options(test_util_strtouint16 PRIVATE ${UNIT_TEST_COMPILE_OPTS})
+target_include_directories(test_util_strtouint16 PRIVATE "${PROJECT_BINARY_DIR}")
+target_link_options(test_util_strtouint16 PRIVATE ${STANDARD_LINK_OPTS})
+target_link_libraries(test_util_strtouint16 PRIVATE lportsentry)
+
+add_executable(test_util_reallocandappend tests/test_util_reallocandappend.c)
+target_compile_options(test_util_reallocandappend PRIVATE ${UNIT_TEST_COMPILE_OPTS})
+target_include_directories(test_util_reallocandappend PRIVATE "${PROJECT_BINARY_DIR}")
+target_link_options(test_util_reallocandappend PRIVATE ${STANDARD_LINK_OPTS})
+target_link_libraries(test_util_reallocandappend PRIVATE lportsentry)
 
 # UNIT TESTS
 enable_testing()
-add_test(NAME listener_auto COMMAND $<TARGET_FILE:listener_test> -stcp)
+add_test(NAME test_util_safestrncpy COMMAND $<TARGET_FILE:test_util_safestrncpy>)
+add_test(NAME test_util_getlong COMMAND $<TARGET_FILE:test_util_getlong>)
+add_test(NAME test_util_createdatetime COMMAND $<TARGET_FILE:test_util_createdatetime>)
+add_test(NAME test_util_strtouint16 COMMAND $<TARGET_FILE:test_util_strtouint16>)
+add_test(NAME test_util_reallocandappend COMMAND $<TARGET_FILE:test_util_reallocandappend>)
