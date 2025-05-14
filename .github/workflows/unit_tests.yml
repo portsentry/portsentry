@@ -1,0 +1,27 @@
+name: Unit Tests
+
+on:
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install pcap
+      run: |
+        sudo apt-get update
+        sudo apt-get install libpcap-dev nmap
+
+    - name: Build
+      run: ./build.sh debug
+
+    - name: Run Unit Tests
+      run: ./build.sh test
