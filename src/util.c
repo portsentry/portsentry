@@ -242,42 +242,59 @@ char *ErrnoString(char *buf, const size_t buflen) {
   return p;
 }
 
-int CreateDateTime(char *buf, const int size) {
+int CreateDateTime(char *buf, const size_t size) {
+  if (buf == NULL) {
+    Error("NULL buffer provided");
+    return ERROR;
+  }
+
+  if (size < MIN_DATETIME_BUFFER) {
+    Error("Buffer too small for datetime format");
+    return ERROR;
+  }
+
   char *p = buf;
-  int ret, current_size = size;
+  char err[ERRNOMAXBUF];
+  size_t remaining_size = size;
+  int ret;
   struct tm tm, *tmptr;
   struct timespec ts;
 
   if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-    Error("Unable to get current clock time");
+    Error("Unable to get current clock time: %s", ErrnoString(err, sizeof(err)));
     return ERROR;
   }
 
   tmptr = localtime_r(&ts.tv_sec, &tm);
-
   if (tmptr != &tm) {
-    Error("Unable to determine local time");
+    Error("Unable to determine local time: %s", ErrnoString(err, sizeof(err)));
     return ERROR;
   }
 
-  if ((ret = strftime(p, current_size, "%Y-%m-%dT%H:%M:%S.", tmptr)) == 0) {
-    Error("Unable to write datetime format to buffer, insufficient space");
+  ret = strftime(p, remaining_size, "%Y-%m-%dT%H:%M:%S.", tmptr);
+  if (ret == 0 || (size_t)ret >= remaining_size) {
+    Error("Buffer overflow while writing datetime format");
+    *buf = '\0';
     return ERROR;
   }
 
-  current_size -= ret;
+  remaining_size -= ret;
   p += ret;
 
-  if ((ret = snprintf(p, current_size, "%03ld", ts.tv_nsec / 1000000)) >= current_size) {
-    Error("Insufficient buffer space to write datetime");
+  ret = snprintf(p, remaining_size, "%03ld", ts.tv_nsec / 1000000);
+  if (ret < 0 || (size_t)ret >= remaining_size) {
+    Error("Buffer overflow while writing milliseconds");
+    *buf = '\0';
     return ERROR;
   }
 
-  current_size -= ret;
+  remaining_size -= ret;
   p += ret;
 
-  if ((ret = strftime(p, current_size, "%z", tmptr)) == 0) {
-    Error("Unable to fit TZ id, insufficient space\n");
+  ret = strftime(p, remaining_size, "%z", tmptr);
+  if (ret == 0) {
+    Error("Buffer overflow while writing timezone");
+    *buf = '\0';
     return ERROR;
   }
 
