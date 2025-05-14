@@ -94,34 +94,37 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" A
   endif()
 endif()
 
-# UTIL TESTS
+
+# UNIT TESTS
+
+set(UNIT_TEST_COMPILE_OPTS ${STANDARD_COMPILE_OPTS} -Wno-unused-result -Wno-unused-value -Wno-unused-variable)
+
 add_executable(test_util_safestrncpy tests/test_util_safestrncpy.c)
-target_compile_options(test_util_safestrncpy PRIVATE ${STANDARD_COMPILE_OPTS})
+target_compile_options(test_util_safestrncpy PRIVATE ${UNIT_TEST_COMPILE_OPTS})
 target_include_directories(test_util_safestrncpy PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(test_util_safestrncpy PRIVATE ${STANDARD_LINK_OPTS})
 target_link_libraries(test_util_safestrncpy PRIVATE lportsentry)
 
-# UTIL TESTS
 add_executable(test_util_getlong tests/test_util_getlong.c)
-target_compile_options(test_util_getlong PRIVATE ${STANDARD_COMPILE_OPTS})
+target_compile_options(test_util_getlong PRIVATE ${UNIT_TEST_COMPILE_OPTS})
 target_include_directories(test_util_getlong PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(test_util_getlong PRIVATE ${STANDARD_LINK_OPTS})
 target_link_libraries(test_util_getlong PRIVATE lportsentry)
 
 add_executable(test_util_createdatetime tests/test_util_createdatetime.c)
-target_compile_options(test_util_createdatetime PRIVATE ${STANDARD_COMPILE_OPTS})
+target_compile_options(test_util_createdatetime PRIVATE ${UNIT_TEST_COMPILE_OPTS})
 target_include_directories(test_util_createdatetime PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(test_util_createdatetime PRIVATE ${STANDARD_LINK_OPTS})
 target_link_libraries(test_util_createdatetime PRIVATE lportsentry)
 
 add_executable(test_util_strtouint16 tests/test_util_strtouint16.c)
-target_compile_options(test_util_strtouint16 PRIVATE ${STANDARD_COMPILE_OPTS})
+target_compile_options(test_util_strtouint16 PRIVATE ${UNIT_TEST_COMPILE_OPTS})
 target_include_directories(test_util_strtouint16 PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(test_util_strtouint16 PRIVATE ${STANDARD_LINK_OPTS})
 target_link_libraries(test_util_strtouint16 PRIVATE lportsentry)
 
 add_executable(test_util_reallocandappend tests/test_util_reallocandappend.c)
-target_compile_options(test_util_reallocandappend PRIVATE ${STANDARD_COMPILE_OPTS})
+target_compile_options(test_util_reallocandappend PRIVATE ${UNIT_TEST_COMPILE_OPTS})
 target_include_directories(test_util_reallocandappend PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(test_util_reallocandappend PRIVATE ${STANDARD_LINK_OPTS})
 target_link_libraries(test_util_reallocandappend PRIVATE lportsentry)

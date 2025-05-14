@@ -8,7 +8,6 @@ void test_safestrncpy_normal_case(void) {
   char dest[10];
   const char *src = "test";
   char *result = SafeStrncpy(dest, src, sizeof(dest));
-  (void)result;
 
   assert(result == dest);
   assert(strcmp(dest, "test") == 0);
@@ -17,7 +16,6 @@ void test_safestrncpy_normal_case(void) {
 
 void test_safestrncpy_null_dest(void) {
   char *result = SafeStrncpy(NULL, "test", 10);
-  (void)result;
   assert(result == NULL);
   printf("Null destination test passed\n");
 }
@@ -25,7 +23,6 @@ void test_safestrncpy_null_dest(void) {
 void test_safestrncpy_zero_size(void) {
   char dest[10];
   char *result = SafeStrncpy(dest, "test", 0);
-  (void)result;
   assert(result == NULL);
   printf("Zero size test passed\n");
 }
@@ -33,7 +30,6 @@ void test_safestrncpy_zero_size(void) {
 void test_safestrncpy_exact_size(void) {
   char dest[5];
   char *result = SafeStrncpy(dest, "test", 5);
-  (void)result;
   assert(result == dest);
   assert(strcmp(dest, "test") == 0);
   printf("Exact size test passed\n");
@@ -42,7 +38,6 @@ void test_safestrncpy_exact_size(void) {
 void test_safestrncpy_truncated(void) {
   char dest[4];
   char *result = SafeStrncpy(dest, "test", 4);
-  (void)result;
   assert(result == dest);
   assert(strcmp(dest, "tes") == 0);
   printf("Truncated test passed\n");
