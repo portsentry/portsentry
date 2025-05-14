@@ -101,6 +101,21 @@ target_include_directories(test_util_safestrncpy PRIVATE "${PROJECT_BINARY_DIR}"
 target_link_options(test_util_safestrncpy PRIVATE ${STANDARD_LINK_OPTS})
 target_link_libraries(test_util_safestrncpy PRIVATE lportsentry)
 
+# UTIL TESTS
+add_executable(test_util_getlong tests/test_util_getlong.c)
+target_compile_options(test_util_getlong PRIVATE ${STANDARD_COMPILE_OPTS})
+target_include_directories(test_util_getlong PRIVATE "${PROJECT_BINARY_DIR}")
+target_link_options(test_util_getlong PRIVATE ${STANDARD_LINK_OPTS})
+target_link_libraries(test_util_getlong PRIVATE lportsentry)
+
+add_executable(test_util_createdatetime tests/test_util_createdatetime.c)
+target_compile_options(test_util_createdatetime PRIVATE ${STANDARD_COMPILE_OPTS})
+target_include_directories(test_util_createdatetime PRIVATE "${PROJECT_BINARY_DIR}")
+target_link_options(test_util_createdatetime PRIVATE ${STANDARD_LINK_OPTS})
+target_link_libraries(test_util_createdatetime PRIVATE lportsentry)
+
 # UNIT TESTS
 enable_testing()
 add_test(NAME test_util_safestrncpy COMMAND $<TARGET_FILE:test_util_safestrncpy>)
+add_test(NAME test_util_getlong COMMAND $<TARGET_FILE:test_util_getlong>)
+add_test(NAME test_util_createdatetime COMMAND $<TARGET_FILE:test_util_createdatetime>)
