@@ -342,6 +342,10 @@ char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
   char *p;
   va_list args;
 
+  if (filterLen == NULL || append == NULL) {
+    return NULL;
+  }
+
   // Calculate the length of the buffer needed (excluding the null terminator)
   va_start(args, append);
   neededBufferLen = vsnprintf(NULL, 0, append, args);
