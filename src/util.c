@@ -255,7 +255,7 @@ int CreateDateTime(char *buf, const size_t size) {
 
   char *p = buf;
   char err[ERRNOMAXBUF];
-  size_t remaining_size = size;
+  size_t remainingSize = size;
   int ret;
   struct tm tm, *tmptr;
   struct timespec ts;
@@ -271,27 +271,27 @@ int CreateDateTime(char *buf, const size_t size) {
     return ERROR;
   }
 
-  ret = strftime(p, remaining_size, "%Y-%m-%dT%H:%M:%S.", tmptr);
-  if (ret == 0 || (size_t)ret >= remaining_size) {
+  ret = strftime(p, remainingSize, "%Y-%m-%dT%H:%M:%S.", tmptr);
+  if (ret == 0 || (size_t)ret >= remainingSize) {
     Error("Buffer overflow while writing datetime format");
     *buf = '\0';
     return ERROR;
   }
 
-  remaining_size -= ret;
+  remainingSize -= ret;
   p += ret;
 
-  ret = snprintf(p, remaining_size, "%03ld", ts.tv_nsec / 1000000);
-  if (ret < 0 || (size_t)ret >= remaining_size) {
+  ret = snprintf(p, remainingSize, "%03ld", ts.tv_nsec / 1000000);
+  if (ret < 0 || (size_t)ret >= remainingSize) {
     Error("Buffer overflow while writing milliseconds");
     *buf = '\0';
     return ERROR;
   }
 
-  remaining_size -= ret;
+  remainingSize -= ret;
   p += ret;
 
-  ret = strftime(p, remaining_size, "%z", tmptr);
+  ret = strftime(p, remainingSize, "%z", tmptr);
   if (ret == 0) {
     Error("Buffer overflow while writing timezone");
     *buf = '\0';
