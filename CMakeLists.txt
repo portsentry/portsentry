@@ -94,16 +94,13 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" A
   endif()
 endif()
 
-# UNIT TEST MOCK EXEC
-add_executable(listener_test tests/listener_test.c)
-target_compile_options(listener_test PRIVATE ${STANDARD_COMPILE_OPTS})
-target_include_directories(listener_test PRIVATE "${PROJECT_BINARY_DIR}")
-target_link_options(listener_test PRIVATE ${STANDARD_LINK_OPTS})
-target_link_libraries(listener_test PRIVATE lportsentry)
-if (USE_PCAP)
-  target_link_libraries(listener_test PRIVATE pcap)
-endif()
+# UTIL TESTS
+add_executable(test_util_safestrncpy tests/test_util_safestrncpy.c)
+target_compile_options(test_util_safestrncpy PRIVATE ${STANDARD_COMPILE_OPTS})
+target_include_directories(test_util_safestrncpy PRIVATE "${PROJECT_BINARY_DIR}")
+target_link_options(test_util_safestrncpy PRIVATE ${STANDARD_LINK_OPTS})
+target_link_libraries(test_util_safestrncpy PRIVATE lportsentry)
 
 # UNIT TESTS
 enable_testing()
-add_test(NAME listener_auto COMMAND $<TARGET_FILE:listener_test> -stcp)
+add_test(NAME test_util_safestrncpy COMMAND $<TARGET_FILE:test_util_safestrncpy>)
