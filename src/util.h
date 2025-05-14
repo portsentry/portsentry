@@ -20,6 +20,7 @@
 char *SafeStrncpy(char *, const char *, size_t);
 void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize);
 long GetLong(const char *buffer);
+int StrToUint16_t(const char *str, uint16_t *val);
 int DisposeTarget(const char *, int, int);
 const char *GetProtocolString(int proto);
 const char *GetFamilyString(int family);
@@ -28,7 +29,6 @@ int IsPortInUse(struct PacketInfo *pi);
 char *ReportPacketType(const struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
 int CreateDateTime(char *buf, const size_t size);
-int StrToUint16_t(const char *str, uint16_t *val);
 __attribute__((format(printf, 3, 4))) char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);
 
 #ifndef NDEBUG
