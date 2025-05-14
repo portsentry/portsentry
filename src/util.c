@@ -169,20 +169,6 @@ const char *GetFamilyString(int family) {
   }
 }
 
-const char *GetSocketTypeString(int type) {
-  switch (type) {
-  case SOCK_STREAM:
-    return ("SOCK_STREAM");
-    break;
-  case SOCK_DGRAM:
-    return ("SOCK_DGRAM");
-    break;
-  default:
-    return ("UNKNOWN");
-    break;
-  }
-}
-
 int SetupPort(int family, uint16_t port, int proto) {
   int sock;
 

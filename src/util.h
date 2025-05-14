@@ -22,7 +22,6 @@ long GetLong(const char *buffer);
 int DisposeTarget(const char *, int, int);
 const char *GetProtocolString(int proto);
 const char *GetFamilyString(int family);
-const char *GetSocketTypeString(int type);
 int SetupPort(int family, uint16_t port, int proto);
 int IsPortInUse(struct PacketInfo *pi);
 char *ReportPacketType(const struct tcphdr *);
