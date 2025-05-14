@@ -89,23 +89,27 @@ long GetLong(const char *buffer) {
 }
 
 int StrToUint16_t(const char *str, uint16_t *val) {
+  if (str == NULL || val == NULL) {
+    return FALSE;
+  }
+
+  if (strnlen(str, 6) > 5) {  // UINT16_MAX is 65535 (5 digits)
+    return FALSE;
+  }
+
   char *endptr;
-  long value;
-
   errno = 0;
-  value = strtol(str, &endptr, 10);
+  long value = strtol(str, &endptr, 10);
 
-  // Stingy error checking
-  // errno set indicates malformed input
-  // endptr == str indicates no digits found
-  // value > UINT16_MAX indicates value is too large, since ports can only be 0-65535
-  // value <= 0: Don't allow port 0 (or negative ports)
-  if (errno != 0 || endptr == str || *endptr != '\0' || value > UINT16_MAX || value <= 0) {
+  if (errno != 0 ||          // Conversion error
+      endptr == str ||       // No digits found
+      *endptr != '\0' ||     // Extra characters after number
+      value > UINT16_MAX ||  // Value too large
+      value <= 0) {          // Zero or negative not allowed
     return FALSE;
   }
 
   *val = (uint16_t)value;
-
   return TRUE;
 }
 
