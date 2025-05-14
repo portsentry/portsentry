@@ -29,20 +29,32 @@
 
 static char *Realloc(char *filter, int newLen);
 
-/* A replacement for strncpy that covers mistakes a little better */
+#define MAX_BUFFER_SIZE ((size_t)(1024 * 1024))
+
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
-  if (!dest) {
-    dest = NULL;
-    return (NULL);
-  } else if (size < 1) {
-    dest = NULL;
-    return (NULL);
+  if (dest == NULL || src == NULL) {
+    return NULL;
   }
 
-  memset(dest, '\0', size);
-  strncpy(dest, src, size - 1);
+  if (size < 1 || size > MAX_BUFFER_SIZE) {
+    return NULL;
+  }
 
-  return (dest);
+  if (size > SIZE_MAX - 1) {
+    return NULL;
+  }
+
+  size_t src_len = strnlen(src, MAX_BUFFER_SIZE);
+  if (src_len >= MAX_BUFFER_SIZE) {
+    return NULL;
+  }
+
+  size_t copy_size = (src_len < (size - 1)) ? src_len : (size - 1);
+
+  memmove(dest, src, copy_size);
+  dest[copy_size] = '\0';
+
+  return dest;
 }
 
 void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize) {
