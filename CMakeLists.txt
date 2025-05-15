@@ -97,7 +97,7 @@ endif()
 
 # UNIT TESTS
 
-set(UNIT_TEST_COMPILE_OPTS ${STANDARD_COMPILE_OPTS} -Wno-unused-result -Wno-unused-value -Wno-unused-variable)
+set(UNIT_TEST_COMPILE_OPTS ${STANDARD_COMPILE_OPTS} -Wno-unused-result -Wno-unused-value -Wno-unused-variable -Wno-unused-but-set-variable)
 
 add_executable(test_util_safestrncpy tests/test_util_safestrncpy.c)
 target_compile_options(test_util_safestrncpy PRIVATE ${UNIT_TEST_COMPILE_OPTS})
@@ -129,6 +129,12 @@ target_include_directories(test_util_reallocandappend PRIVATE "${PROJECT_BINARY_
 target_link_options(test_util_reallocandappend PRIVATE ${STANDARD_LINK_OPTS})
 target_link_libraries(test_util_reallocandappend PRIVATE lportsentry)
 
+add_executable(test_state_machine tests/test_state_machine.c)
+target_compile_options(test_state_machine PRIVATE ${UNIT_TEST_COMPILE_OPTS})
+target_include_directories(test_state_machine PRIVATE "${PROJECT_BINARY_DIR}")
+target_link_options(test_state_machine PRIVATE ${STANDARD_LINK_OPTS})
+target_link_libraries(test_state_machine PRIVATE lportsentry)
+
 # UNIT TESTS
 enable_testing()
 add_test(NAME test_util_safestrncpy COMMAND $<TARGET_FILE:test_util_safestrncpy>)
@@ -136,3 +142,4 @@ add_test(NAME test_util_getlong COMMAND $<TARGET_FILE:test_util_getlong>)
 add_test(NAME test_util_createdatetime COMMAND $<TARGET_FILE:test_util_createdatetime>)
 add_test(NAME test_util_strtouint16 COMMAND $<TARGET_FILE:test_util_strtouint16>)
 add_test(NAME test_util_reallocandappend COMMAND $<TARGET_FILE:test_util_reallocandappend>)
+add_test(NAME test_state_machine COMMAND $<TARGET_FILE:test_state_machine>)
