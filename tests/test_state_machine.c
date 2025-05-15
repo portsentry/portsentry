@@ -39,7 +39,7 @@ struct sockaddr_in6 create_ipv6_addr(const char *ip_str) {
   return addr;
 }
 
-void test_uninitialized_state() {
+void test_uninitialized_state(void) {
   struct SentryState state;
   state.isInitialized = FALSE;
   struct sockaddr_in addr_ipv4 = create_ipv4_addr("192.168.1.1");
@@ -50,7 +50,7 @@ void test_uninitialized_state() {
   assert(result == ERROR);
 }
 
-void test_trigger_count_zero() {
+void test_trigger_count_zero(void) {
   struct SentryState state;
   InitSentryState(&state);
   struct sockaddr_in addr_ipv4 = create_ipv4_addr("192.168.1.1");
@@ -63,7 +63,7 @@ void test_trigger_count_zero() {
   FreeSentryState(&state);
 }
 
-void test_ipv4_trigger_logic() {
+void test_ipv4_trigger_logic(void) {
   struct SentryState state;
   InitSentryState(&state);
   struct sockaddr_in addr1 = create_ipv4_addr("192.168.0.1");
@@ -95,7 +95,7 @@ void test_ipv4_trigger_logic() {
   FreeSentryState(&state);
 }
 
-void test_ipv4_eviction() {
+void test_ipv4_eviction(void) {
   assert(MAX_HASH_SIZE == 2);
 
   struct SentryState state;
@@ -124,7 +124,7 @@ void test_ipv4_eviction() {
   FreeSentryState(&state);
 }
 
-void test_ipv6_trigger_logic() {
+void test_ipv6_trigger_logic(void) {
   struct SentryState state;
   InitSentryState(&state);
   struct sockaddr_in6 addr1 = create_ipv6_addr("2001:db8::1");
@@ -151,7 +151,7 @@ void test_ipv6_trigger_logic() {
   FreeSentryState(&state);
 }
 
-void test_ipv6_eviction() {
+void test_ipv6_eviction(void) {
   assert(MAX_HASH_SIZE == 2);
 
   struct SentryState state;
@@ -180,7 +180,7 @@ void test_ipv6_eviction() {
   FreeSentryState(&state);
 }
 
-void test_unsupported_family() {
+void test_unsupported_family(void) {
   struct SentryState state;
   InitSentryState(&state);
 
@@ -194,7 +194,7 @@ void test_unsupported_family() {
   FreeSentryState(&state);
 }
 
-int main() {
+int main(void) {
   test_uninitialized_state();
   test_trigger_count_zero();
   test_ipv4_trigger_logic();
