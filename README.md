@@ -66,6 +66,10 @@ Detailed compilation instructions can be found on the [HOWTO-Compile](docs/HOWTO
 
 All documentation for portsentry is indexed in the [docs/README.md](docs/README.md).
 
+## Support
+
+Please use the [Discussions Forums](https://github.com/portsentry/portsentry/discussions) for any support questions or feedback
+
 ## Links
 
 Website: https://portsentry.xyz
