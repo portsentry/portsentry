@@ -23,7 +23,7 @@ jobs:
 # Since debug builds have asserts, tests might not be accurate and/or fail
 # in debug builds. release build should provide better results.
     - name: Build
-      run: ./build.sh release
+      run: ./build.sh build_test
 
     - name: Run Unit Tests
-      run: ./build.sh test
+      run: ./build.sh run_test

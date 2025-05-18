@@ -71,7 +71,10 @@ elif [ "$ACTION" = "create_bin_tarball" ]; then
   cp LICENSE /tmp/portsentry-${version}-${machine}/ && \
   cp README.md /tmp/portsentry-${version}-${machine}/ && \
   tar -cvJf portsentry-${machine}-${version}.tar.xz -C /tmp portsentry-${version}-${machine}
-elif [ "$ACTION" = "test" ]; then
+elif [ "$ACTION" = "build_test" ]; then
+  ./build.sh clean && \
+  CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh release
+elif [ "$ACTION" = "run_test" ]; then
   if [ -d "debug" ]; then
     ctest --test-dir debug
   elif [ -d "release" ]; then
@@ -86,9 +89,15 @@ else
   echo "  clean         - Remove all build files/caches"
   echo "  debug         - Build debug version"
   echo "  release       - Build release version"
+  echo
   echo "  sast          - Run static analysis tools"
+  echo "  build_test    - Build unit test targets"
+  echo "  run_test      - Run unit test targets"
+  echo
   echo "  build_fuzz    - Build fuzzing targets"
   echo "  run_fuzz      - Run fuzzing targets"
   echo "  docker        - Build docker image"
+  echo
+  echo "  doc           - Build man pages"
   exit 0
 fi
