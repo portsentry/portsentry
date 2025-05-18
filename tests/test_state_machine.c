@@ -17,7 +17,7 @@
 
 #include "../src/config_data.h"
 
-struct sockaddr_in create_ipv4_addr(const char *ip_str) {
+struct sockaddr_in CreateIpv4Addr(const char *ip_str) {
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
@@ -28,7 +28,7 @@ struct sockaddr_in create_ipv4_addr(const char *ip_str) {
   return addr;
 }
 
-struct sockaddr_in6 create_ipv6_addr(const char *ip_str) {
+struct sockaddr_in6 CreateIpv6Addr(const char *ip_str) {
   struct sockaddr_in6 addr;
   memset(&addr, 0, sizeof(addr));
   addr.sin6_family = AF_INET6;
@@ -39,10 +39,10 @@ struct sockaddr_in6 create_ipv6_addr(const char *ip_str) {
   return addr;
 }
 
-void test_uninitialized_state(void) {
+void TestUninitializedState(void) {
   struct SentryState state;
   state.isInitialized = FALSE;
-  struct sockaddr_in addr_ipv4 = create_ipv4_addr("192.168.1.1");
+  struct sockaddr_in addr_ipv4 = CreateIpv4Addr("192.168.1.1");
 
   configData.configTriggerCount = 1;
 
@@ -50,10 +50,10 @@ void test_uninitialized_state(void) {
   assert(result == ERROR);
 }
 
-void test_trigger_count_zero(void) {
+void TestTriggerCountZero(void) {
   struct SentryState state;
   InitSentryState(&state);
-  struct sockaddr_in addr_ipv4 = create_ipv4_addr("192.168.1.1");
+  struct sockaddr_in addr_ipv4 = CreateIpv4Addr("192.168.1.1");
 
   configData.configTriggerCount = 0;
 
@@ -63,11 +63,11 @@ void test_trigger_count_zero(void) {
   FreeSentryState(&state);
 }
 
-void test_ipv4_trigger_logic(void) {
+void TestIpv4TriggerLogic(void) {
   struct SentryState state;
   InitSentryState(&state);
-  struct sockaddr_in addr1 = create_ipv4_addr("192.168.0.1");
-  struct sockaddr_in addr2 = create_ipv4_addr("192.168.0.2");
+  struct sockaddr_in addr1 = CreateIpv4Addr("192.168.0.1");
+  struct sockaddr_in addr2 = CreateIpv4Addr("192.168.0.2");
 
   configData.configTriggerCount = 3;
   int result;
@@ -95,14 +95,14 @@ void test_ipv4_trigger_logic(void) {
   FreeSentryState(&state);
 }
 
-void test_ipv4_eviction(void) {
+void TestIpv4Eviction(void) {
   assert(MAX_HASH_SIZE == 2);
 
   struct SentryState state;
   InitSentryState(&state);
-  struct sockaddr_in addr1 = create_ipv4_addr("10.0.0.1");
-  struct sockaddr_in addr2 = create_ipv4_addr("10.0.0.2");
-  struct sockaddr_in addr3 = create_ipv4_addr("10.0.0.3");
+  struct sockaddr_in addr1 = CreateIpv4Addr("10.0.0.1");
+  struct sockaddr_in addr2 = CreateIpv4Addr("10.0.0.2");
+  struct sockaddr_in addr3 = CreateIpv4Addr("10.0.0.3");
 
   configData.configTriggerCount = 1;
   int result;
@@ -124,11 +124,11 @@ void test_ipv4_eviction(void) {
   FreeSentryState(&state);
 }
 
-void test_ipv6_trigger_logic(void) {
+void TestIpv6TriggerLogic(void) {
   struct SentryState state;
   InitSentryState(&state);
-  struct sockaddr_in6 addr1 = create_ipv6_addr("2001:db8::1");
-  struct sockaddr_in6 addr2 = create_ipv6_addr("2001:db8::2");
+  struct sockaddr_in6 addr1 = CreateIpv6Addr("2001:db8::1");
+  struct sockaddr_in6 addr2 = CreateIpv6Addr("2001:db8::2");
 
   configData.configTriggerCount = 2;
   int result;
@@ -151,14 +151,14 @@ void test_ipv6_trigger_logic(void) {
   FreeSentryState(&state);
 }
 
-void test_ipv6_eviction(void) {
+void TestIpv6Eviction(void) {
   assert(MAX_HASH_SIZE == 2);
 
   struct SentryState state;
   InitSentryState(&state);
-  struct sockaddr_in6 addr1 = create_ipv6_addr("2001:db8::a");
-  struct sockaddr_in6 addr2 = create_ipv6_addr("2001:db8::b");
-  struct sockaddr_in6 addr3 = create_ipv6_addr("2001:db8::c");
+  struct sockaddr_in6 addr1 = CreateIpv6Addr("2001:db8::a");
+  struct sockaddr_in6 addr2 = CreateIpv6Addr("2001:db8::b");
+  struct sockaddr_in6 addr3 = CreateIpv6Addr("2001:db8::c");
 
   configData.configTriggerCount = 1;
   int result;
@@ -180,7 +180,7 @@ void test_ipv6_eviction(void) {
   FreeSentryState(&state);
 }
 
-void test_unsupported_family(void) {
+void TestUnsupportedFamily(void) {
   struct SentryState state;
   InitSentryState(&state);
 
@@ -195,13 +195,13 @@ void test_unsupported_family(void) {
 }
 
 int main(void) {
-  test_uninitialized_state();
-  test_trigger_count_zero();
-  test_ipv4_trigger_logic();
-  test_ipv4_eviction();
-  test_ipv6_trigger_logic();
-  test_ipv6_eviction();
-  test_unsupported_family();
+  TestUninitializedState();
+  TestTriggerCountZero();
+  TestIpv4TriggerLogic();
+  TestIpv4Eviction();
+  TestIpv6TriggerLogic();
+  TestIpv6Eviction();
+  TestUnsupportedFamily();
 
   return 0;
 }

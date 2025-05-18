@@ -4,7 +4,7 @@
 #include "../src/util.h"
 #include "../src/portsentry.h"
 
-void test_create_datetime(void) {
+void TestCreateDateTime(void) {
   char buffer[MIN_DATETIME_BUFFER];
   assert(CreateDateTime(buffer, sizeof(buffer)) == TRUE);
 
@@ -15,6 +15,6 @@ void test_create_datetime(void) {
 }
 
 int main(void) {
-  test_create_datetime();
+  TestCreateDateTime();
   return 0;
 }

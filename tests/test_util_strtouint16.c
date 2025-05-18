@@ -2,7 +2,7 @@
 #include "../src/util.h"
 #include "../src/portsentry.h"
 
-void test_strtouint16(void) {
+void TestStrToUint16(void) {
   uint16_t val;
 
   // Test valid cases
@@ -25,6 +25,6 @@ void test_strtouint16(void) {
 }
 
 int main(void) {
-  test_strtouint16();
+  TestStrToUint16();
   return 0;
 }

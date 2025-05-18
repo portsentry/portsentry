@@ -9,7 +9,7 @@
 #include "../src/util.h"
 #include "../src/portsentry.h"
 
-void test_reset_port(void) {
+void TestResetPort(void) {
   struct Port port;
 
   port.single = 1234;
@@ -23,7 +23,7 @@ void test_reset_port(void) {
   assert(port.range.end == 0);
 }
 
-void test_set_port_single(void) {
+void TestSetPortSingle(void) {
   struct Port port;
 
   SetPortSingle(&port, 8080);
@@ -37,7 +37,7 @@ void test_set_port_single(void) {
   assert(port.range.end == 0);
 }
 
-void test_set_port_range(void) {
+void TestSetPortRange(void) {
   struct Port port;
 
   SetPortRange(&port, 1000, 2000);
@@ -51,7 +51,7 @@ void test_set_port_range(void) {
   assert(port.range.end == 4000);
 }
 
-void test_is_port_present(void) {
+void TestIsPortPresent(void) {
   struct Port ports[3];
 
   SetPortSingle(&ports[0], 80);
@@ -71,7 +71,7 @@ void test_is_port_present(void) {
   assert(IsPortPresent(ports, 3, 444) == FALSE);
 }
 
-void test_is_port_in_range(void) {
+void TestIsPortInRange(void) {
   struct Port port;
 
   SetPortSingle(&port, 80);
@@ -86,7 +86,7 @@ void test_is_port_in_range(void) {
   assert(IsPortInRange(&port, 2001) == FALSE);
 }
 
-void test_is_port_single(void) {
+void TestIsPortSingle(void) {
   struct Port port;
 
   SetPortSingle(&port, 80);
@@ -99,7 +99,7 @@ void test_is_port_single(void) {
   assert(IsPortSingle(&port) == FALSE);
 }
 
-void test_parse_port(void) {
+void TestParsePort(void) {
   struct Port port;
 
   assert(ParsePort("80", &port) == TRUE);
@@ -122,7 +122,7 @@ void test_parse_port(void) {
   assert(ParsePort("123456789012", &port) == ERROR);  // Too long string
 }
 
-void test_get_no_ports(void) {
+void TestGetNoPorts(void) {
   struct Port ports[3];
 
   SetPortSingle(&ports[0], 80);
@@ -144,13 +144,13 @@ void test_get_no_ports(void) {
 }
 
 int main(void) {
-  test_reset_port();
-  test_set_port_single();
-  test_set_port_range();
-  test_is_port_present();
-  test_is_port_in_range();
-  test_is_port_single();
-  test_parse_port();
-  test_get_no_ports();
+  TestResetPort();
+  TestSetPortSingle();
+  TestSetPortRange();
+  TestIsPortPresent();
+  TestIsPortInRange();
+  TestIsPortSingle();
+  TestParsePort();
+  TestGetNoPorts();
   return 0;
 }
