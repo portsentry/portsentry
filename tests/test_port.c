@@ -9,7 +9,7 @@
 #include "../src/util.h"
 #include "../src/portsentry.h"
 
-void test_reset_port() {
+void test_reset_port(void) {
   struct Port port;
 
   port.single = 1234;
@@ -23,7 +23,7 @@ void test_reset_port() {
   assert(port.range.end == 0);
 }
 
-void test_set_port_single() {
+void test_set_port_single(void) {
   struct Port port;
 
   SetPortSingle(&port, 8080);
@@ -37,7 +37,7 @@ void test_set_port_single() {
   assert(port.range.end == 0);
 }
 
-void test_set_port_range() {
+void test_set_port_range(void) {
   struct Port port;
 
   SetPortRange(&port, 1000, 2000);
@@ -51,7 +51,7 @@ void test_set_port_range() {
   assert(port.range.end == 4000);
 }
 
-void test_is_port_present() {
+void test_is_port_present(void) {
   struct Port ports[3];
 
   SetPortSingle(&ports[0], 80);
@@ -71,7 +71,7 @@ void test_is_port_present() {
   assert(IsPortPresent(ports, 3, 444) == FALSE);
 }
 
-void test_is_port_in_range() {
+void test_is_port_in_range(void) {
   struct Port port;
 
   SetPortSingle(&port, 80);
@@ -86,7 +86,7 @@ void test_is_port_in_range() {
   assert(IsPortInRange(&port, 2001) == FALSE);
 }
 
-void test_is_port_single() {
+void test_is_port_single(void) {
   struct Port port;
 
   SetPortSingle(&port, 80);
@@ -99,7 +99,7 @@ void test_is_port_single() {
   assert(IsPortSingle(&port) == FALSE);
 }
 
-void test_parse_port() {
+void test_parse_port(void) {
   struct Port port;
 
   assert(ParsePort("80", &port) == TRUE);
@@ -122,7 +122,7 @@ void test_parse_port() {
   assert(ParsePort("123456789012", &port) == ERROR);  // Too long string
 }
 
-void test_get_no_ports() {
+void test_get_no_ports(void) {
   struct Port ports[3];
 
   SetPortSingle(&ports[0], 80);
@@ -143,7 +143,7 @@ void test_get_no_ports() {
   assert(GetNoPorts(&range_port, 1) == 1001);  // 2000-1000+1
 }
 
-int main() {
+int main(void) {
   test_reset_port();
   test_set_port_single();
   test_set_port_range();
