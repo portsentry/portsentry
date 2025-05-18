@@ -7,6 +7,7 @@
 
 #include "../src/port.h"
 #include "../src/util.h"
+#include "../src/portsentry.h"
 
 void test_reset_port() {
   struct Port port;
