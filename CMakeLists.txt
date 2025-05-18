@@ -135,6 +135,13 @@ target_include_directories(test_state_machine PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(test_state_machine PRIVATE ${STANDARD_LINK_OPTS})
 target_link_libraries(test_state_machine PRIVATE lportsentry)
 
+add_executable(test_port tests/test_port.c)
+target_compile_options(test_port PRIVATE ${UNIT_TEST_COMPILE_OPTS})
+target_include_directories(test_port PRIVATE "${PROJECT_BINARY_DIR}")
+target_link_options(test_port PRIVATE ${STANDARD_LINK_OPTS})
+target_link_libraries(test_port PRIVATE lportsentry)
+
+
 # UNIT TESTS
 enable_testing()
 add_test(NAME test_util_safestrncpy COMMAND $<TARGET_FILE:test_util_safestrncpy>)
@@ -143,3 +150,4 @@ add_test(NAME test_util_createdatetime COMMAND $<TARGET_FILE:test_util_createdat
 add_test(NAME test_util_strtouint16 COMMAND $<TARGET_FILE:test_util_strtouint16>)
 add_test(NAME test_util_reallocandappend COMMAND $<TARGET_FILE:test_util_reallocandappend>)
 add_test(NAME test_state_machine COMMAND $<TARGET_FILE:test_state_machine>)
+add_test(NAME test_port COMMAND $<TARGET_FILE:test_port>)
