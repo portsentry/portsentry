@@ -4,7 +4,7 @@
 #include <limits.h>
 #include "../src/util.h"
 
-void test_realloc_and_append(void) {
+void TestReallocAndAppend(void) {
   int len = 0;
   char *buf = NULL;
 
@@ -23,6 +23,6 @@ void test_realloc_and_append(void) {
 }
 
 int main(void) {
-  test_realloc_and_append();
+  TestReallocAndAppend();
   return 0;
 }

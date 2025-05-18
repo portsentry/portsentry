@@ -4,19 +4,19 @@
 #include "../src/util.h"
 #include "../src/portsentry.h"
 
-void test_getlong_valid_numbers(void) {
+void TestGetLongValidNumbers(void) {
   assert(GetLong("123") == 123);
   assert(GetLong("0") == 0);
   assert(GetLong("-456") == -456);
   printf("Valid numbers test passed\n");
 }
 
-void test_getlong_null_input(void) {
+void TestGetLongNullInput(void) {
   assert(GetLong(NULL) == ERROR);
   printf("Null input test passed\n");
 }
 
-void test_getlong_invalid_input(void) {
+void TestGetLongInvalidInput(void) {
   assert(GetLong("abc") == ERROR);
   assert(GetLong("") == ERROR);
   assert(GetLong(" ") == ERROR);
@@ -24,7 +24,7 @@ void test_getlong_invalid_input(void) {
   printf("Invalid input test passed\n");
 }
 
-void test_getlong_boundary_cases(void) {
+void TestGetLongBoundaryCases(void) {
   char max_buffer[32];
   char min_buffer[32];
   snprintf(max_buffer, sizeof(max_buffer), "%ld", LONG_MAX);
@@ -36,10 +36,10 @@ void test_getlong_boundary_cases(void) {
 }
 
 int main(void) {
-  test_getlong_valid_numbers();
-  test_getlong_null_input();
-  test_getlong_invalid_input();
-  test_getlong_boundary_cases();
+  TestGetLongValidNumbers();
+  TestGetLongNullInput();
+  TestGetLongInvalidInput();
+  TestGetLongBoundaryCases();
   printf("All GetLong tests passed!\n");
   return 0;
 }
