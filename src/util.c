@@ -133,7 +133,7 @@ int DisposeTarget(const char *target, int port, int protocol) {
     Debug("DisposeTarget: killRunCmd: %s", configData.killRunCmd);
     Debug("DisposeTarget: runCmdFirst: %d", configData.runCmdFirst);
     Debug("DisposeTarget: killHostsDeny: %s", configData.killHostsDeny);
-    Debug("DisposeTarget: killRoute: %s (%lu)", configData.killRoute, strlen(configData.killRoute));
+    Debug("DisposeTarget: killRoute: %s (%zu)", configData.killRoute, strlen(configData.killRoute));
 
     // Need to init variable to avoid uninitialized variable warning for some compilers
     killRunCmdStatus = FALSE;
