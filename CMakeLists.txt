@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(Portsentry VERSION 2.0.0)
+include(CheckCCompilerFlag)
 
 option(BUILD_FUZZER "Build fuzzer tests" OFF)
 option(BUILD_TESTS "Build unit tests" OFF)
@@ -8,7 +9,13 @@ option(USE_PCAP "Build with pcap code and link with libpcap" ON)
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
 
-set(STANDARD_COMPILE_OPTS -Wall -Wextra -pedantic -Werror -Wformat -Wformat-security -Wstack-protector -Wshadow -Wredundant-decls -Wdisabled-optimization -Wnested-externs -Wstrict-overflow=2 -fPIE -fstack-protector-strong -fstrict-aliasing -fcf-protection=full -fno-common -fno-strict-overflow -D_FORTIFY_SOURCE=2)
+set(STANDARD_COMPILE_OPTS -Wall -Wextra -pedantic -Werror -Wformat -Wformat-security -Wstack-protector -Wshadow -Wredundant-decls -Wdisabled-optimization -Wnested-externs -Wstrict-overflow=2 -fPIE -fstack-protector-strong -fstrict-aliasing -fno-common -fno-strict-overflow -D_FORTIFY_SOURCE=2)
+
+check_c_compiler_flag("-fcf-protection=full" COMPILER_SUPPORTS_CFI_PROTECTION)
+
+if (COMPILER_SUPPORTS_CFI_PROTECTION)
+  set(STANDARD_COMPILE_OPTS ${STANDARD_COMPILE_OPTS} -fcf-protection=full)
+endif()
 
 set(STANDARD_LINK_OPTS -pie -Wl,-z,noexecstack -Wl,-z,now -Wl,-z,relro -Wl,-z,defs -Wl,--no-undefined)
 set(CORE_SOURCE_FILES src/config_data.c src/configfile.c src/io.c src/util.c src/state_machine.c src/cmdline.c src/sentry_connect.c src/sighandler.c src/port.c src/packet_info.c src/ignore.c src/sentry.c src/block.c)
