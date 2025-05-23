@@ -48,6 +48,11 @@ elif [ "$ACTION" = "autobuild" ]; then
   done
 elif [ "$ACTION" = "docker" ]; then
   docker build -t portsentry:unstable -f docker/Dockerfile .
+elif [ "$ACTION" = "build" ]; then
+  BUILD_DIR=/tmp/portsentry-build
+  rm -rf $BUILD_DIR
+  mkdir -p $BUILD_DIR
+  docker buildx build -t export -f docker/Dockerfile --target export --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 --output type=local,dest=$BUILD_DIR .
 elif [ "$ACTION" = "doc" ]; then
   pandoc --standalone --to man docs/Manual.md -o docs/portsentry.8
   pandoc --standalone --to man docs/portsentry.conf.md -o docs/portsentry.conf.8
