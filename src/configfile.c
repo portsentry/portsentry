@@ -47,7 +47,7 @@ void ReadConfigFile(void) {
     StripTrailingSpace(buffer);
 
     if ((keySize = GetKeySize(buffer)) == 0) {
-      fprintf(stderr, "Invalid config file entry at line %lu\n", line);
+      fprintf(stderr, "Invalid config file entry at line %zu\n", line);
       fclose(config);
       Exit(EXIT_FAILURE);
     }
@@ -56,7 +56,7 @@ void ReadConfigFile(void) {
     ptr = SkipSpaceAndTab(ptr);
 
     if (*ptr != '=') {
-      fprintf(stderr, "Invalid character found after config key. Require equals (=) after key. Line %lu\n", line);
+      fprintf(stderr, "Invalid character found after config key. Require equals (=) after key. Line %zu\n", line);
       fclose(config);
       Exit(EXIT_FAILURE);
     }
@@ -65,14 +65,14 @@ void ReadConfigFile(void) {
     ptr = SkipSpaceAndTab(ptr);
 
     if (*ptr != '"') {
-      fprintf(stderr, "Invalid value on line %lu, require quote character (\") to start value\n", line);
+      fprintf(stderr, "Invalid value on line %zu, require quote character (\") to start value\n", line);
       fclose(config);
       Exit(EXIT_FAILURE);
     }
     ptr++;
 
     if ((valueSize = GetSizeToQuote(ptr)) == ERROR) {
-      fprintf(stderr, "Invalid value at line %lu, require an end quote character (\") at end of value\n", line);
+      fprintf(stderr, "Invalid value at line %zu, require an end quote character (\") at end of value\n", line);
       fclose(config);
       Exit(EXIT_FAILURE);
     }
@@ -92,7 +92,7 @@ void ReadConfigFile(void) {
 
 static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr, const ssize_t valueSize, const size_t line, struct ConfigData *fileConfig) {
   char err[ERRNOMAXBUF];
-  Debug("SetConfiguration: %s keySize: %lu valueSize: %ld sentryMode: %s", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
+  Debug("SetConfiguration: %s keySize: %zu valueSize: %zd sentryMode: %s", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
 
   if (strncmp(buffer, "BLOCK_TCP", keySize) == 0) {
     if (strncmp(ptr, "0", valueSize) == 0) {
@@ -198,7 +198,7 @@ static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr
     }
     fileConfig->portBannerPresent = TRUE;
   } else {
-    fprintf(stderr, "Invalid config file entry at line %lu\n", line);
+    fprintf(stderr, "Invalid config file entry at line %zu\n", line);
     Exit(EXIT_FAILURE);
   }
 }

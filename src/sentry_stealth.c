@@ -152,7 +152,7 @@ static int PacketRead(const int socket, char *buffer, const int bufferLen) {
     Error("Could not read from socket %d: %s. Aborting", socket, ErrnoString(err, sizeof(err)));
     return ERROR;
   } else if (result < (ssize_t)sizeof(struct ip)) {
-    Error("Packet read from socket %d is too small (%lu bytes). Aborting", socket, result);
+    Error("Packet read from socket %d is too small (%zu bytes). Aborting", socket, result);
     return ERROR;
   }
 
