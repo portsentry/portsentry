@@ -19,8 +19,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build Docker image
-      run: |
-        docker build -t portsentry:unstable -f ${{github.workspace}}/docker/Dockerfile ${{github.workspace}}
+      run: ./build.sh docker
 
     - name: Push Docker image
       run: |
