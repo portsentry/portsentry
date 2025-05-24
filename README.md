@@ -35,7 +35,7 @@ Portsentry can be integrated with other security tools and systems to provide a 
 
 ## Quickstart
 
-As of right now, Portsentry is available as source and binary download and is available on Docker Hub. More distribution methods will be added in the next release.
+Detailed installation instructions can be found in the [HOWTO-Use](docs/HOWTO-Use.md) guide.
 
 ### Docker
 
