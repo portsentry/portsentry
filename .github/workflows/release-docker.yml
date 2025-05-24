@@ -33,9 +33,11 @@ jobs:
 
     - name: Push Docker image
       run: |
+        docker tag portsentry:unstable portsentry/portsentry:unstable
         docker tag portsentry:unstable portsentry/portsentry:latest
         docker tag portsentry:unstable portsentry/portsentry:${{ github.ref_name }}
         docker tag portsentry:unstable portsentry/portsentry:${{ env.BRANCH_VERSION }}
+        docker push portsentry/portsentry:unstable
         docker push portsentry/portsentry:latest
         docker push portsentry/portsentry:${{ github.ref_name }}
         docker push portsentry/portsentry:${{ env.BRANCH_VERSION }}
