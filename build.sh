@@ -2,11 +2,53 @@
 
 ACTION=$1
 
+do_package() {
+  if [ -z "$1" ]; then
+    echo "Usage: $0 package <version>"
+    exit 1
+  fi
+
+  local BUILD_DIR=/tmp/portsentry-build
+  rm -rf $BUILD_DIR && \
+  mkdir -p $BUILD_DIR && \
+  ./build.sh clean && \
+  git archive --format=tar --prefix=portsentry-$1-src/ HEAD | xz > $BUILD_DIR/portsentry-$1-src.tar.xz && \
+  sha256sum $BUILD_DIR/portsentry-$1-src.tar.xz > $BUILD_DIR/portsentry-$1-src.tar.xz.sha256 && \
+  ./build.sh doc && \
+  docker buildx build -t export -f docker/Dockerfile --target export --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 --output type=local,dest=$BUILD_DIR .
+
+  find $BUILD_DIR -mindepth 1 -maxdepth 1 -type d | while read f
+  do
+    cp -rf docs $f && \
+    cp -rf examples $f && \
+    cp -rf fail2ban $f && \
+    cp -rf init $f && \
+    cp -f Changes.md $f && \
+    cp -f LICENSE $f && \
+    cp -f README.md $f && \
+    cp -f scripts/install.sh $f && \
+    cp -f scripts/uninstall.sh $f
+    chmod 755 $f/install.sh
+    chmod 755 $f/uninstall.sh
+
+    local FINAL_NAME=portsentry-${1}-$(basename $f)
+    mv $f $BUILD_DIR/$FINAL_NAME
+
+    tar -cJf $BUILD_DIR/$FINAL_NAME.tar.xz -C $BUILD_DIR $FINAL_NAME
+    sha256sum $BUILD_DIR/$FINAL_NAME.tar.xz > $BUILD_DIR/$FINAL_NAME.sha256
+    rm -rf $f $BUILD_DIR/$FINAL_NAME
+  done
+
+  echo "Packages created in $BUILD_DIR"
+}
+
 if [ "$ACTION" = "clean" ]; then
   rm -rf debug release && \
   rm -f portsentry.blocked.* && \
   rm -f portsentry.history && \
   rm -f portsentry*.tar.xz
+  rm -f docs/portsentry.8
+  rm -f docs/portsentry.conf.8
 elif [ "$ACTION" = "debug" ]; then
   cmake -B debug -D CMAKE_BUILD_TYPE=Debug $CMAKE_OPTS
   cmake --build debug -v
@@ -48,29 +90,11 @@ elif [ "$ACTION" = "autobuild" ]; then
   done
 elif [ "$ACTION" = "docker" ]; then
   docker build -t portsentry:unstable -f docker/Dockerfile .
+elif [ "$ACTION" = "package" ]; then
+  do_package $2
 elif [ "$ACTION" = "doc" ]; then
   pandoc --standalone --to man docs/Manual.md -o docs/portsentry.8
   pandoc --standalone --to man docs/portsentry.conf.md -o docs/portsentry.conf.8
-elif [ "$ACTION" = "create_src_tarball" ]; then
-  version=$(git describe --tags)
-  ./build.sh clean && \
-  git archive --format=tar --prefix=portsentry-src-${version}/ HEAD | xz > portsentry-src-${version}.tar.xz
-elif [ "$ACTION" = "create_bin_tarball" ]; then
-  version=$(git describe --tags)
-  machine=$(uname -m)
-  ./build.sh clean && \
-  ./build.sh release && \
-  rm -rf /tmp/portsentry-${version}-${machine} && \
-  mkdir -p /tmp/portsentry-${version}-${machine} && \
-  cp release/portsentry /tmp/portsentry-${version}-${machine}/ && \
-  cp -rf docs /tmp/portsentry-${version}-${machine}/ && \
-  cp -rf examples /tmp/portsentry-${version}-${machine}/ && \
-  cp -rf fail2ban /tmp/portsentry-${version}-${machine}/ && \
-  cp -rf init /tmp/portsentry-${version}-${machine}/ && \
-  cp Changes.md /tmp/portsentry-${version}-${machine}/ && \
-  cp LICENSE /tmp/portsentry-${version}-${machine}/ && \
-  cp README.md /tmp/portsentry-${version}-${machine}/ && \
-  tar -cvJf portsentry-${machine}-${version}.tar.xz -C /tmp portsentry-${version}-${machine}
 elif [ "$ACTION" = "build_test" ]; then
   ./build.sh clean && \
   CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh release
