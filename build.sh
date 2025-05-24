@@ -3,7 +3,12 @@
 ACTION=$1
 
 do_package() {
-  BUILD_DIR=/tmp/portsentry-build
+  if [ -z "$1" ]; then
+    echo "Usage: $0 package <version>"
+    exit 1
+  fi
+
+  local BUILD_DIR=/tmp/portsentry-build
   ./build.sh clean && \
   ./build.sh doc && \
   rm -rf $BUILD_DIR && \
@@ -12,7 +17,6 @@ do_package() {
 
   find $BUILD_DIR -mindepth 1 -maxdepth 1 -type d | while read f
   do
-    echo "Packaging $f"
     cp -rf docs $f && \
     cp -rf examples $f && \
     cp -rf fail2ban $f && \
@@ -20,8 +24,20 @@ do_package() {
     cp -f Changes.md $f && \
     cp -f LICENSE $f && \
     cp -f README.md $f && \
-    cp -f scripts/install.sh $f
+    cp -f scripts/install.sh $f && \
+    cp -f scripts/uninstall.sh $f
+    chmod 755 $f/install.sh
+    chmod 755 $f/uninstall.sh
+
+    local FINAL_NAME=portsentry-${1}-$(basename $f)
+    mv $f $BUILD_DIR/$FINAL_NAME
+
+    tar -cJf $BUILD_DIR/$FINAL_NAME.tar.xz -C $BUILD_DIR $FINAL_NAME
+    sha256sum $BUILD_DIR/$FINAL_NAME.tar.xz > $BUILD_DIR/$FINAL_NAME.sha256
+    rm -rf $f $BUILD_DIR/$FINAL_NAME
   done
+
+  echo "Packages created in $BUILD_DIR"
 }
 
 if [ "$ACTION" = "clean" ]; then
@@ -71,7 +87,7 @@ elif [ "$ACTION" = "autobuild" ]; then
 elif [ "$ACTION" = "docker" ]; then
   docker build -t portsentry:unstable -f docker/Dockerfile .
 elif [ "$ACTION" = "package" ]; then
-  do_package
+  do_package $2
 elif [ "$ACTION" = "doc" ]; then
   pandoc --standalone --to man docs/Manual.md -o docs/portsentry.8
   pandoc --standalone --to man docs/portsentry.conf.md -o docs/portsentry.conf.8
