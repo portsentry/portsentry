@@ -3,10 +3,7 @@ name: Docker Release Image Create and Push To Docker HUB
 on:
   push:
     tags:
-      - 'v2'
-
-env:
-  BUILD_TYPE: Release
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   build-and-push-docker:
@@ -16,31 +13,30 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       
-    - name: Install pcap
+    - name: Setup BRANCH_VERSION
       run: |
-        sudo apt-get update
-        sudo apt-get install libpcap-dev
-        
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/release -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-      
-    - name: Build
-      run: cmake --build ${{github.workspace}}/release --config ${{env.BUILD_TYPE}}
-      
+        BRANCH_VERSION=$(echo "${{ github.ref_name }}" | sed 's|\(v[0-9]\.[0-9]\).*|\1|')
+        if ! echo "$BRANCH_VERSION" | grep -q "v[0-9]\.[0-9]"; then
+          echo "Error: Invalid version format. Expected format is vX.Y"
+          exit 1
+        fi
+        echo "BRANCH_VERSION=${BRANCH_VERSION}" >> $GITHUB_ENV
+
+    - name: Build Docker image
+      run: ./build.sh docker
+
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build Docker image
-      run: |
-        docker build -t portsentry:latest -f ${{github.workspace}}/docker/Dockerfile ${{github.workspace}}
-
     - name: Push Docker image
       run: |
-        docker tag portsentry:latest ${{ secrets.DOCKER_USERNAME }}/portsentry:latest
-        docker tag portsentry:${{ github.ref_name }} ${{ secrets.DOCKER_USERNAME }}/portsentry:${{ github.ref_name }}
-        docker push ${{ secrets.DOCKER_USERNAME }}/portsentry:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/portsentry:${{ github.ref_name }}
+        docker tag portsentry:unstable portsentry/portsentry:latest
+        docker tag portsentry:unstable portsentry/portsentry:${{ github.ref_name }}
+        docker tag portsentry:unstable portsentry/portsentry:${{ env.BRANCH_VERSION }}
+        docker push portsentry/portsentry:latest
+        docker push portsentry/portsentry:${{ github.ref_name }}
+        docker push portsentry/portsentry:${{ env.BRANCH_VERSION }}
 
