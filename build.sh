@@ -89,7 +89,7 @@ elif [ "$ACTION" = "autobuild" ]; then
     sleep 5
   done
 elif [ "$ACTION" = "docker" ]; then
-  docker build -t portsentry:unstable -f docker/Dockerfile .
+  docker buildx build -t portsentry:unstable -f docker/Dockerfile --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 .
 elif [ "$ACTION" = "package" ]; then
   do_package $2
 elif [ "$ACTION" = "doc" ]; then
