@@ -4,9 +4,6 @@ on:
   pull_request:
     branches: [ "master" ]
 
-env:
-  BUILD_TYPE: Debug
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,11 +17,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install libpcap-dev nmap
 
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/debug -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-
     - name: Build
-      run: cmake --build ${{github.workspace}}/debug --config ${{env.BUILD_TYPE}}
+      run: ./build.sh debug
 
     - name: System Test
       run: |

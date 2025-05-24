@@ -4,9 +4,6 @@ on:
   pull_request:
     branches: [ "master" ]
 
-env:
-  BUILD_TYPE: Debug
-
 jobs:
   build:
     runs-on: ubuntu-latest
