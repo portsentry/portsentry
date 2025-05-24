@@ -23,5 +23,5 @@ jobs:
 
     - name: Push Docker image
       run: |
-        docker tag portsentry:unstable ${{ secrets.DOCKER_USERNAME }}/portsentry:unstable
-        docker push ${{ secrets.DOCKER_USERNAME }}/portsentry:unstable
+        docker tag portsentry:unstable portsentry/portsentry:unstable
+        docker push portsentry/portsentry:unstable
