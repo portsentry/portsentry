@@ -9,10 +9,12 @@ do_package() {
   fi
 
   local BUILD_DIR=/tmp/portsentry-build
-  ./build.sh clean && \
-  ./build.sh doc && \
   rm -rf $BUILD_DIR && \
   mkdir -p $BUILD_DIR && \
+  ./build.sh clean && \
+  git archive --format=tar --prefix=portsentry-$1-src/ HEAD | xz > $BUILD_DIR/portsentry-$1-src.tar.xz && \
+  sha256sum $BUILD_DIR/portsentry-$1-src.tar.xz > $BUILD_DIR/portsentry-$1-src.tar.xz.sha256 && \
+  ./build.sh doc && \
   docker buildx build -t export -f docker/Dockerfile --target export --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 --output type=local,dest=$BUILD_DIR .
 
   find $BUILD_DIR -mindepth 1 -maxdepth 1 -type d | while read f
@@ -45,6 +47,8 @@ if [ "$ACTION" = "clean" ]; then
   rm -f portsentry.blocked.* && \
   rm -f portsentry.history && \
   rm -f portsentry*.tar.xz
+  rm -f docs/portsentry.8
+  rm -f docs/portsentry.conf.8
 elif [ "$ACTION" = "debug" ]; then
   cmake -B debug -D CMAKE_BUILD_TYPE=Debug $CMAKE_OPTS
   cmake --build debug -v
@@ -91,10 +95,6 @@ elif [ "$ACTION" = "package" ]; then
 elif [ "$ACTION" = "doc" ]; then
   pandoc --standalone --to man docs/Manual.md -o docs/portsentry.8
   pandoc --standalone --to man docs/portsentry.conf.md -o docs/portsentry.conf.8
-elif [ "$ACTION" = "create_src_tarball" ]; then
-  version=$(git describe --tags)
-  ./build.sh clean && \
-  git archive --format=tar --prefix=portsentry-src-${version}/ HEAD | xz > portsentry-src-${version}.tar.xz
 elif [ "$ACTION" = "build_test" ]; then
   ./build.sh clean && \
   CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh release
