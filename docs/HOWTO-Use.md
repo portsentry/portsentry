@@ -7,8 +7,7 @@
 Your current options are:
 
 * Docker - This is the recommeded deployment option if you have Docker available. Refer to rhe [HOWTO-Docker.md](HOWTO-Docker.md) guide for more information.
-* Precompiled Linux Binaries - Download Portsentry from the [releases](https://github.com/portsentry/portsentry/releases) page. Extract and run the installer script by typing **sudo install.sh**
-* Precompiled *BSD Binaries - In the [releases](https://github.com/portsentry/portsentry/releases) section you will find binary packages for FreeBSD, OpenBSD and NetBSD. Download the package and run the **install.sh** script as root.
+* Precompiled Linux Binaries - Download Portsentry from the [releases](https://github.com/portsentry/portsentry/releases) page. Extract and run the installer script by typing **sudo ./install.sh**
 * Compile from source - If you are using a system that is not supported by the precompiled binaries, you can compile Portsentry from source. Refer to the [HOWTO-Compile.md](HOWTO-Compile.md) guide for more information.
 
 ## Setup
@@ -29,7 +28,13 @@ This will start Portsentry in the foreground and you will see the output in your
 
 ### Systemd
 
-Portsentry comes with a systemd service file which is installed during installation. You can start Portsentry by running the following command:
+Portsentry comes with a systemd service file which is installed during installation. To enable the Portsentry service to start on boot, you can run the following command:
+
+```bash
+sudo systemctl enable portsentry
+```
+
+You can start Portsentry by running the following command:
 
 ```bash
 sudo systemctl start portsentry
