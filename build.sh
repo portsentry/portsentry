@@ -2,6 +2,28 @@
 
 ACTION=$1
 
+do_package() {
+  BUILD_DIR=/tmp/portsentry-build
+  ./build.sh clean && \
+  ./build.sh doc && \
+  rm -rf $BUILD_DIR && \
+  mkdir -p $BUILD_DIR && \
+  docker buildx build -t export -f docker/Dockerfile --target export --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 --output type=local,dest=$BUILD_DIR .
+
+  find $BUILD_DIR -mindepth 1 -maxdepth 1 -type d | while read f
+  do
+    echo "Packaging $f"
+    cp -rf docs $f && \
+    cp -rf examples $f && \
+    cp -rf fail2ban $f && \
+    cp -rf init $f && \
+    cp -f Changes.md $f && \
+    cp -f LICENSE $f && \
+    cp -f README.md $f && \
+    cp -f scripts/install.sh $f
+  done
+}
+
 if [ "$ACTION" = "clean" ]; then
   rm -rf debug release && \
   rm -f portsentry.blocked.* && \
@@ -48,11 +70,8 @@ elif [ "$ACTION" = "autobuild" ]; then
   done
 elif [ "$ACTION" = "docker" ]; then
   docker build -t portsentry:unstable -f docker/Dockerfile .
-elif [ "$ACTION" = "build" ]; then
-  BUILD_DIR=/tmp/portsentry-build
-  rm -rf $BUILD_DIR
-  mkdir -p $BUILD_DIR
-  docker buildx build -t export -f docker/Dockerfile --target export --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 --output type=local,dest=$BUILD_DIR .
+elif [ "$ACTION" = "package" ]; then
+  do_package
 elif [ "$ACTION" = "doc" ]; then
   pandoc --standalone --to man docs/Manual.md -o docs/portsentry.8
   pandoc --standalone --to man docs/portsentry.conf.md -o docs/portsentry.conf.8
