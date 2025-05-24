@@ -95,22 +95,6 @@ elif [ "$ACTION" = "create_src_tarball" ]; then
   version=$(git describe --tags)
   ./build.sh clean && \
   git archive --format=tar --prefix=portsentry-src-${version}/ HEAD | xz > portsentry-src-${version}.tar.xz
-elif [ "$ACTION" = "create_bin_tarball" ]; then
-  version=$(git describe --tags)
-  machine=$(uname -m)
-  ./build.sh clean && \
-  ./build.sh release && \
-  rm -rf /tmp/portsentry-${version}-${machine} && \
-  mkdir -p /tmp/portsentry-${version}-${machine} && \
-  cp release/portsentry /tmp/portsentry-${version}-${machine}/ && \
-  cp -rf docs /tmp/portsentry-${version}-${machine}/ && \
-  cp -rf examples /tmp/portsentry-${version}-${machine}/ && \
-  cp -rf fail2ban /tmp/portsentry-${version}-${machine}/ && \
-  cp -rf init /tmp/portsentry-${version}-${machine}/ && \
-  cp Changes.md /tmp/portsentry-${version}-${machine}/ && \
-  cp LICENSE /tmp/portsentry-${version}-${machine}/ && \
-  cp README.md /tmp/portsentry-${version}-${machine}/ && \
-  tar -cvJf portsentry-${machine}-${version}.tar.xz -C /tmp portsentry-${version}-${machine}
 elif [ "$ACTION" = "build_test" ]; then
   ./build.sh clean && \
   CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh release
