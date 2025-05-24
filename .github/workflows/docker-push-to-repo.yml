@@ -4,10 +4,6 @@ on:
   push:
     branches: [ "master" ]
 
-env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
-
 jobs:
   build-and-push-docker:
     runs-on: ubuntu-latest
@@ -15,17 +11,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      
-    - name: Install pcap
-      run: |
-        sudo apt-get update
-        sudo apt-get install libpcap-dev
-        
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/release -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-      
-    - name: Build
-      run: cmake --build ${{github.workspace}}/release --config ${{env.BUILD_TYPE}}
       
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
