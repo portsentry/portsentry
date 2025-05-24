@@ -17,7 +17,7 @@ rm -rf $PATH_DOC
 rm -rf $PATH_ETC
 
 if [ -f /etc/logrotate.d ]; then
-  rm -f /etc/logrotate.d/portsentry.conf
+  rm -f /etc/logrotate.d/portsentry
 fi
 
 rm -rf $PATH_SHARE
