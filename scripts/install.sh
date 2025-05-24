@@ -46,5 +46,6 @@ install -m 644 LICENSE $PATH_SHARE/LICENSE
 
 # Install systemd service file
 if [ -d /usr/lib/systemd/system ]; then
+  sed -i "s|^ExecStart=.*|ExecStart=$PATH_BIN/portsentry|g" init/portsentry.service
   install -m 644 -o root -g root init/portsentry.service /usr/lib/systemd/system/portsentry.service
 fi
