@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-PATH_BIN=${PATH_BIN:-/usr/local/bin}
+PATH_BIN=${PATH_BIN:-/usr/local/sbin}
 PATH_MAN=${PATH_MAN:-/usr/share/man/man8}
 PATH_DOC=${PATH_DOC:-/usr/share/doc/portsentry}
 PATH_ETC=${PATH_ETC:-/etc/portsentry}
