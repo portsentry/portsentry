@@ -11,14 +11,11 @@
   <img src="https://img.shields.io/github/last-commit/portsentry/portsentry" alt="" />
 </div>
 
-# Portsentry
-**Detect and respond to port scans against a target host in real\-time**
-
 ## What is Portsentry?
 
 **Port Scan Detection**
 
-Portsentry monitors network traffic to detect port scans in real-time. It can identify several types of scans, including TCP, UDP, SYN, FIN, XMAS, and NULL scans.
+Portsentry monitors network traffic in order to detect port scans in real-time. It can identify several types of scans, including TCP, SYN, FIN, XMAS, and NULL scans and UDP probing.
 
 **Response Mechanisms**
 
@@ -37,6 +34,8 @@ Portsentry operates in stealth mode where it listens on unused ports. Since thes
 Portsentry can be integrated with other security tools and systems to provide a comprehensive security solution. For example, it can be used with fail2ban in order to take advantage of its sophisticated blocking mechanism.
 
 ## Quickstart
+
+Detailed installation instructions can be found in the [HOWTO-Use](docs/HOWTO-Use.md) guide.
 
 ### Docker
 

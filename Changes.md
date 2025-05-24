@@ -1,5 +1,14 @@
 # Portsentry Changelog
 
+## 2025-05-24 2.0.1
+
+### Improvements
+- Added detailed usage instructions in docs/HOWTO-Use.md
+- Minor documentation updates
+- Added automatic package building and compile targets arm
+- Fixed architecture code issues for arm64 and armhf
+- Added unit testing
+
 ## 2025-05-09 2.0.0
 
 ### Bugfixes

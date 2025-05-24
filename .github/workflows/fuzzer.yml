@@ -3,8 +3,6 @@ name: fuzzer
 on:
   pull_request:
     branches: [ "master" ]
-  push:
-    branches: [ "master" ]
 
 env:
   BUILD_TYPE: Debug

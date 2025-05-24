@@ -1,31 +1,63 @@
-# How to use Portsentry
+# Howto Install and Setup Guide
 
-At a high level overview, Portsentry does **three** main things:
+## Choosing a Deployment Method
 
-* It listens to TCP and/or UDP ports you specify.
-* It stealthily (or visibly) logs connection attempts to the ports you have specified.
-* It can optionally execute scripts or applications when connection attempts are made.
+**At the time of writing, Portsentry has limited deployment options due to the fact that the project has just recently been relaunched. More deployment options are next on the roadmap and will be comming soon.**
 
-How could one leverage this into strengthening the Cyber Security posture of an organization? Here are two use-cases where you might want to deploy Portsentry.
+Your current options are:
 
-## As a complementary Network Intrusion Detection System (NIDS) within your organization
+* Docker - This is the recommeded deployment option if you have Docker available. Refer to rhe [HOWTO-Docker.md](HOWTO-Docker.md) guide for more information.
+* Precompiled Linux Binaries - Download Portsentry from the [releases](https://github.com/portsentry/portsentry/releases) page. Extract and run the installer script by typing **sudo ./install.sh**
+* Compile from source - If you are using a system that is not supported by the precompiled binaries, you can compile Portsentry from source. Refer to the [HOWTO-Compile.md](HOWTO-Compile.md) guide for more information.
 
-Let's assume your small organisation consist of:
+## Setup
 
-* Office LAN
-* WIFI network
-* Internal server network
+Once Portsentry is installed, you need to configure it. The configuration file is located in **/etc/portsentry/portsentry.conf**. The default configuration file is well documented and should be easy to understand. More documentation and in-depth discusson on the configuration can be found in the [portsentry.conf.md](portsentry.conf.md) manual. You can also use **man portsentry.conf** to read the manual page for the configuration file.
 
-You could put a dedicated instance (server, a virtual machine or a container) running Portsentry on all of these networks and listening to a wide range of ports.
+## Running Portsentry
 
-Since this node is not part of the organization, no legitimate traffic should be directed towards it. However, an attacker inside your network will most certainly want to probe your network as part of their reconnaissance and lateral movement. When they do, they will trigger Portsentry and you will be alerted to a potential intruder in your network.
+### Running in a Terminal
 
-![Portsentry Inside Internal Organization](images/PS-Int-Org.png)
+You can run Portsentry directly in your terminal to get a feel for it. Simply run the following command:
 
-## Enumeration Prevention
+```bash
+sudo portsentry
+```
 
-Consider a scenario where you have one or several services offered on the public Internet. Portsentry could be deployed to listen for traffic on unused services. Since no legitimate traffic will try to access the unused services, you could block any and all attempts to access the unused services.
+This will start Portsentry in the foreground and you will see the output in your terminal. You can stop Portsentry by pressing **Ctrl+C**.
 
-Access attempts on unused traffic are more often than not bots, looking for vulnerable services. By blocking them, you interfere with their ability to enumerate your servers, and in some cases even your services (when Portsentry triggers before probes reach legitimate services). This setup also helps protect against targeted enumeration attacks where an adversary is specifically targeting your organization. Blocking an adversary actively enumerating your servers/services could significantly interfere with their attempts. Especially when paired with a "mostly-closed firewall" design, dropping illegitimate traffic.
+### Systemd
 
-![Portsentry Blocking Enumeration Attempts](images/PS-Enumeration.png)
+Portsentry comes with a systemd service file which is installed during installation. To enable the Portsentry service to start on boot, you can run the following command:
+
+```bash
+sudo systemctl enable portsentry
+```
+
+You can start Portsentry by running the following command:
+
+```bash
+sudo systemctl start portsentry
+```
+
+You can check the status of Portsentry by running:
+
+```bash
+sudo systemctl status portsentry
+```
+
+You the journalctl command to view the Portsentry system log:
+
+```bash
+sudo journalctl -u portsentry
+```
+
+## Portsentry Logfile
+
+Portsentry logs all activity to the **/var/log/portsentry.log** file. Refer to the [HOWTO-Logfile.md](HOWTO-Logfile.md) for more information on how the log file format is structured. You can view the log file by running the following command:
+
+```bash
+sudo tail -f /var/log/portsentry.log
+```
+
+
