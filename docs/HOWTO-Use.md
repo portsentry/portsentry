@@ -60,4 +60,17 @@ Portsentry logs all activity to the **/var/log/portsentry.log** file. Refer to t
 sudo tail -f /var/log/portsentry.log
 ```
 
+## Fail2ban Integration
+
+Fail2ban is a log-parsing tool that can be used to block IP addresses that are attempting to brute-force your services. Portsentry can be configured to work with Fail2ban in order to take advantage of Fail2ban's excellent blocking capabilities.
+
+* Download fail2ban for your platform [https://github.com/fail2ban/fail2ban](https://github.com/fail2ban/fail2ban)
+* Download the [portsentry fail2ban filter file](https://github.com/portsentry/portsentry/blob/master/fail2ban/portsentry.conf) and place it in the **/etc/fail2ban/filter.d/** directory.
+* Download the [portsentry fail2ban jail file](https://github.com/portsentry/portsentry/blob/master/fail2ban/portsentry.local) and place it in the **/etc/fail2ban/jail.d/** directory.
+* Tweak the jail file to your liking, such as setting the ban time, find time, and max retry values.
+* Restart the fail2ban service to apply the changes:
+
+```bash
+sudo systemctl restart fail2ban
+```
 
