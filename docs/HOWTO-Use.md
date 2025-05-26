@@ -62,7 +62,7 @@ sudo tail -f /var/log/portsentry.log
 
 ## Fail2ban Integration
 
-Fail2ban is a log-parsing tool that can be used to block IP addresses that are attempting to brute-force your services. Fail2ban incorporates many costomizable features which makes it a flexible and powerful tool for protecting your server from malicious activity. Portsentry can be configured to work with Fail2ban in order to take advantage of Fail2ban's excellent blocking capabilities.
+Fail2ban is a log-parsing tool that can be used to block IP addresses that are detected by its parsing engine. It incorporates many costomizable features which makes it a flexible and powerful tool for protecting your server from malicious activity. Portsentry can be configured to work with Fail2ban in order to take advantage of Fail2ban's excellent capabilities.
 
 * Download fail2ban for your platform [https://github.com/fail2ban/fail2ban](https://github.com/fail2ban/fail2ban)
 * Download the [portsentry fail2ban filter file](https://github.com/portsentry/portsentry/blob/master/fail2ban/portsentry.conf) and place it in the **/etc/fail2ban/filter.d/** directory.
