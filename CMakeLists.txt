@@ -8,6 +8,7 @@ option(USE_PCAP "Build with pcap code and link with libpcap" ON)
 
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
+set(PATH_BIN "usr/sbin" CACHE STRING "Target directory for installation of the portsentry binary")
 
 set(STANDARD_COMPILE_OPTS -Wall -Wextra -pedantic -Werror -Wformat -Wformat-security -Wstack-protector -Wshadow -Wredundant-decls -Wdisabled-optimization -Wnested-externs -Wstrict-overflow=2 -fPIE -fstack-protector-strong -fstrict-aliasing -fno-common -fno-strict-overflow -D_FORTIFY_SOURCE=2)
 
@@ -63,7 +64,7 @@ if (USE_PCAP)
 endif()
 
 # INSTALL TARGETS for portsentry program
-install(TARGETS portsentry DESTINATION usr/sbin)
+install(TARGETS portsentry DESTINATION ${PATH_BIN})
 install(FILES examples/portsentry.conf DESTINATION etc/portsentry)
 install(FILES examples/portsentry.ignore DESTINATION etc/portsentry)
 
