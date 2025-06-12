@@ -81,15 +81,17 @@ if(PANDOC_EXECUTABLE)
 endif()
 
 # INSTALL TARGETS for portsentry program
+include(GNUInstallDirs)
+
 install(TARGETS portsentry DESTINATION ${PATH_BIN})
-install(FILES examples/portsentry.conf DESTINATION etc/portsentry)
-install(FILES examples/portsentry.ignore DESTINATION etc/portsentry)
-install(FILES man/portsentry.8 DESTINATION share/man/man8)
-install(FILES man/portsentry.conf.8 DESTINATION share/man/man8)
-install(DIRECTORY docs/ DESTINATION share/doc/portsentry)
-install(FILES Changes.md README.md LICENSE DESTINATION share/doc/portsentry)
-install(FILES examples/logrotate.conf DESTINATION etc/logrotate.d RENAME portsentry)
-install(FILES init/portsentry.service DESTINATION lib/systemd/system)
+install(FILES examples/portsentry.conf DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/portsentry)
+install(FILES examples/portsentry.ignore DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/portsentry)
+install(FILES examples/logrotate.conf DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/logrotate.d RENAME portsentry)
+install(FILES man/portsentry.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
+install(FILES man/portsentry.conf.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
+install(DIRECTORY docs/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(FILES Changes.md README.md LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(FILES init/portsentry.service DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system)
 
 # PORTCON - helper test program used in system tests
 add_executable(portcon portcon/main.c)
