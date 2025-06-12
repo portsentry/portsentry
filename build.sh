@@ -50,10 +50,10 @@ if [ "$ACTION" = "clean" ]; then
   rm -f docs/portsentry.8
   rm -f docs/portsentry.conf.8
 elif [ "$ACTION" = "debug" ]; then
-  cmake -B debug -D CMAKE_BUILD_TYPE=Debug $CMAKE_OPTS
+  cmake -B debug -D CMAKE_BUILD_TYPE=Debug -D CMAKE_INSTALL_PREFIX=/ $CMAKE_OPTS
   cmake --build debug -v
 elif [ "$ACTION" = "release" ]; then
-  cmake -B release -D CMAKE_BUILD_TYPE=Release $CMAKE_OPTS
+  cmake -B release -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/ $CMAKE_OPTS
   cmake --build release -v
 elif [ "$ACTION" = "sast" ]; then
   rm -rf /tmp/portsentry
