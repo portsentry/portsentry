@@ -8,7 +8,6 @@ option(USE_PCAP "Build with pcap code and link with libpcap" ON)
 
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
-set(PATH_BIN "usr/sbin" CACHE STRING "Target directory for installation of the portsentry binary")
 
 set(STANDARD_COMPILE_OPTS -Wall -Wextra -pedantic -Werror -Wformat -Wformat-security -Wstack-protector -Wshadow -Wredundant-decls -Wdisabled-optimization -Wnested-externs -Wstrict-overflow=2 -fPIE -fstack-protector-strong -fstrict-aliasing -fno-common -fno-strict-overflow -D_FORTIFY_SOURCE=2)
 
@@ -43,6 +42,18 @@ endif()
 
 configure_file(config.h.in config.h)
 
+# CPack configuration
+set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(CPACK_DEBIAN_PACKAGE_NAME "portsentry")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.36), libpcap0.8 (>= 1.10.3)")
+set(CPACK_DEBIAN_PACKAGE_SECTION "net")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Marcus Hufvudsson <mh@protohuf.com")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://portsentry.xyz")
+set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "fail2ban")
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "A port scanning detection tool")
+
+include(CPack)
 
 # LIBPORTSENTRY - Static lib of the portsentry functionallity
 add_library(lportsentry STATIC ${CORE_SOURCE_FILES})
@@ -83,7 +94,7 @@ endif()
 # INSTALL TARGETS for portsentry program
 include(GNUInstallDirs)
 
-install(TARGETS portsentry DESTINATION ${PATH_BIN})
+install(TARGETS portsentry DESTINATION ${CMAKE_INSTALL_SBINDIR})
 install(FILES examples/portsentry.conf DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/portsentry)
 install(FILES examples/portsentry.ignore DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/portsentry)
 install(FILES examples/logrotate.conf DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/logrotate.d RENAME portsentry)
