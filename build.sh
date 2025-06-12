@@ -92,9 +92,6 @@ elif [ "$ACTION" = "docker" ]; then
   docker buildx build -t portsentry:unstable -f docker/Dockerfile --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 .
 elif [ "$ACTION" = "package" ]; then
   do_package $2
-elif [ "$ACTION" = "doc" ]; then
-  pandoc --standalone --to man docs/Manual.md -o docs/portsentry.8
-  pandoc --standalone --to man docs/portsentry.conf.md -o docs/portsentry.conf.8
 elif [ "$ACTION" = "build_test" ]; then
   ./build.sh clean && \
   CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh release
