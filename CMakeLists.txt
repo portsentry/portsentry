@@ -52,7 +52,6 @@ if (USE_PCAP)
   target_link_libraries(lportsentry INTERFACE pcap)
 endif()
 
-
 # PORTSENTRY - main program
 add_executable(portsentry src/portsentry.c)
 target_compile_options(portsentry PRIVATE ${STANDARD_COMPILE_OPTS})
@@ -63,18 +62,36 @@ if (USE_PCAP)
   target_link_libraries(portsentry PRIVATE pcap)
 endif()
 
+# Check for pandoc and generate man pages if available
+find_program(PANDOC_EXECUTABLE pandoc)
+if(PANDOC_EXECUTABLE)
+    add_custom_command(
+        OUTPUT
+            ${CMAKE_SOURCE_DIR}/docs/portsentry.8
+            ${CMAKE_SOURCE_DIR}/docs/portsentry.conf.8
+        COMMAND ${PANDOC_EXECUTABLE} --standalone --to man ${CMAKE_SOURCE_DIR}/docs/Manual.md -o ${CMAKE_SOURCE_DIR}/docs/portsentry.8
+        COMMAND ${PANDOC_EXECUTABLE} --standalone --to man ${CMAKE_SOURCE_DIR}/docs/portsentry.conf.md -o ${CMAKE_SOURCE_DIR}/docs/portsentry.conf.8
+        COMMENT "Generating man pages using pandoc"
+    )
+    add_custom_target(generate_man_pages DEPENDS
+        ${CMAKE_SOURCE_DIR}/docs/portsentry.8
+        ${CMAKE_SOURCE_DIR}/docs/portsentry.conf.8
+    )
+    add_dependencies(portsentry generate_man_pages)
+endif()
+
 # INSTALL TARGETS for portsentry program
 install(TARGETS portsentry DESTINATION ${PATH_BIN})
 install(FILES examples/portsentry.conf DESTINATION etc/portsentry)
 install(FILES examples/portsentry.ignore DESTINATION etc/portsentry)
-
+install(FILES docs/portsentry.8 DESTINATION share/man/man8)
+install(FILES docs/portsentry.conf.8 DESTINATION share/man/man8)
 
 # PORTCON - helper test program used in system tests
 add_executable(portcon portcon/main.c)
 target_compile_options(portcon PRIVATE ${STANDARD_COMPILE_OPTS})
 target_include_directories(portcon PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(portcon PRIVATE ${STANDARD_LINK_OPTS})
-
 
 # FUZZER - fuzzer tests
 if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_FUZZER STREQUAL "ON")
@@ -102,7 +119,6 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" A
     target_link_libraries(fuzz_sentry_stealth PRIVATE pcap)
   endif()
 endif()
-
 
 # UNIT TESTS
 if(BUILD_TESTS)
