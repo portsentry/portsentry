@@ -86,6 +86,7 @@ install(FILES examples/portsentry.conf DESTINATION etc/portsentry)
 install(FILES examples/portsentry.ignore DESTINATION etc/portsentry)
 install(FILES docs/portsentry.8 DESTINATION share/man/man8)
 install(FILES docs/portsentry.conf.8 DESTINATION share/man/man8)
+install(DIRECTORY docs/ DESTINATION share/doc/portsentry)
 
 # PORTCON - helper test program used in system tests
 add_executable(portcon portcon/main.c)
