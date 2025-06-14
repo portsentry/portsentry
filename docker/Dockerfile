@@ -4,9 +4,13 @@ WORKDIR /build
 COPY . .
 RUN ./build.sh clean
 RUN ./build.sh release
+RUN cpack --config release/CPackConfig.cmake -G DEB
+RUN cpack --config release/CPackConfig.cmake -G TXZ
 
 FROM scratch AS export
 COPY --from=builder /build/release/portsentry /portsentry
+COPY --from=builder /build/portsentry-*.deb /
+COPY --from=builder /build/portsentry-*.tar.xz /
 
 FROM debian:stable
 RUN apt update && apt install -y libpcap0.8

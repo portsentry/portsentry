@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(Portsentry VERSION 2.0.1)
+project(portsentry VERSION 2.0.1)
 include(CheckCCompilerFlag)
 
 option(BUILD_FUZZER "Build fuzzer tests" OFF)
@@ -8,7 +8,6 @@ option(USE_PCAP "Build with pcap code and link with libpcap" ON)
 
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
-set(PATH_BIN "usr/sbin" CACHE STRING "Target directory for installation of the portsentry binary")
 
 set(STANDARD_COMPILE_OPTS -Wall -Wextra -pedantic -Werror -Wformat -Wformat-security -Wstack-protector -Wshadow -Wredundant-decls -Wdisabled-optimization -Wnested-externs -Wstrict-overflow=2 -fPIE -fstack-protector-strong -fstrict-aliasing -fno-common -fno-strict-overflow -D_FORTIFY_SOURCE=2)
 
@@ -43,6 +42,18 @@ endif()
 
 configure_file(config.h.in config.h)
 
+# CPack configuration
+set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(CPACK_DEBIAN_PACKAGE_NAME "portsentry")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.36), libpcap0.8 (>= 1.10.3)")
+set(CPACK_DEBIAN_PACKAGE_SECTION "net")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Marcus Hufvudsson <mh@protohuf.com")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://portsentry.xyz")
+set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "fail2ban")
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "A port scanning detection tool")
+
+include(CPack)
 
 # LIBPORTSENTRY - Static lib of the portsentry functionallity
 add_library(lportsentry STATIC ${CORE_SOURCE_FILES})
@@ -51,7 +62,6 @@ target_include_directories(lportsentry PRIVATE "${PROJECT_BINARY_DIR}")
 if (USE_PCAP)
   target_link_libraries(lportsentry INTERFACE pcap)
 endif()
-
 
 # PORTSENTRY - main program
 add_executable(portsentry src/portsentry.c)
@@ -63,18 +73,42 @@ if (USE_PCAP)
   target_link_libraries(portsentry PRIVATE pcap)
 endif()
 
-# INSTALL TARGETS for portsentry program
-install(TARGETS portsentry DESTINATION ${PATH_BIN})
-install(FILES examples/portsentry.conf DESTINATION etc/portsentry)
-install(FILES examples/portsentry.ignore DESTINATION etc/portsentry)
+# Check for pandoc and generate man pages if available
+find_program(PANDOC_EXECUTABLE pandoc)
+if(PANDOC_EXECUTABLE)
+    add_custom_command(
+        OUTPUT
+            ${CMAKE_SOURCE_DIR}/docs/portsentry.8
+            ${CMAKE_SOURCE_DIR}/docs/portsentry.conf.8
+        COMMAND ${PANDOC_EXECUTABLE} --standalone --to man ${CMAKE_SOURCE_DIR}/docs/Manual.md -o ${CMAKE_SOURCE_DIR}/man/portsentry.8
+        COMMAND ${PANDOC_EXECUTABLE} --standalone --to man ${CMAKE_SOURCE_DIR}/docs/portsentry.conf.md -o ${CMAKE_SOURCE_DIR}/man/portsentry.conf.8
+        COMMENT "Generating man pages using pandoc"
+    )
+    add_custom_target(generate_man_pages DEPENDS
+        ${CMAKE_SOURCE_DIR}/docs/portsentry.8
+        ${CMAKE_SOURCE_DIR}/docs/portsentry.conf.8
+    )
+    add_dependencies(portsentry generate_man_pages)
+endif()
 
+# INSTALL TARGETS for portsentry program
+include(GNUInstallDirs)
+
+install(TARGETS portsentry DESTINATION ${CMAKE_INSTALL_SBINDIR})
+install(FILES examples/portsentry.conf DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/portsentry)
+install(FILES examples/portsentry.ignore DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/portsentry)
+install(FILES examples/logrotate.conf DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/logrotate.d RENAME portsentry)
+install(FILES man/portsentry.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
+install(FILES man/portsentry.conf.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
+install(DIRECTORY docs/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(FILES Changes.md README.md LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(FILES init/portsentry.service DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system)
 
 # PORTCON - helper test program used in system tests
 add_executable(portcon portcon/main.c)
 target_compile_options(portcon PRIVATE ${STANDARD_COMPILE_OPTS})
 target_include_directories(portcon PRIVATE "${PROJECT_BINARY_DIR}")
 target_link_options(portcon PRIVATE ${STANDARD_LINK_OPTS})
-
 
 # FUZZER - fuzzer tests
 if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_FUZZER STREQUAL "ON")
@@ -102,7 +136,6 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" A
     target_link_libraries(fuzz_sentry_stealth PRIVATE pcap)
   endif()
 endif()
-
 
 # UNIT TESTS
 if(BUILD_TESTS)

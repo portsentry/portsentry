@@ -5,6 +5,4 @@ build
 portsentry.blocked.*
 Testing/**
 remotes.txt
-docs/portsentry.8
-docs/portsentry.conf.8
 portsentry*.tar.xz

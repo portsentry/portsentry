@@ -6,9 +6,30 @@
 
 Your current options are:
 
-* Docker - This is the recommeded deployment option if you have Docker available. Refer to rhe [HOWTO-Docker.md](HOWTO-Docker.md) guide for more information.
-* Precompiled Linux Binaries - Download Portsentry from the [releases](https://github.com/portsentry/portsentry/releases) page. Extract and run the installer script by typing **sudo ./install.sh**
-* Compile from source - If you are using a system that is not supported by the precompiled binaries, you can compile Portsentry from source. Refer to the [HOWTO-Compile.md](HOWTO-Compile.md) guide for more information.
+### Docker
+
+This is the recommeded deployment option if you have Docker available. Refer to rhe [HOWTO-Docker.md](HOWTO-Docker.md) guide for more information.
+
+### Debian/Ubuntu based systems
+
+Download the .deb file from the [releases](https://github.com/portsentry/portsentry/releases) page and install it by typing:
+
+```bash
+sudo apt install libpcap0.8
+sudo dpkg -i portsentry-*.deb
+```
+
+### Tarball
+
+Download the .tar.xz file from the [releases](https://github.com/portsentry/portsentry/releases) page and install if by tping:
+
+```bash
+sudo tar --strip-components=1 -C / -xvf portsentry-*.tar.xz
+```
+
+### Compile from source
+
+If you are using a system that is not supported by the precompiled binaries, you can compile Portsentry from source. Refer to the [HOWTO-Compile.md](HOWTO-Compile.md) guide for more information.
 
 ## Setup
 
