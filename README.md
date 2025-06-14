@@ -49,6 +49,23 @@ More docker configuration options available in the [HOWTO-Docker.md](docs/HOWTO-
 
 Download the latest release from the [Release page](https://github.com/portsentry/portsentry/releases)
 
+#### Debian/Ubuntu based systems
+
+Download the .deb file and install it by typing:
+
+```bash
+sudo apt install libpcap0.8
+sudo dpkg -i portsentry-*.deb
+```
+
+#### tarball
+
+Download and extract the tarball and run the installer script by typing:
+
+```bash
+sudo tar --strip-components=1 -C / -xvf portsentry-*.tar.xz
+```
+
 ### *BSD
 
 OpenBSD, NetBSD and FreeBSD is supported but must currently be compiled manually, see below
