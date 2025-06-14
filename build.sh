@@ -2,46 +2,6 @@
 
 ACTION=$1
 
-do_package() {
-  if [ -z "$1" ]; then
-    echo "Usage: $0 package <version>"
-    exit 1
-  fi
-
-  local BUILD_DIR=/tmp/portsentry-build
-  rm -rf $BUILD_DIR && \
-  mkdir -p $BUILD_DIR && \
-  ./build.sh clean && \
-  git archive --format=tar --prefix=portsentry-$1-src/ HEAD | xz > $BUILD_DIR/portsentry-$1-src.tar.xz && \
-  sha256sum $BUILD_DIR/portsentry-$1-src.tar.xz > $BUILD_DIR/portsentry-$1-src.tar.xz.sha256 && \
-  ./build.sh doc && \
-  docker buildx build -t export -f docker/Dockerfile --target export --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 --output type=local,dest=$BUILD_DIR .
-
-  find $BUILD_DIR -mindepth 1 -maxdepth 1 -type d | while read f
-  do
-    cp -rf docs $f && \
-    cp -rf examples $f && \
-    cp -rf fail2ban $f && \
-    cp -rf init $f && \
-    cp -f Changes.md $f && \
-    cp -f LICENSE $f && \
-    cp -f README.md $f && \
-    cp -f scripts/install.sh $f && \
-    cp -f scripts/uninstall.sh $f
-    chmod 755 $f/install.sh
-    chmod 755 $f/uninstall.sh
-
-    local FINAL_NAME=portsentry-${1}-$(basename $f)
-    mv $f $BUILD_DIR/$FINAL_NAME
-
-    tar -cJf $BUILD_DIR/$FINAL_NAME.tar.xz -C $BUILD_DIR $FINAL_NAME
-    sha256sum $BUILD_DIR/$FINAL_NAME.tar.xz > $BUILD_DIR/$FINAL_NAME.sha256
-    rm -rf $f $BUILD_DIR/$FINAL_NAME
-  done
-
-  echo "Packages created in $BUILD_DIR"
-}
-
 if [ "$ACTION" = "clean" ]; then
   rm -rf debug release && \
   rm -f portsentry.blocked.* && \
@@ -90,6 +50,11 @@ elif [ "$ACTION" = "autobuild" ]; then
   done
 elif [ "$ACTION" = "docker" ]; then
   docker buildx build -t portsentry:unstable -f docker/Dockerfile --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 .
+elif [ "$ACTION" = "docker_export" ]; then
+  BUILD_DIR=/tmp/portsentry-build
+  rm -rf $BUILD_DIR
+  docker buildx build -t export -f docker/Dockerfile --target export --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 --output type=local,dest=$BUILD_DIR .
+
 elif [ "$ACTION" = "package" ]; then
   do_package $2
 elif [ "$ACTION" = "build_test" ]; then
