@@ -42,9 +42,6 @@ endif()
 
 configure_file(config.h.in config.h)
 
-cmake_path(SET PORTSENTRY_BINARY_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SBINDIR}/portsentry")
-configure_file(init/portsentry.service.in init/portsentry.service @ONLY)
-
 # CPack configuration
 set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(CPACK_DEBIAN_PACKAGE_NAME "portsentry")
@@ -96,6 +93,8 @@ endif()
 
 # INSTALL TARGETS for portsentry program
 include(GNUInstallDirs)
+
+configure_file(init/portsentry.service.in init/portsentry.service @ONLY)
 
 install(TARGETS portsentry DESTINATION ${CMAKE_INSTALL_SBINDIR})
 install(FILES examples/portsentry.conf DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/portsentry)
