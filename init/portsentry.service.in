@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=@CMAKE_INSTALL_SBINDIR@/portsentry
+ExecStart=@PORTSENTRY_BINARY_PATH@
 Restart=on-failure
 RestartSec=1
 

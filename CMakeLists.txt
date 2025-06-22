@@ -41,6 +41,8 @@ else()
 endif()
 
 configure_file(config.h.in config.h)
+
+cmake_path(SET PORTSENTRY_BINARY_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SBINDIR}/portsentry")
 configure_file(init/portsentry.service.in init/portsentry.service @ONLY)
 
 # CPack configuration
