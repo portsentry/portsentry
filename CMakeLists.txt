@@ -41,6 +41,7 @@ else()
 endif()
 
 configure_file(config.h.in config.h)
+configure_file(init/portsentry.service.in init/portsentry.service @ONLY)
 
 # CPack configuration
 set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
