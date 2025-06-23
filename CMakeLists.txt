@@ -78,15 +78,15 @@ find_program(PANDOC_EXECUTABLE pandoc)
 if(PANDOC_EXECUTABLE)
     add_custom_command(
         OUTPUT
-            ${CMAKE_SOURCE_DIR}/docs/portsentry.8
-            ${CMAKE_SOURCE_DIR}/docs/portsentry.conf.8
+            ${CMAKE_SOURCE_DIR}/man/portsentry.8
+            ${CMAKE_SOURCE_DIR}/man/portsentry.conf.8
         COMMAND ${PANDOC_EXECUTABLE} --standalone --to man ${CMAKE_SOURCE_DIR}/docs/Manual.md -o ${CMAKE_SOURCE_DIR}/man/portsentry.8
         COMMAND ${PANDOC_EXECUTABLE} --standalone --to man ${CMAKE_SOURCE_DIR}/docs/portsentry.conf.md -o ${CMAKE_SOURCE_DIR}/man/portsentry.conf.8
         COMMENT "Generating man pages using pandoc"
     )
     add_custom_target(generate_man_pages DEPENDS
-        ${CMAKE_SOURCE_DIR}/docs/portsentry.8
-        ${CMAKE_SOURCE_DIR}/docs/portsentry.conf.8
+        ${CMAKE_SOURCE_DIR}/man/portsentry.8
+        ${CMAKE_SOURCE_DIR}/man/portsentry.conf.8
     )
     add_dependencies(portsentry generate_man_pages)
 endif()
