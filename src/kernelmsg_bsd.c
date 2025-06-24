@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2024 Marcus Hufvudsson <mh@protohuf.com>
 //
-// SPDX-License-Identifier: CPL-1.0
+// SPDX-License-Identifier: BSD-2-Clause
 
 #include <arpa/inet.h>
 #include <net/if.h>

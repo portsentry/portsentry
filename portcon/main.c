@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2024 Marcus Hufvudsson <mh@protohuf.com>
 //
-// SPDX-License-Identifier: CPL-1.0
+// SPDX-License-Identifier: BSD-2-Clause
 
 /* This is a simple program used in the system testing framework (see the system_test directory) */
 

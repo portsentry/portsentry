@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024 Craig Rowland
 // SPDX-FileContributor: Marcus Hufvudsson <mh@protohuf.com>
 //
-// SPDX-License-Identifier: CPL-1.0
+// SPDX-License-Identifier: BSD-2-Clause
 
 #pragma once
 #include <stdint.h>
