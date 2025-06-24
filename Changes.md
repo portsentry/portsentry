@@ -1,5 +1,15 @@
 # Portsentry Changelog
 
+## 2025-06-24 2.0.2
+
+### Improvements
+- Added multi-architecture build of docker containers
+- Improved documentation
+- Improved CMake install process with definable directories
+- Added CPack support for packaging
+- Moved man pages to build process
+- Improved systemd unit file with better handling of install paths and start conditions
+
 ## 2025-05-24 2.0.1
 
 ### Improvements
