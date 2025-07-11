@@ -10,11 +10,11 @@
 #include "portsentry.h"
 #include "port.h"
 
-#define LOGFLAG_NONE 0x00
-#define LOGFLAG_DEBUG 0x1
-#define LOGFLAG_VERBOSE 0x2
-#define LOGFLAG_OUTPUT_STDOUT 0x4
-#define LOGFLAG_OUTPUT_SYSLOG 0x8
+const uint8_t LOGFLAG_NONE = 0x00;
+const uint8_t LOGFLAG_DEBUG = 0x1;
+const uint8_t LOGFLAG_VERBOSE = 0x2;
+const uint8_t LOGFLAG_OUTPUT_STDOUT = 0x4;
+const uint8_t LOGFLAG_OUTPUT_SYSLOG = 0x8;
 
 enum SentryMode { SENTRY_MODE_STEALTH = 0,
                   SENTRY_MODE_CONNECT };
