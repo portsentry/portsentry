@@ -132,12 +132,14 @@ static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr
       Exit(EXIT_FAILURE);
     }
   } else if (strncmp(buffer, "SCAN_TRIGGER", keySize) == 0) {
-    fileConfig->configTriggerCount = GetLong(ptr);
+    long scanTriggerCount = GetLong(ptr);
 
-    if (fileConfig->configTriggerCount < 0) {
+    if (scanTriggerCount < 0) {
       fprintf(stderr, "Invalid config file entry for SCAN_TRIGGER\n");
       Exit(EXIT_FAILURE);
     }
+
+    fileConfig->configTriggerCount = (uint16_t)scanTriggerCount;
   } else if (strncmp(buffer, "KILL_ROUTE", keySize) == 0) {
     if (snprintf(fileConfig->killRoute, MAXBUF, "%s", ptr) >= MAXBUF) {
       fprintf(stderr, "KILL_ROUTE value too long\n");
