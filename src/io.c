@@ -141,7 +141,7 @@ void Exit(const int status) {
   exit(status);
 }
 
-int BindSocket(const int sockfd, const int family, const int port, const int proto) {
+int BindSocket(const int sockfd, const int family, const uint16_t port, const int proto) {
   char err[ERRNOMAXBUF];
   struct sockaddr_in6 sin6;
   struct sockaddr_in sin4;

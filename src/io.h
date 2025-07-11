@@ -19,7 +19,7 @@ void Exit(const int);
 int NeverBlock(const char *, const char *);
 int CheckConfig(void);
 int OpenSocket(const int family, const int type, const int protocol, const uint8_t tcpReuseAddr);
-int BindSocket(const int, const int, const int, const int);
+int BindSocket(const int, const int, const uint16_t, const int);
 int KillRoute(const char *, const int, const char *, const char *);
 int KillHostsDeny(const char *, const int, const char *, const char *);
 int KillRunCmd(const char *, const int, const char *, const char *);
