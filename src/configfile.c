@@ -14,7 +14,7 @@
 #include "util.h"
 #include "port.h"
 
-static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr, const ssize_t valueSize, const size_t line, struct ConfigData *fileConfig);
+static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr, const size_t valueSize, const size_t line, struct ConfigData *fileConfig);
 static void ValidateConfig(struct ConfigData *fileConfig);
 static void MergeToConfigData(struct ConfigData *fileConfig);
 static char *SkipSpaceAndTab(char *buffer);
@@ -77,9 +77,15 @@ void ReadConfigFile(void) {
       Exit(EXIT_FAILURE);
     }
 
+    if (valueSize < 1) {
+      fprintf(stderr, "Invalid value at line %zu, require a value\n", line);
+      fclose(config);
+      Exit(EXIT_FAILURE);
+    }
+
     *(ptr + valueSize) = '\0';  // Remove trailing quote
 
-    SetConfiguration(buffer, keySize, ptr, valueSize, line, &fileConfig);
+    SetConfiguration(buffer, keySize, ptr, (size_t)valueSize, line, &fileConfig);
   }
 
   fclose(config);
@@ -90,7 +96,7 @@ void ReadConfigFile(void) {
   MergeToConfigData(&fileConfig);
 }
 
-static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr, const ssize_t valueSize, const size_t line, struct ConfigData *fileConfig) {
+static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr, const size_t valueSize, const size_t line, struct ConfigData *fileConfig) {
   char err[ERRNOMAXBUF];
   Debug("SetConfiguration: %s keySize: %zu valueSize: %zd sentryMode: %s", buffer, keySize, valueSize, GetSentryModeString(configData.sentryMode));
 
