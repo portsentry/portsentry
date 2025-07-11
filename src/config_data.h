@@ -65,6 +65,6 @@ void PrintConfigData(const struct ConfigData cd);
 char *GetSentryModeString(const enum SentryMode sentryMode);
 void SetConfigData(const struct ConfigData *fileConfig, const struct ConfigData *cmdlineConfig);
 int AddInterface(struct ConfigData *cd, const char *interface);
-int GetNoInterfaces(const struct ConfigData *cd);
+size_t GetNoInterfaces(const struct ConfigData *cd);
 void FreeConfigData(struct ConfigData *cd);
 int IsInterfacePresent(const struct ConfigData *cd, const char *interface);

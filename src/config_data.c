@@ -138,7 +138,7 @@ static char *GetSentryMethodString(const enum SentryMethod sentryMethod) {
 }
 
 int AddInterface(struct ConfigData *cd, const char *interface) {
-  int noInterfaces;
+  size_t noInterfaces;
 
   if (strlen(interface) >= IF_NAMESIZE) {
     fprintf(stderr, "Error: Interface name %s too long\n", interface);
@@ -160,8 +160,8 @@ int AddInterface(struct ConfigData *cd, const char *interface) {
   return TRUE;
 }
 
-int GetNoInterfaces(const struct ConfigData *cd) {
-  int i = 0;
+size_t GetNoInterfaces(const struct ConfigData *cd) {
+  size_t i = 0;
 
   if (cd->interfaces == NULL) {
     return 0;
