@@ -32,7 +32,7 @@ void PostProcessConfig(struct ConfigData *cd) {
   }
 
   if (cd->daemon == TRUE) {
-    cd->logFlags &= ~LOGFLAG_OUTPUT_STDOUT;
+    cd->logFlags &= (uint8_t)~LOGFLAG_OUTPUT_STDOUT;
     cd->logFlags |= LOGFLAG_OUTPUT_SYSLOG;
   }
 
