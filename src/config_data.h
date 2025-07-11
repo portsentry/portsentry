@@ -46,7 +46,7 @@ struct ConfigData {
   int blockUDP;
   int runCmdFirst;
   int resolveHost;
-  int configTriggerCount;
+  uint16_t configTriggerCount;
   int disableLocalCheck;
 
   enum SentryMode sentryMode;
