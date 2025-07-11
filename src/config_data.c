@@ -68,22 +68,22 @@ void PrintConfigData(const struct ConfigData cd) {
     printf("debug: [no interfaces set]\n");
   }
 
-  printf("debug: tcpPorts (%d): ", cd.tcpPortsLength);
-  for (i = 0; i < cd.tcpPortsLength; i++) {
-    if (IsPortSingle(&cd.tcpPorts[i])) {
-      printf("%d ", cd.tcpPorts[i].single);
+  printf("debug: tcpPorts (%zu): ", cd.tcpPortsLength);
+  for (size_t j = 0; j < cd.tcpPortsLength; j++) {
+    if (IsPortSingle(&cd.tcpPorts[j])) {
+      printf("%d ", cd.tcpPorts[j].single);
     } else {
-      printf("%d-%d ", cd.tcpPorts[i].range.start, cd.tcpPorts[i].range.end);
+      printf("%d-%d ", cd.tcpPorts[j].range.start, cd.tcpPorts[j].range.end);
     }
   }
   printf("\n");
 
-  printf("debug: udpPorts (%d): ", cd.udpPortsLength);
-  for (i = 0; i < cd.udpPortsLength; i++) {
-    if (IsPortSingle(&cd.udpPorts[i])) {
-      printf("%d ", cd.udpPorts[i].single);
+  printf("debug: udpPorts (%zu): ", cd.udpPortsLength);
+  for (size_t j = 0; j < cd.udpPortsLength; j++) {
+    if (IsPortSingle(&cd.udpPorts[j])) {
+      printf("%d ", cd.udpPorts[j].single);
     } else {
-      printf("%d-%d ", cd.udpPorts[i].range.start, cd.udpPorts[i].range.end);
+      printf("%d-%d ", cd.udpPorts[j].range.start, cd.udpPorts[j].range.end);
     }
   }
   printf("\n");

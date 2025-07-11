@@ -21,7 +21,7 @@ static char *SkipSpaceAndTab(char *buffer);
 static size_t GetKeySize(char *buffer);
 static void StripTrailingSpace(char *buffer);
 static ssize_t GetSizeToQuote(const char *buffer);
-static int ParsePortsList(char *str, struct Port **ports, int *portsLength);
+static int ParsePortsList(char *str, struct Port **ports, size_t *portsLength);
 
 void ReadConfigFile(void) {
   struct ConfigData fileConfig;
@@ -333,8 +333,8 @@ static ssize_t GetSizeToQuote(const char *buffer) {
   return valueSize;
 }
 
-static int ParsePortsList(char *str, struct Port **ports, int *portsLength) {
-  int count = 0;
+static int ParsePortsList(char *str, struct Port **ports, size_t *portsLength) {
+  size_t count = 0;
   char *temp, *saveptr, *p = str;
 
   if (strlen(str) == 0) {

@@ -30,9 +30,9 @@ struct ConfigData {
   char **interfaces;
 
   struct Port *tcpPorts;
-  int tcpPortsLength;
+  size_t tcpPortsLength;
   struct Port *udpPorts;
-  int udpPortsLength;
+  size_t udpPortsLength;
 
   char portBanner[MAXBUF];
   uint8_t portBannerPresent;
