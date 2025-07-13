@@ -55,11 +55,21 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
   return dest;
 }
 
-void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize) {
+void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const socklen_t resolvedHostSize) {
+  char err[ERRNOMAXBUF];
+
+  assert(resolvedHostSize > 0);
+  assert(resolvedHostSize < INT_MAX);
+  assert(resolvedHost != NULL);
+
   if (getnameinfo(GetSourceSockaddrFromPacketInfo(pi), GetSourceSockaddrLenFromPacketInfo(pi), resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
-    Error("ResolveAddr: Unable to resolve address for %s", pi->saddr);
-    if (snprintf(resolvedHost, resolvedHostSize, "<unknown>") >= resolvedHostSize) {
-      Error("ResolveAddr: <unknown> placeholder too long for buffer");
+    Error("ResolveAddr: Unable to resolve address for %s: %s", pi->saddr, ErrnoString(err, sizeof(err)));
+
+    int ret = snprintf(resolvedHost, resolvedHostSize, "<unknown>");
+    if (ret <= 0) {
+      resolvedHost[0] = '\0';
+    } else if (ret >= (int)resolvedHostSize) {
+      Error("ResolveAddr: <unknown> placeholder too long for buffer: %s", ErrnoString(err, sizeof(err)));
       resolvedHost[resolvedHostSize - 1] = '\0';
     }
   }

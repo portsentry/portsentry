@@ -18,7 +18,7 @@
 #define MIN_DATETIME_BUFFER 32
 
 char *SafeStrncpy(char *, const char *, size_t);
-void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize);
+void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const socklen_t resolvedHostSize);
 long GetLong(const char *buffer);
 int StrToUint16_t(const char *str, uint16_t *val);
 int DisposeTarget(const char *, int, int);
