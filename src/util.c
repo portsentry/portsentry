@@ -306,14 +306,14 @@ int CreateDateTime(char *buf, const size_t size) {
     return ERROR;
   }
 
-  ret = strftime(p, remainingSize, "%Y-%m-%dT%H:%M:%S.", tmptr);
+  ret = (int)strftime(p, remainingSize, "%Y-%m-%dT%H:%M:%S.", tmptr);
   if (ret == 0 || (size_t)ret >= remainingSize) {
     Error("Buffer overflow while writing datetime format");
     *buf = '\0';
     return ERROR;
   }
 
-  remainingSize -= ret;
+  remainingSize -= (size_t)ret;
   p += ret;
 
   ret = snprintf(p, remainingSize, "%03ld", ts.tv_nsec / 1000000);
@@ -323,10 +323,10 @@ int CreateDateTime(char *buf, const size_t size) {
     return ERROR;
   }
 
-  remainingSize -= ret;
+  remainingSize -= (size_t)ret;
   p += ret;
 
-  ret = strftime(p, remainingSize, "%z", tmptr);
+  ret = (int)strftime(p, remainingSize, "%z", tmptr);
   if (ret == 0) {
     Error("Buffer overflow while writing timezone");
     *buf = '\0';
