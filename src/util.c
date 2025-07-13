@@ -347,7 +347,7 @@ static char *Realloc(char *filter, size_t newLen) {
   return newFilter;
 }
 
-char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
+char *ReallocAndAppend(char *filter, size_t *filterLen, const char *append, ...) {
   int neededBufferLen;
   char *p;
   va_list args;
@@ -361,25 +361,38 @@ char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
   neededBufferLen = vsnprintf(NULL, 0, append, args);
   va_end(args);
 
-  // First time we're called, make sure we alloc room for the null terminator since *snprintf auto adds it and force truncate if it doesn't fit
-  if (filter == NULL)
-    neededBufferLen += 1;
+  if (neededBufferLen < 0) {
+    return NULL;
+  }
 
-  filter = Realloc(filter, *filterLen + neededBufferLen);
+  size_t totalSize = *filterLen + (size_t)neededBufferLen + 1;
 
-  // First time we're called, start at the beginning of the buffer. Otherwise, go to end of buffer - the null terminator
-  if (*filterLen == 0)
+  // Overflow
+  if (totalSize < *filterLen) {
+    return NULL;
+  }
+
+  filter = Realloc(filter, totalSize);
+
+  // Position pointer at the end of existing string (null terminator)
+  if (*filterLen == 0) {
     p = filter;
-  else
-    p = filter + *filterLen - 1;
+  } else {
+    p = filter + *filterLen;  // Points to null terminator
+  }
 
-  // store the new length of the buffer
-  *filterLen += neededBufferLen;
-
-  // Append the new string to the buffer, *snprintf will add the null terminator
+  // Append the new string to the buffer
   va_start(args, append);
-  vsnprintf(p, (p == filter) ? neededBufferLen : neededBufferLen + 1, append, args);
+  int written = vsnprintf(p, neededBufferLen + 1, append, args);
   va_end(args);
+
+  if (written < 0 || written >= neededBufferLen + 1) {
+    // vsnprintf failed or truncated
+    return NULL;
+  }
+
+  // Update the length (excluding null terminator)
+  *filterLen += (size_t)written;
 
   return filter;
 }
