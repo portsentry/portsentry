@@ -27,7 +27,7 @@
 #include "util.h"
 #include "packet_info.h"
 
-static char *Realloc(char *filter, int newLen);
+static char *Realloc(char *filter, size_t newLen);
 
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
   if (dest == NULL || src == NULL) {
@@ -336,11 +336,11 @@ int CreateDateTime(char *buf, const size_t size) {
   return TRUE;
 }
 
-static char *Realloc(char *filter, int newLen) {
+static char *Realloc(char *filter, size_t newLen) {
   char *newFilter = NULL;
 
   if ((newFilter = realloc(filter, newLen)) == NULL) {
-    Error("Unable to reallocate %d bytes of memory for pcap filter", newLen);
+    Error("Unable to reallocate %zu bytes of memory for pcap filter", newLen);
     Exit(EXIT_FAILURE);
   }
 
