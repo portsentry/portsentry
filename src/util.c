@@ -383,7 +383,7 @@ char *ReallocAndAppend(char *filter, size_t *filterLen, const char *append, ...)
 
   // Append the new string to the buffer
   va_start(args, append);
-  int written = vsnprintf(p, neededBufferLen + 1, append, args);
+  int written = vsnprintf(p, (size_t)neededBufferLen + 1, append, args);
   va_end(args);
 
   if (written < 0 || written >= neededBufferLen + 1) {
