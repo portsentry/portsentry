@@ -103,15 +103,15 @@ int ParsePort(const char *portString, struct Port *port) {
   return TRUE;
 }
 
-int GetNoPorts(const struct Port *port, const int portLength) {
-  int i;
-  int noPorts = 0;
+size_t GetNoPorts(const struct Port *port, const size_t portLength) {
+  size_t i;
+  size_t noPorts = 0;
 
   for (i = 0; i < portLength; i++) {
     if (IsPortSingle(&port[i])) {
       noPorts++;
     } else {
-      noPorts += port[i].range.end - port[i].range.start + 1;
+      noPorts += (size_t)(port[i].range.end - port[i].range.start + 1);
     }
   }
 
