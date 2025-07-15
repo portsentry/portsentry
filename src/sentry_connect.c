@@ -324,7 +324,13 @@ static int PrepareNoFds(void) {
     return FALSE;
   }
 
-  if (rlim.rlim_cur >= noFds) {
+  if (rlim.rlim_cur == RLIM_INFINITY) {
+    return TRUE;
+  }
+
+  // FIXME: On FreeBSD rlim_t is long, so we need to cast to size_t
+  // since we don't know what to do with any negative value
+  if ((size_t)rlim.rlim_cur >= noFds) {
     return TRUE;
   }
 
@@ -333,8 +339,8 @@ static int PrepareNoFds(void) {
 #else
   Debug("Setting RLIMIT_NOFILE to %zu (from cur: %zu max: %zu)", noFds, rlim.rlim_cur, rlim.rlim_max);
 #endif
-  rlim.rlim_cur = noFds;
-  rlim.rlim_max = noFds;
+  rlim.rlim_cur = (rlim_t)noFds;
+  rlim.rlim_max = (rlim_t)noFds;
   if (setrlimit(RLIMIT_NOFILE, &rlim) == -1) {
     Error("setrlimit RLIMIT_NOFILE %zu failed: %s", noFds, ErrnoString(err, sizeof(err)));
     return FALSE;
@@ -345,7 +351,7 @@ static int PrepareNoFds(void) {
     return FALSE;
   }
 
-  if (rlim.rlim_cur >= noFds) {
+  if ((size_t)rlim.rlim_cur >= noFds) {
     return TRUE;
   }
 
