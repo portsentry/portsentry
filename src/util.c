@@ -401,7 +401,7 @@ char *ReallocAndAppend(char *filter, size_t *filterLen, const char *append, ...)
 void DebugWritePacketToFs(const struct PacketInfo *pi) {
   int fd = -1;
   char filename[64], err[ERRNOMAXBUF];
-  int ipLen;
+  size_t ipLen;
   unsigned char *ip;
 
   if (pi->ip != NULL) {
@@ -414,9 +414,9 @@ void DebugWritePacketToFs(const struct PacketInfo *pi) {
   }
 
   if (pi->tcp != NULL) {
-    ipLen = (unsigned char *)pi->tcp - ip;
+    ipLen = (size_t)((unsigned char *)pi->tcp - ip);
   } else if (pi->udp != NULL) {
-    ipLen = (unsigned char *)pi->udp - ip;
+    ipLen = (size_t)((unsigned char *)pi->udp - ip);
   } else {
     Error("No TCP or UDP header to write to file");
     goto exit;
