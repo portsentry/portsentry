@@ -35,9 +35,9 @@ struct ConnectionData {
   int sockfd;
 };
 
-static int SetConnectionData(struct ConnectionData **cd, const int cdIdx, const uint16_t port, const int proto, const int family);
-static int ConstructConnectionData(struct ConnectionData **cd);
-static void FreeConnectionData(struct ConnectionData **cd, int *cdSize);
+static int SetConnectionData(struct ConnectionData **cd, const size_t cdIdx, const uint16_t port, const int proto, const int family);
+static nfds_t ConstructConnectionData(struct ConnectionData **cd);
+static void FreeConnectionData(struct ConnectionData **cd, nfds_t *cdSize);
 static int PrepareNoFds(void);
 
 int PortSentryConnectMode(void) {
@@ -46,12 +46,13 @@ int PortSentryConnectMode(void) {
   struct sockaddr_in6 client6;
   socklen_t clientLength;
   int incomingSockfd = -1, result;
-  int count = 0;
+  ssize_t recvResult;
+  size_t count = 0;
   char err[ERRNOMAXBUF];
   struct pollfd *fds = NULL;
   struct ConnectionData *connectionData = NULL;
   struct PacketInfo pi;
-  int connectionDataSize = 0;
+  nfds_t connectionDataSize = 0;
   char tmp;
 
   assert(configData.sentryMode == SENTRY_MODE_CONNECT);
@@ -117,11 +118,11 @@ int PortSentryConnectMode(void) {
         }
       } else if (connectionData[count].protocol == IPPROTO_UDP) {
         if (connectionData[count].family == AF_INET) {
-          result = recvfrom(connectionData[count].sockfd, &tmp, 1, 0, (struct sockaddr *)&client4, &clientLength);
+          recvResult = recvfrom(connectionData[count].sockfd, &tmp, 1, 0, (struct sockaddr *)&client4, &clientLength);
         } else {
-          result = recvfrom(connectionData[count].sockfd, &tmp, 1, 0, (struct sockaddr *)&client6, &clientLength);
+          recvResult = recvfrom(connectionData[count].sockfd, &tmp, 1, 0, (struct sockaddr *)&client6, &clientLength);
         }
-        if (result == -1) {
+        if (recvResult == -1) {
           Error("Could not receive incoming data on UDP port: %d: %s", connectionData[count].port, ErrnoString(err, sizeof(err)));
           continue;
         }
@@ -166,7 +167,7 @@ exit:
   return status;
 }
 
-static int SetConnectionData(struct ConnectionData **cd, const int cdIdx, const uint16_t port, const int proto, const int family) {
+static int SetConnectionData(struct ConnectionData **cd, const size_t cdIdx, const uint16_t port, const int proto, const int family) {
   int sockfd;
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
   assert(family == AF_INET || family == AF_INET6);
@@ -201,8 +202,10 @@ static int SetConnectionData(struct ConnectionData **cd, const int cdIdx, const 
   return TRUE;
 }
 
-int ConstructConnectionData(struct ConnectionData **cd) {
-  int i, j, cdIdx = 0, ret;
+nfds_t ConstructConnectionData(struct ConnectionData **cd) {
+  int ret;
+  uint16_t j;
+  nfds_t i, cdIdx = 0;
 
   /* OpenBSD doesn't support IPv4/IPv6 dual-stack sockets,
    * so we need to manually open an IPv4 socket */
@@ -289,7 +292,7 @@ exit:
   return cdIdx;
 }
 
-void FreeConnectionData(struct ConnectionData **cd, int *cdSize) {
+void FreeConnectionData(struct ConnectionData **cd, nfds_t *cdSize) {
   if (*cd != NULL) {
     free(*cd);
     *cd = NULL;
@@ -299,7 +302,7 @@ void FreeConnectionData(struct ConnectionData **cd, int *cdSize) {
 }
 
 static int PrepareNoFds(void) {
-  uint32_t noFds;
+  size_t noFds;
   struct rlimit rlim;
   char err[ERRNOMAXBUF];
 
@@ -326,14 +329,14 @@ static int PrepareNoFds(void) {
   }
 
 #ifdef __OpenBSD__
-  Debug("Setting RLIMIT_NOFILE to %d (from cur: %llu max: %llu)", noFds, rlim.rlim_cur, rlim.rlim_max);
+  Debug("Setting RLIMIT_NOFILE to %zu (from cur: %llu max: %llu)", noFds, rlim.rlim_cur, rlim.rlim_max);
 #else
-  Debug("Setting RLIMIT_NOFILE to %d (from cur: %lu max: %lu)", noFds, rlim.rlim_cur, rlim.rlim_max);
+  Debug("Setting RLIMIT_NOFILE to %zu (from cur: %zu max: %zu)", noFds, rlim.rlim_cur, rlim.rlim_max);
 #endif
   rlim.rlim_cur = noFds;
   rlim.rlim_max = noFds;
   if (setrlimit(RLIMIT_NOFILE, &rlim) == -1) {
-    Error("setrlimit RLIMIT_NOFILE %d failed: %s", noFds, ErrnoString(err, sizeof(err)));
+    Error("setrlimit RLIMIT_NOFILE %zu failed: %s", noFds, ErrnoString(err, sizeof(err)));
     return FALSE;
   }
 
@@ -346,7 +349,7 @@ static int PrepareNoFds(void) {
     return TRUE;
   }
 
-  Error("Unable to increase the number of allowed open file descriptors. Needed fd's: %d, "
+  Error("Unable to increase the number of allowed open file descriptors. Needed fd's: %zu, "
 #ifdef __OpenBSD__
         "soft limit: %llu, hard limit: %llu."
 #else
