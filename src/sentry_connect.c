@@ -31,11 +31,11 @@ extern uint8_t g_isRunning;
 struct ConnectionData {
   uint16_t port;
   int family;
-  int protocol;
+  uint8_t protocol;
   int sockfd;
 };
 
-static int SetConnectionData(struct ConnectionData **cd, const size_t cdIdx, const uint16_t port, const int proto, const int family);
+static int SetConnectionData(struct ConnectionData **cd, const size_t cdIdx, const uint16_t port, const uint8_t proto, const int family);
 static nfds_t ConstructConnectionData(struct ConnectionData **cd);
 static void FreeConnectionData(struct ConnectionData **cd, nfds_t *cdSize);
 static int PrepareNoFds(void);
@@ -167,7 +167,7 @@ exit:
   return status;
 }
 
-static int SetConnectionData(struct ConnectionData **cd, const size_t cdIdx, const uint16_t port, const int proto, const int family) {
+static int SetConnectionData(struct ConnectionData **cd, const size_t cdIdx, const uint16_t port, const uint8_t proto, const int family) {
   int sockfd;
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
   assert(family == AF_INET || family == AF_INET6);
