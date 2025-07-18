@@ -21,7 +21,7 @@ struct IgnoreIp {
 
 struct IgnoreState {
   struct IgnoreIp *ignoreIpList;
-  int ignoreIpListSize;
+  size_t ignoreIpListSize;
   uint8_t isInitialized;
 };
 

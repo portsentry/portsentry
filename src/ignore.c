@@ -165,7 +165,7 @@ int InitIgnore(struct IgnoreState *is) {
   is->isInitialized = TRUE;
 
   if (configData.logFlags & LOGFLAG_VERBOSE) {
-    for (int i = 0; i < is->ignoreIpListSize; i++) {
+    for (size_t i = 0; i < is->ignoreIpListSize; i++) {
       if (is->ignoreIpList[i].family == AF_INET) {
         char ip[INET_ADDRSTRLEN];
         char mask[INET_ADDRSTRLEN];
@@ -204,7 +204,7 @@ int IgnoreIpIsPresent(const struct IgnoreState *is, const struct sockaddr *sa) {
     return ERROR;
   }
 
-  for (int i = 0; i < is->ignoreIpListSize; i++) {
+  for (size_t i = 0; i < is->ignoreIpListSize; i++) {
     if (is->ignoreIpList[i].family != sa->sa_family) {
       continue;
     }
