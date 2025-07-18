@@ -52,7 +52,8 @@ void ClearPacketInfo(struct PacketInfo *pi) {
 }
 
 int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, const uint32_t packetLength) {
-  int iplen, nextHeader;
+  size_t iplen;
+  uint8_t nextHeader;
   uint8_t protocol, ipVersion;
   struct ip6_ext *ip6ext;
   struct ip *ip = NULL;
@@ -114,7 +115,7 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
         return FALSE;
       }
 
-      uint32_t extlen = (ip6ext->ip6e_len * 8) + 8;
+      uint32_t extlen = ((uint32_t)ip6ext->ip6e_len * 8) + 8;
       if (iplen + extlen > packetLength) {
         Error("IPv6 extension header length exceeds packet bounds, ignoring");
         return FALSE;
@@ -192,7 +193,7 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
   return TRUE;
 }
 
-int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const int protocol, const int sockfd, const int incomingSockfd, const struct sockaddr_in *client4, const struct sockaddr_in6 *client6) {
+int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const uint8_t protocol, const int sockfd, const int incomingSockfd, const struct sockaddr_in *client4, const struct sockaddr_in6 *client6) {
   pi->protocol = protocol;
   pi->port = port;
   pi->version = (family == AF_INET) ? 4 : 6;
