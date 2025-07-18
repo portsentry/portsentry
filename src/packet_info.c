@@ -18,8 +18,8 @@
 
 #define IPV4_MAPPED_IPV6_PREFIX "::ffff:"
 
-static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const size_t buflen);
-static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const size_t buflen);
+static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const socklen_t buflen);
+static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const socklen_t buflen);
 
 // Create a lookup table for IPv6 extension headers
 static const uint8_t IPV6_EXT_HEADERS[] = {
@@ -231,7 +231,7 @@ int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, con
   return TRUE;
 }
 
-static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const size_t buflen) {
+static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const socklen_t buflen) {
   char err[ERRNOMAXBUF];
 
   if (sa == NULL || addr == NULL) {
@@ -258,7 +258,7 @@ static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uin
   return TRUE;
 }
 
-static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const size_t buflen) {
+static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const socklen_t buflen) {
   char err[ERRNOMAXBUF];
 
   if (sa6 == NULL || addr6 == NULL) {
