@@ -21,7 +21,7 @@
 #define BUFFER_TIMEOUT 2000
 
 static pcap_t *PcapOpenLiveImmediate(const char *source, const int snaplen, const int promisc, const int to_ms, char *errbuf);
-static char **RemoveElementFromArray(char **array, const int index, int *count);
+static char **RemoveElementFromArray(char **array, const size_t index, size_t *count);
 static char *AllocAndBuildPcapFilter(const struct Device *device);
 
 /* Heavily inspired by src/lib/libpcap/pcap-bpf.c from OpenBSD's pcap implementation.
@@ -59,12 +59,11 @@ fail:
   return (NULL);
 }
 
-static char **RemoveElementFromArray(char **array, const int index, int *count) {
+static char **RemoveElementFromArray(char **array, const size_t index, size_t *count) {
   char **tmp = array;
 
   assert(array != NULL);
   assert(count != NULL);
-  assert(index >= 0);
   assert(index < *count);
   assert(*count > 0);
 
@@ -72,7 +71,7 @@ static char **RemoveElementFromArray(char **array, const int index, int *count) 
 
   (*count)--;
 
-  for (int i = index; i < *count; i++) {
+  for (size_t i = index; i < *count; i++) {
     array[i] = array[i + 1];
   }
 
