@@ -88,8 +88,8 @@ static char **RemoveElementFromArray(char **array, const size_t index, size_t *c
 }
 
 static char *AllocAndBuildPcapFilter(const struct Device *device) {
-  int i;
-  int filterLen = 0;
+  size_t i;
+  size_t filterLen = 0;
   char *filter = NULL;
 
   assert(device != NULL);

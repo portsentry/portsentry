@@ -23,9 +23,9 @@ struct Device {
   enum DeviceState state;
 
   char **inet4_addrs;
-  int inet4_addrs_count;
+  size_t inet4_addrs_count;
   char **inet6_addrs;
-  int inet6_addrs_count;
+  size_t inet6_addrs_count;
 
   struct Device *next;
 };
