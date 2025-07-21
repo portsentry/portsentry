@@ -276,7 +276,7 @@ struct Device *FindDeviceByName(const struct ListenerModule *lm, const char *nam
 
 struct Device *FindDeviceByIpAddr(const struct ListenerModule *lm, const char *ip_addr) {
   struct Device *current;
-  int i;
+  size_t i;
 
   assert(lm != NULL);
   assert(ip_addr != NULL);
@@ -414,7 +414,7 @@ struct Device *GetDeviceByFd(const struct ListenerModule *lm, const int fd) {
 }
 
 static void PrintDevices(const struct ListenerModule *lm) {
-  int i;
+  size_t i;
   struct Device *current;
 
   if (lm == NULL) {
