@@ -113,7 +113,7 @@ int InitSentry(void) {
     return ERROR;
   }
 
-  if (bs.isInitialized == FALSE) {
+  if (bs.isInitialized == FALSE && strlen(configData.blockedFile) > 0) {
     int ret;
     ret = BlockedStateInit(&bs);
     if (ret == ERROR) {
@@ -202,12 +202,14 @@ void RunSentry(const struct PacketInfo *pi) {
     flagDontBlock = FALSE;
   }
 
-  if (IsBlocked(GetSourceSockaddrFromPacketInfo(pi), &bs) == FALSE) {
+  if (bs.isInitialized == FALSE || IsBlocked(GetSourceSockaddrFromPacketInfo(pi), &bs) == FALSE) {
     if (DisposeTarget(pi->saddr, pi->port, pi->protocol) != TRUE) {
       Error("attackalert: Error during target dispose %s/%s!", resolvedHost, pi->saddr);
       flagBlockSuccessful = FALSE;
     } else {
-      WriteBlockedFile(GetSourceSockaddrFromPacketInfo(pi), &bs);
+      if (bs.isInitialized == TRUE) {
+        WriteBlockedFile(GetSourceSockaddrFromPacketInfo(pi), &bs);
+      }
       flagBlockSuccessful = TRUE;
     }
   } else {
