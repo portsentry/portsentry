@@ -6,10 +6,6 @@
 #include <net/if.h>
 #include <pcap.h>
 
-#define HAVE_ETHERNET_HDR_FALSE 0
-#define HAVE_ETHERNET_HDR_TRUE 1
-#define HAVE_ETHERNET_HDR_UNKNOWN 2
-
 enum DeviceState {
   DEVICE_STATE_STOPPED = 0,
   DEVICE_STATE_RUNNING,
