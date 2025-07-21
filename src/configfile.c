@@ -318,10 +318,6 @@ static ssize_t GetSizeToQuote(const char *buffer) {
 
   valueSize = ptr - buffer;
 
-  if (valueSize == 0) {
-    return ERROR;
-  }
-
   return valueSize;
 }
 
