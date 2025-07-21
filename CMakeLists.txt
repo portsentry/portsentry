@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(portsentry VERSION 2.0.2)
+project(portsentry VERSION 2.0.3)
 include(CheckCCompilerFlag)
 
 option(BUILD_FUZZER "Build fuzzer tests" OFF)

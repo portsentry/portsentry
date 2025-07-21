@@ -1,5 +1,10 @@
 # Portsentry Changelog
 
+## 2025-07-21 2.0.3
+
+### Improvements
+- Added the ability to turn off the block cache. This enables Portsentry to always block and/or run commands on a triggered scan.
+
 ## 2025-06-24 2.0.2
 
 ### Improvements
