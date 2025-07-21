@@ -188,7 +188,7 @@ static char *AllocAndBuildPcapFilter(const struct Device *device) {
 
   filter = ReallocAndAppend(filter, &filterLen, ")");
 
-  Debug("Device: %s pcap filter len %d: [%s]", device->name, filterLen, filter);
+  Debug("Device: %s pcap filter len %zu: [%s]", device->name, filterLen, filter);
 
   return filter;
 }
@@ -218,7 +218,7 @@ struct Device *CreateDevice(const char *name) {
 
 int AddAddress(struct Device *device, const char *address, const int type) {
   char **addresses = NULL;
-  int addresses_count = 0;
+  size_t addresses_count = 0;
 
   assert(device != NULL);
   assert(address != NULL);
