@@ -170,7 +170,7 @@ static void SetConfiguration(const char *buffer, const size_t keySize, char *ptr
       Exit(EXIT_FAILURE);
     }
 
-    if (TestFileAccess(fileConfig->blockedFile, "a", TRUE) == FALSE) {
+    if (strlen(fileConfig->blockedFile) > 0 && TestFileAccess(fileConfig->blockedFile, "a", TRUE) == FALSE) {
       fprintf(stderr, "Unable to open block file for writing %s: %s\n", fileConfig->blockedFile, ErrnoString(err, sizeof(err)));
       Exit(EXIT_FAILURE);
     }
@@ -217,11 +217,6 @@ static void ValidateConfig(struct ConfigData *fileConfig) {
     Exit(EXIT_FAILURE);
   } else if (configData.sentryMode == SENTRY_MODE_CONNECT && fileConfig->tcpPortsLength == 0 && fileConfig->udpPortsLength == 0) {
     fprintf(stderr, "Selected mode: %s, but no TCP_PORTS or UDP_PORTS specified in config file\n", GetSentryModeString(configData.sentryMode));
-    Exit(EXIT_FAILURE);
-  }
-
-  if (strlen(fileConfig->blockedFile) == 0 && (fileConfig->blockTCP > 0 || fileConfig->blockUDP > 0)) {
-    fprintf(stderr, "No BLOCK_FILE specified while BLOCK_TCP and/or BLOCK_UDP is not 0 (logging only)\n");
     Exit(EXIT_FAILURE);
   }
 
@@ -325,10 +320,6 @@ static ssize_t GetSizeToQuote(const char *buffer) {
   }
 
   valueSize = ptr - buffer;
-
-  if (valueSize == 0) {
-    return ERROR;
-  }
 
   return valueSize;
 }
