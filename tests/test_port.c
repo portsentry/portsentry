@@ -118,6 +118,7 @@ void TestParsePort(void) {
   assert(ParsePort("abc", &port) == ERROR);           // Non-numeric
   assert(ParsePort("1000-abc", &port) == ERROR);      // Invalid range end
   assert(ParsePort("abc-2000", &port) == ERROR);      // Invalid range start
+  assert(ParsePort("2000-1000", &port) == ERROR);     // High number first
   assert(ParsePort("", &port) == ERROR);              // Empty string
   assert(ParsePort("123456789012", &port) == ERROR);  // Too long string
 }
