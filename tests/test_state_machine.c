@@ -14,7 +14,6 @@
 
 #include "../src/config_data.h"
 
-// Function prototypes
 struct sockaddr_in CreateIpv4Addr(const char *ip_str);
 struct sockaddr_in6 CreateIpv6Addr(const char *ip_str);
 void TestUninitializedState(void);

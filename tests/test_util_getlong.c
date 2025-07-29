@@ -4,7 +4,6 @@
 #include "../src/util.h"
 #include "../src/portsentry.h"
 
-// Function prototypes
 void TestGetLongValidNumbers(void);
 void TestGetLongNullInput(void);
 void TestGetLongInvalidInput(void);

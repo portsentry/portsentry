@@ -9,7 +9,6 @@
 #include "../src/util.h"
 #include "../src/portsentry.h"
 
-// Function prototypes
 void TestResetPort(void);
 void TestSetPortSingle(void);
 void TestSetPortRange(void);

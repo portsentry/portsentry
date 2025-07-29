@@ -6,7 +6,6 @@
 #include "../src/io.h"
 #include "../src/portsentry.h"
 
-// Function prototypes
 void TestSubstStringNormalCase(void);
 void TestSubstStringNoMatch(void);
 void TestSubstStringEmptyReplace(void);

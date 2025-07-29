@@ -4,7 +4,6 @@
 #include <assert.h>
 #include "../src/util.h"
 
-// Function prototypes
 void TestSafeStrncpyNormalCase(void);
 void TestSafeStrncpyNullDest(void);
 void TestSafeStrncpyZeroSize(void);
