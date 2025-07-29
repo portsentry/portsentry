@@ -32,7 +32,7 @@
 
 extern uint8_t g_isRunning;
 
-static int PacketRead(const int socket, char *buffer, const int bufferLen);
+static ssize_t PacketRead(const int socket, char *buffer, const size_t bufferLen);
 
 #ifdef FUZZ_SENTRY_STEALTH_PREP_PACKET
 uint8_t g_isRunning = TRUE;
@@ -48,11 +48,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 #endif
 
 int PortSentryStealthMode(void) {
-  int32_t packetLen;
-  int status = EXIT_FAILURE, result, nfds = NFDS, i;
+  ssize_t packetLen;
+  int status = EXIT_FAILURE, result;
   char packetBuffer[IP_MAXPACKET], err[ERRNOMAXBUF];
   struct pollfd fds[NFDS];
   struct PacketInfo pi;
+  size_t i;
+  nfds_t nfds = NFDS;
 
   assert(configData.sentryMode == SENTRY_MODE_STEALTH);
 
@@ -101,7 +103,7 @@ int PortSentryStealthMode(void) {
 
       ClearPacketInfo(&pi);
       pi.packetLength = IP_MAXPACKET;
-      if (SetPacketInfoFromPacket(&pi, (unsigned char *)packetBuffer, packetLen) != TRUE) {
+      if (SetPacketInfoFromPacket(&pi, (unsigned char *)packetBuffer, (uint32_t)packetLen) != TRUE) {
         continue;
       }
 
@@ -142,7 +144,7 @@ exit:
   return status;
 }
 
-static int PacketRead(const int socket, char *buffer, const int bufferLen) {
+static ssize_t PacketRead(const int socket, char *buffer, const size_t bufferLen) {
   char err[ERRNOMAXBUF];
   ssize_t result;
   struct sockaddr_ll sll;
