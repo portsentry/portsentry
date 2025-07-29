@@ -336,6 +336,8 @@ static int PrepareNoFds(void) {
 
 #ifdef __OpenBSD__
   Debug("Setting RLIMIT_NOFILE to %zu (from cur: %llu max: %llu)", noFds, rlim.rlim_cur, rlim.rlim_max);
+#elif defined(__arm__) || defined(__aarch64__)
+  Debug("Setting RLIMIT_NOFILE to %zu (from cur: %lu max: %lu)", noFds, rlim.rlim_cur, rlim.rlim_max);
 #else
   Debug("Setting RLIMIT_NOFILE to %zu (from cur: %zu max: %zu)", noFds, rlim.rlim_cur, rlim.rlim_max);
 #endif
@@ -358,6 +360,8 @@ static int PrepareNoFds(void) {
   Error("Unable to increase the number of allowed open file descriptors. Needed fd's: %zu, "
 #ifdef __OpenBSD__
         "soft limit: %llu, hard limit: %llu."
+#elif defined(__arm__) || defined(__aarch64__)
+        "soft limit: %lu, hard limit: %lu."
 #else
         "soft limit: %lu, hard limit: %lu."
 #endif
