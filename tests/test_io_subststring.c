@@ -6,6 +6,21 @@
 #include "../src/io.h"
 #include "../src/portsentry.h"
 
+// Function prototypes
+void TestSubstStringNormalCase(void);
+void TestSubstStringNoMatch(void);
+void TestSubstStringEmptyReplace(void);
+void TestSubstStringNullInputs(void);
+void TestSubstStringInvalidSize(void);
+void TestSubstStringEmptyFindToken(void);
+void TestSubstStringBufferOverflow(void);
+void TestSubstStringExactFit(void);
+void TestSubstStringMultipleReplacements(void);
+void TestSubstStringOverlappingTokens(void);
+void TestSubstStringSpecialCharacters(void);
+void TestSubstStringUnicodeSafe(void);
+void TestSubstStringBoundaryConditions(void);
+
 void TestSubstStringNormalCase(void) {
   char dest[100];
   const char *source = "Hello world, hello universe";

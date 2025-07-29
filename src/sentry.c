@@ -14,6 +14,7 @@
 #include "packet_info.h"
 #include "state_machine.h"
 #include "block.h"
+#include "sentry.h"
 
 #define MAX_BUF_SCAN_EVENT 1024
 

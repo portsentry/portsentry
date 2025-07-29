@@ -4,6 +4,14 @@
 #include <assert.h>
 #include "../src/util.h"
 
+// Function prototypes
+void TestSafeStrncpyNormalCase(void);
+void TestSafeStrncpyNullDest(void);
+void TestSafeStrncpyZeroSize(void);
+void TestSafeStrncpyExactSize(void);
+void TestSafeStrncpyTruncated(void);
+void TestSafeStrncpySecurity(void);
+
 void TestSafeStrncpyNormalCase(void) {
   char dest[10];
   const char *src = "test";

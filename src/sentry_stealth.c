@@ -27,6 +27,7 @@
 #include "io.h"
 #include "util.h"
 #include "sentry.h"
+#include "sentry_stealth.h"
 
 #define NFDS 2
 

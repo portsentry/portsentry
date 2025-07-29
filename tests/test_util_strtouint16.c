@@ -2,6 +2,8 @@
 #include "../src/util.h"
 #include "../src/portsentry.h"
 
+void TestStrToUint16(void);
+
 void TestStrToUint16(void) {
   uint16_t val;
 

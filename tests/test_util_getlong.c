@@ -4,6 +4,12 @@
 #include "../src/util.h"
 #include "../src/portsentry.h"
 
+// Function prototypes
+void TestGetLongValidNumbers(void);
+void TestGetLongNullInput(void);
+void TestGetLongInvalidInput(void);
+void TestGetLongBoundaryCases(void);
+
 void TestGetLongValidNumbers(void) {
   assert(GetLong("123") == 123);
   assert(GetLong("0") == 0);

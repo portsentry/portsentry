@@ -4,6 +4,8 @@
 #include <limits.h>
 #include "../src/util.h"
 
+void TestReallocAndAppend(void);
+
 void TestReallocAndAppend(void) {
   size_t len = 0;
   char *buf = NULL;
