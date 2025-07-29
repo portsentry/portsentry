@@ -5,7 +5,7 @@
 #include "../src/util.h"
 
 void TestReallocAndAppend(void) {
-  int len = 0;
+  size_t len = 0;
   char *buf = NULL;
 
   buf = ReallocAndAppend(buf, &len, "Hello %s", "World");

@@ -129,7 +129,7 @@ void TestGetNoPorts(void) {
   SetPortRange(&ports[1], 1000, 2000);
   SetPortSingle(&ports[2], 443);
 
-  int count = GetNoPorts(ports, 3);
+  size_t count = GetNoPorts(ports, 3);
   assert(count == 1003);  // 1 + (2000-1000+1) + 1
 
   assert(GetNoPorts(NULL, 0) == 0);
