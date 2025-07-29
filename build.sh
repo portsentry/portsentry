@@ -59,9 +59,6 @@ elif [ "$ACTION" = "docker_export" ]; then
     new_name=$(echo $f |sed "s/-Linux\./-$(basename $(dirname $f))\./")
     mv -v "$f" "$new_name"
   done
-
-elif [ "$ACTION" = "package" ]; then
-  do_package $2
 elif [ "$ACTION" = "build_test" ]; then
   ./build.sh clean && \
   CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh release
