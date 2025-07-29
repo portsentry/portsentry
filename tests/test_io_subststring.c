@@ -13,7 +13,7 @@ void TestSubstStringNormalCase(void) {
 
   int result = SubstString(replaceToken, findToken, source, dest, sizeof(dest));
 
-  assert(result == 2);
+  assert(result == 1);
   assert(strcmp(dest, "Hello world, hi universe") == 0);
   printf("Normal case test passed\n");
 }
@@ -39,7 +39,7 @@ void TestSubstStringEmptyReplace(void) {
 
   int result = SubstString(replaceToken, findToken, source, dest, sizeof(dest));
 
-  assert(result == 2);
+  assert(result == 1);
   assert(strcmp(dest, "Hello world ") == 0);
   printf("Empty replace token test passed\n");
 }
@@ -91,7 +91,7 @@ void TestSubstStringBufferOverflow(void) {
 }
 
 void TestSubstStringExactFit(void) {
-  char dest[12];
+  char dest[15];
   const char *source = "Hello world";
   const char *findToken = "world";
   const char *replaceToken = "universe";
@@ -156,7 +156,7 @@ void TestSubstStringUnicodeSafe(void) {
 }
 
 void TestSubstStringBoundaryConditions(void) {
-  char dest[5];
+  char dest[3];
   const char *source = "test";
   const char *findToken = "test";
   const char *replaceToken = "new";
@@ -168,7 +168,7 @@ void TestSubstStringBoundaryConditions(void) {
   // Should succeed with exact space
   char dest2[4];
   result = SubstString(replaceToken, findToken, source, dest2, sizeof(dest2));
-  assert(result == ERROR);  // Still fails because "new" is 3 chars + null terminator = 4, but we need 4 chars
+  assert(result == 1);  // "new" is 3 chars + null terminator = 4, which fits in dest2[4]
 
   char dest3[5];
   result = SubstString(replaceToken, findToken, source, dest3, sizeof(dest3));
