@@ -61,14 +61,12 @@ elif [ "$ACTION" = "docker_export" ]; then
   done
 elif [ "$ACTION" = "build_test" ]; then
   ./build.sh clean && \
-  CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh release
+  CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh debug
 elif [ "$ACTION" = "run_test" ]; then
   if [ -d "debug" ]; then
     ctest --test-dir debug
-  elif [ -d "release" ]; then
-    ctest --test-dir release
   else
-    echo "No build directories (debug or release) found"
+    echo "No debug build directory found"
     exit 1
   fi
 else
