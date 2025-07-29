@@ -45,11 +45,6 @@ static int IgnoreParse(const char *buffer, struct IgnoreIp *ignoreIp) {
       Error("Invalid netmask in ignore file: %s", buffer);
       goto exit;
     }
-
-    if (mask < 0 || mask > 128) {
-      Error("Invalid netmask in ignore file, must be 0-128: %s", buffer);
-      goto exit;
-    }
   }
 
   memset(&hints, 0, sizeof(struct addrinfo));
@@ -69,6 +64,10 @@ static int IgnoreParse(const char *buffer, struct IgnoreIp *ignoreIp) {
     if (mask == -1) {
       ignoreIp->mask.mask4.s_addr = 0xffffffff;
     } else {
+      if (mask < 0 || mask > 32) {
+        Error("Invalid netmask in ignore file, must be 0-32: %s", buffer);
+        goto exit;
+      }
       ignoreIp->mask.mask4.s_addr = htonl(0xffffffff << (32 - mask));
     }
   } else if (res->ai_family == AF_INET6) {
@@ -77,6 +76,10 @@ static int IgnoreParse(const char *buffer, struct IgnoreIp *ignoreIp) {
     if (mask == -1) {
       memset(&ignoreIp->mask.mask6, 0xff, sizeof(struct in6_addr));
     } else {
+      if (mask < 0 || mask > 128) {
+        Error("Invalid netmask in ignore file, must be 0-128: %s", buffer);
+        goto exit;
+      }
       memset(&ignoreIp->mask.mask6, 0, sizeof(struct in6_addr));
       for (int i = 0; i < 16; i++) {
         if (mask >= 8) {
