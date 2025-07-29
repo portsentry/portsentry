@@ -241,8 +241,19 @@ static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule 
                        .msg_namelen = sizeof(sa),
                        .msg_iov = &iov,
                        .msg_iovlen = 1};
+  char err[ERRNOMAXBUF];
+  size_t len;
+  ssize_t ret = recvmsg(kernel_socket, &msg, 0);
 
-  ssize_t len = recvmsg(kernel_socket, &msg, 0);
+  if (ret < 0) {
+    Error("Failed to receive routing message: %s", ErrnoString(err, sizeof(err)));
+    return;
+  } else if (ret == 0) {
+    Debug("Received 0 bytes from kernel socket");
+    return;
+  }
+
+  len = (size_t)ret;
 
   for (nh = (struct nlmsghdr *)buf; NLMSG_OK(nh, len); nh = NLMSG_NEXT(nh, len)) {
     if (ParseKernelMessage(nh, &kernelMessage) != TRUE) {
