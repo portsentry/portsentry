@@ -86,7 +86,14 @@ int ParsePort(const char *portString, struct Port *port) {
       return ERROR;
     }
 
-    SetPortRange(port, start, end);
+    if (start > end) {
+      Error("Invalid port range: %s, start port must be less than or equal to end port", portString);
+      return ERROR;
+    } else if (start == end) {
+      SetPortSingle(port, start);
+    } else {
+      SetPortRange(port, start, end);
+    }
   } else {
     if (StrToUint16_t(ps, &single) == FALSE) {
       Error("Unable to extract single port: %s", portString);
