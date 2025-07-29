@@ -14,6 +14,16 @@
 
 #include "../src/config_data.h"
 
+struct sockaddr_in CreateIpv4Addr(const char *ip_str);
+struct sockaddr_in6 CreateIpv6Addr(const char *ip_str);
+void TestUninitializedState(void);
+void TestTriggerCountZero(void);
+void TestIpv4TriggerLogic(void);
+void TestIpv4Eviction(void);
+void TestIpv6TriggerLogic(void);
+void TestIpv6Eviction(void);
+void TestUnsupportedFamily(void);
+
 struct sockaddr_in CreateIpv4Addr(const char *ip_str) {
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));

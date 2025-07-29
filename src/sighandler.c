@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "portsentry.h"
+#include "sighandler.h"
 
 extern uint8_t g_isRunning;
 

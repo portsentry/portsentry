@@ -9,6 +9,15 @@
 #include "../src/util.h"
 #include "../src/portsentry.h"
 
+void TestResetPort(void);
+void TestSetPortSingle(void);
+void TestSetPortRange(void);
+void TestIsPortPresent(void);
+void TestIsPortInRange(void);
+void TestIsPortSingle(void);
+void TestParsePort(void);
+void TestGetNoPorts(void);
+
 void TestResetPort(void) {
   struct Port port;
 
