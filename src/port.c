@@ -28,8 +28,8 @@ void SetPortRange(struct Port *port, const uint16_t start, const uint16_t end) {
   port->range.end = end;
 }
 
-int IsPortPresent(const struct Port *port, const int portLength, const uint16_t portNumber) {
-  int i;
+int IsPortPresent(const struct Port *port, const size_t portLength, const uint16_t portNumber) {
+  size_t i;
 
   for (i = 0; i < portLength; i++) {
     if (IsPortInRange(&port[i], portNumber) == TRUE) {
