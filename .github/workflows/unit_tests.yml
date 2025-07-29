@@ -17,10 +17,14 @@ jobs:
         sudo apt-get update
         sudo apt-get install libpcap-dev nmap
 
-# Since debug builds have asserts, tests might not be accurate and/or fail
-# in debug builds. release build should provide better results.
-    - name: Build
-      run: ./build.sh build_test
+    - name: clean
+      run: ./build.sh clean
 
-    - name: Run Unit Tests
-      run: ./build.sh run_test
+    - name: debug build with tests enabled
+      run: CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh debug
+
+    - name: release build with tests enabled
+      run: CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh release
+
+    - name: run unit tests
+      run: ctest --test-dir debug && ctest --test-dir release

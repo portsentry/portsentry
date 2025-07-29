@@ -17,5 +17,20 @@ jobs:
         sudo apt-get update
         sudo apt-get install libpcap-dev
 
-    - name: Build
+    - name: clean
+      run: ./build.sh clean
+
+    - name: debug build
+      run: ./build.sh debug
+
+    - name: release build
       run: ./build.sh release
+
+    - name: clean
+      run: ./build.sh clean
+
+    - name: debug build with pcap disabled
+      run: CMAKE_OPTS="-D USE_PCAP=OFF" ./build.sh debug
+
+    - name: release build with pcap disabled
+      run: CMAKE_OPTS="-D USE_PCAP=OFF" ./build.sh release
