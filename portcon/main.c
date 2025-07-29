@@ -16,7 +16,8 @@
 #define BUF_SIZE 1024
 
 int main(int argc, char **argv) {
-  int protocol, sock, result;
+  int protocol, sock;
+  ssize_t result;
   uint16_t port;
   char buf[BUF_SIZE];
   struct sockaddr_in addr;
@@ -28,7 +29,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  port = atoi(argv[1]);
+  port = (uint16_t)atoi(argv[1]);  // yolo
 
   if (strncmp("tcp", argv[2], 3) == 0) {
     protocol = IPPROTO_TCP;
