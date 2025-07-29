@@ -69,6 +69,18 @@ elif [ "$ACTION" = "run_test" ]; then
     echo "No debug build directory found"
     exit 1
   fi
+elif [ "$ACTION" = "test_all" ]; then
+  ./build.sh clean && \
+  CMAKE_OPTS="-D USE_PCAP=OFF" ./build.sh debug && \
+  CMAKE_OPTS="-D USE_PCAP=OFF" ./build.sh release && \
+  ./build.sh clean && \
+  CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh debug && \
+  CMAKE_OPTS="-D BUILD_TESTS=ON" ./build.sh release && \
+  ctest --test-dir debug && \
+  ctest --test-dir release
+  (command -v docker >/dev/null 2>&1 && ./build.sh docker)
+  cd system_test
+  ./run_all_tests.sh
 else
   echo "Usage: $0 <command>"
   echo "Commands:"

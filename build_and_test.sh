@@ -9,9 +9,9 @@ fi
 
 # Build on all remote hosts in parallel
 for host in $REMOTE_HOSTS; do
-  ssh $host "rm -rf /tmp/portsentry"
-  rsync -az -e ssh ../portsentry $host:/tmp/
-  ssh $host "cd /tmp/portsentry && ./build.sh clean && ./build.sh $BUILD_TYPE"
+  echo "Uploading to $host"
+  ssh root@$host "rm -rf /tmp/portsentry"
+  rsync -az -e ssh ../portsentry root@$host:/tmp/
 done
 
 # Run tests
@@ -26,22 +26,22 @@ sleep 1
 
 tmux select-pane -t 0
 sleep 1
-tmux send-keys 'ssh root@deb-portsentry rat.sh' C-m
+tmux send-keys 'ssh root@deb-portsentry "cd /tmp/portsentry && ./build.sh test_all"' C-m
 sleep 1
 
 tmux select-pane -t 1
 sleep 1
-tmux send-keys 'ssh root@netbsd /usr/sbin/rat.sh' C-m
+tmux send-keys 'ssh root@netbsd "cd /tmp/portsentry && ./build.sh test_all"' C-m
 sleep 1
 
 tmux select-pane -t 2
 sleep 1
-tmux send-keys 'ssh root@freebsd rat.sh' C-m
+tmux send-keys 'ssh root@freebsd "cd /tmp/portsentry && ./build.sh test_all"' C-m
 sleep 1
 
 tmux select-pane -t 3
 sleep 1
-tmux send-keys 'ssh root@openbsd rat.sh' C-m
+tmux send-keys 'ssh root@openbsd "cd /tmp/portsentry && ./build.sh test_all"' C-m
 sleep 1
 
 tmux a
