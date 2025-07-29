@@ -5,6 +5,7 @@
 #pragma once
 #include <net/if.h>
 #include <pcap.h>
+#include <poll.h>
 
 struct ListenerModule {
   struct Device *root;
