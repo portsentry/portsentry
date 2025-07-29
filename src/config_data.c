@@ -13,6 +13,13 @@
 #include "portsentry.h"
 #include "util.h"
 
+// Define the constants that are declared as extern in the header
+const uint8_t LOGFLAG_NONE = 0x00;
+const uint8_t LOGFLAG_DEBUG = 0x1;
+const uint8_t LOGFLAG_VERBOSE = 0x2;
+const uint8_t LOGFLAG_OUTPUT_STDOUT = 0x4;
+const uint8_t LOGFLAG_OUTPUT_SYSLOG = 0x8;
+
 struct ConfigData configData;
 
 static char *GetSentryMethodString(const enum SentryMethod sentryMethod);
@@ -32,7 +39,7 @@ void PostProcessConfig(struct ConfigData *cd) {
   }
 
   if (cd->daemon == TRUE) {
-    cd->logFlags &= ~LOGFLAG_OUTPUT_STDOUT;
+    cd->logFlags &= (uint8_t)~LOGFLAG_OUTPUT_STDOUT;
     cd->logFlags |= LOGFLAG_OUTPUT_SYSLOG;
   }
 
@@ -68,22 +75,22 @@ void PrintConfigData(const struct ConfigData cd) {
     printf("debug: [no interfaces set]\n");
   }
 
-  printf("debug: tcpPorts (%d): ", cd.tcpPortsLength);
-  for (i = 0; i < cd.tcpPortsLength; i++) {
-    if (IsPortSingle(&cd.tcpPorts[i])) {
-      printf("%d ", cd.tcpPorts[i].single);
+  printf("debug: tcpPorts (%zu): ", cd.tcpPortsLength);
+  for (size_t j = 0; j < cd.tcpPortsLength; j++) {
+    if (IsPortSingle(&cd.tcpPorts[j])) {
+      printf("%d ", cd.tcpPorts[j].single);
     } else {
-      printf("%d-%d ", cd.tcpPorts[i].range.start, cd.tcpPorts[i].range.end);
+      printf("%d-%d ", cd.tcpPorts[j].range.start, cd.tcpPorts[j].range.end);
     }
   }
   printf("\n");
 
-  printf("debug: udpPorts (%d): ", cd.udpPortsLength);
-  for (i = 0; i < cd.udpPortsLength; i++) {
-    if (IsPortSingle(&cd.udpPorts[i])) {
-      printf("%d ", cd.udpPorts[i].single);
+  printf("debug: udpPorts (%zu): ", cd.udpPortsLength);
+  for (size_t j = 0; j < cd.udpPortsLength; j++) {
+    if (IsPortSingle(&cd.udpPorts[j])) {
+      printf("%d ", cd.udpPorts[j].single);
     } else {
-      printf("%d-%d ", cd.udpPorts[i].range.start, cd.udpPorts[i].range.end);
+      printf("%d-%d ", cd.udpPorts[j].range.start, cd.udpPorts[j].range.end);
     }
   }
   printf("\n");
@@ -138,7 +145,7 @@ static char *GetSentryMethodString(const enum SentryMethod sentryMethod) {
 }
 
 int AddInterface(struct ConfigData *cd, const char *interface) {
-  int noInterfaces;
+  size_t noInterfaces;
 
   if (strlen(interface) >= IF_NAMESIZE) {
     fprintf(stderr, "Error: Interface name %s too long\n", interface);
@@ -160,8 +167,8 @@ int AddInterface(struct ConfigData *cd, const char *interface) {
   return TRUE;
 }
 
-int GetNoInterfaces(const struct ConfigData *cd) {
-  int i = 0;
+size_t GetNoInterfaces(const struct ConfigData *cd) {
+  size_t i = 0;
 
   if (cd->interfaces == NULL) {
     return 0;

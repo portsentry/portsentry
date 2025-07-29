@@ -18,8 +18,8 @@
 
 #define IPV4_MAPPED_IPV6_PREFIX "::ffff:"
 
-static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const size_t buflen);
-static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const size_t buflen);
+static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const socklen_t buflen);
+static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const socklen_t buflen);
 
 // Create a lookup table for IPv6 extension headers
 static const uint8_t IPV6_EXT_HEADERS[] = {
@@ -52,7 +52,8 @@ void ClearPacketInfo(struct PacketInfo *pi) {
 }
 
 int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, const uint32_t packetLength) {
-  int iplen, nextHeader;
+  size_t iplen;
+  uint8_t nextHeader;
   uint8_t protocol, ipVersion;
   struct ip6_ext *ip6ext;
   struct ip *ip = NULL;
@@ -114,7 +115,7 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
         return FALSE;
       }
 
-      uint32_t extlen = (ip6ext->ip6e_len * 8) + 8;
+      uint32_t extlen = ((uint32_t)ip6ext->ip6e_len * 8) + 8;
       if (iplen + extlen > packetLength) {
         Error("IPv6 extension header length exceeds packet bounds, ignoring");
         return FALSE;
@@ -192,7 +193,7 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
   return TRUE;
 }
 
-int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const int protocol, const int sockfd, const int incomingSockfd, const struct sockaddr_in *client4, const struct sockaddr_in6 *client6) {
+int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const uint8_t protocol, const int sockfd, const int incomingSockfd, const struct sockaddr_in *client4, const struct sockaddr_in6 *client6) {
   pi->protocol = protocol;
   pi->port = port;
   pi->version = (family == AF_INET) ? 4 : 6;
@@ -230,7 +231,7 @@ int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, con
   return TRUE;
 }
 
-static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const size_t buflen) {
+static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uint16_t port, char *buf, const socklen_t buflen) {
   char err[ERRNOMAXBUF];
 
   if (sa == NULL || addr == NULL) {
@@ -257,7 +258,7 @@ static int SetSockaddr4(struct sockaddr_in *sa, const in_addr_t *addr, const uin
   return TRUE;
 }
 
-static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const size_t buflen) {
+static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, const uint16_t port, char *buf, const socklen_t buflen) {
   char err[ERRNOMAXBUF];
 
   if (sa6 == NULL || addr6 == NULL) {

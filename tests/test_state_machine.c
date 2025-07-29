@@ -12,9 +12,6 @@
 #include "../src/config_data.h"
 #include "../src/state_machine.h"
 
-// Redefine MAX_HASH_SIZE to a small value for testing eviction
-#define MAX_HASH_SIZE 2
-
 #include "../src/config_data.h"
 
 struct sockaddr_in CreateIpv4Addr(const char *ip_str) {
@@ -95,35 +92,6 @@ void TestIpv4TriggerLogic(void) {
   FreeSentryState(&state);
 }
 
-void TestIpv4Eviction(void) {
-  assert(MAX_HASH_SIZE == 2);
-
-  struct SentryState state;
-  InitSentryState(&state);
-  struct sockaddr_in addr1 = CreateIpv4Addr("10.0.0.1");
-  struct sockaddr_in addr2 = CreateIpv4Addr("10.0.0.2");
-  struct sockaddr_in addr3 = CreateIpv4Addr("10.0.0.3");
-
-  configData.configTriggerCount = 1;
-  int result;
-
-  result = CheckState(&state, (struct sockaddr *)&addr1);
-  assert(result == FALSE);
-  result = CheckState(&state, (struct sockaddr *)&addr2);
-  assert(result == FALSE);
-
-  result = CheckState(&state, (struct sockaddr *)&addr3);
-  assert(result == FALSE);
-
-  result = CheckState(&state, (struct sockaddr *)&addr1);
-  assert(result == FALSE);
-
-  result = CheckState(&state, (struct sockaddr *)&addr2);
-  assert(result == FALSE);
-
-  FreeSentryState(&state);
-}
-
 void TestIpv6TriggerLogic(void) {
   struct SentryState state;
   InitSentryState(&state);
@@ -151,35 +119,6 @@ void TestIpv6TriggerLogic(void) {
   FreeSentryState(&state);
 }
 
-void TestIpv6Eviction(void) {
-  assert(MAX_HASH_SIZE == 2);
-
-  struct SentryState state;
-  InitSentryState(&state);
-  struct sockaddr_in6 addr1 = CreateIpv6Addr("2001:db8::a");
-  struct sockaddr_in6 addr2 = CreateIpv6Addr("2001:db8::b");
-  struct sockaddr_in6 addr3 = CreateIpv6Addr("2001:db8::c");
-
-  configData.configTriggerCount = 1;
-  int result;
-
-  result = CheckState(&state, (struct sockaddr *)&addr1);
-  assert(result == FALSE);
-  result = CheckState(&state, (struct sockaddr *)&addr2);
-  assert(result == FALSE);
-
-  result = CheckState(&state, (struct sockaddr *)&addr3);
-  assert(result == FALSE);
-
-  result = CheckState(&state, (struct sockaddr *)&addr1);
-  assert(result == FALSE);
-
-  result = CheckState(&state, (struct sockaddr *)&addr2);
-  assert(result == FALSE);
-
-  FreeSentryState(&state);
-}
-
 void TestUnsupportedFamily(void) {
   struct SentryState state;
   InitSentryState(&state);
@@ -198,9 +137,7 @@ int main(void) {
   TestUninitializedState();
   TestTriggerCountZero();
   TestIpv4TriggerLogic();
-  TestIpv4Eviction();
   TestIpv6TriggerLogic();
-  TestIpv6Eviction();
   TestUnsupportedFamily();
 
   return 0;

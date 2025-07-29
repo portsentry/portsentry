@@ -28,8 +28,8 @@ void SetPortRange(struct Port *port, const uint16_t start, const uint16_t end) {
   port->range.end = end;
 }
 
-int IsPortPresent(const struct Port *port, const int portLength, const uint16_t portNumber) {
-  int i;
+int IsPortPresent(const struct Port *port, const size_t portLength, const uint16_t portNumber) {
+  size_t i;
 
   for (i = 0; i < portLength; i++) {
     if (IsPortInRange(&port[i], portNumber) == TRUE) {
@@ -86,7 +86,14 @@ int ParsePort(const char *portString, struct Port *port) {
       return ERROR;
     }
 
-    SetPortRange(port, start, end);
+    if (start > end) {
+      Error("Invalid port range: %s, start port must be less than or equal to end port", portString);
+      return ERROR;
+    } else if (start == end) {
+      SetPortSingle(port, start);
+    } else {
+      SetPortRange(port, start, end);
+    }
   } else {
     if (StrToUint16_t(ps, &single) == FALSE) {
       Error("Unable to extract single port: %s", portString);
@@ -103,15 +110,15 @@ int ParsePort(const char *portString, struct Port *port) {
   return TRUE;
 }
 
-int GetNoPorts(const struct Port *port, const int portLength) {
-  int i;
-  int noPorts = 0;
+size_t GetNoPorts(const struct Port *port, const size_t portLength) {
+  size_t i;
+  size_t noPorts = 0;
 
   for (i = 0; i < portLength; i++) {
     if (IsPortSingle(&port[i])) {
       noPorts++;
     } else {
-      noPorts += port[i].range.end - port[i].range.start + 1;
+      noPorts += (size_t)(port[i].range.end - port[i].range.start + 1);
     }
   }
 

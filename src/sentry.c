@@ -25,7 +25,8 @@ static struct SentryState ss = {0};
 static void LogScanEvent(const char *target, const char *resolvedHost, const int protocol, const uint16_t port, const struct ip *ip, const struct tcphdr *tcp, const int flagIgnored, const int flagTriggerCountExceeded, const int flagDontBlock, const int flagBlockSuccessful);
 
 static void LogScanEvent(const char *target, const char *resolvedHost, const int protocol, const uint16_t port, const struct ip *ip, const struct tcphdr *tcp, const int flagIgnored, const int flagTriggerCountExceeded, const int flagDontBlock, const int flagBlockSuccessful) {
-  int ret, bufsize = MAX_BUF_SCAN_EVENT;
+  int ret;
+  size_t bufsize = MAX_BUF_SCAN_EVENT;
   char buf[MAX_BUF_SCAN_EVENT], *p = buf;
   char err[ERRNOMAXBUF];
   FILE *output;
@@ -64,7 +65,14 @@ static void LogScanEvent(const char *target, const char *resolvedHost, const int
                  (flagBlockSuccessful == TRUE) ? "true" : (flagBlockSuccessful == -100) ? "unset"
                                                                                         : "false");
 
-  if (ret >= bufsize) {
+  if (ret < 0) {
+    Error("Unable to log scan event: %s", ErrnoString(err, sizeof(err)));
+    return;
+  }
+
+  size_t len = (size_t)ret;
+
+  if (len >= bufsize) {
     Error("Unable to log scan event due to internal buffer too small");
     return;
   }
@@ -77,18 +85,25 @@ static void LogScanEvent(const char *target, const char *resolvedHost, const int
     return;
   }
 
-  bufsize -= ret;
-  p += ret;
+  bufsize -= len;
+  p += len;
 
   ret = snprintf(p, bufsize, "\n");
 
-  if (ret >= bufsize) {
+  if (ret < 0) {
+    Error("Unable to add newline to scan event: %s", ErrnoString(err, sizeof(err)));
+    return;
+  }
+
+  len = (size_t)ret;
+
+  if (len >= bufsize) {
     Error("Unable to add newline to scan event due to internal buffer too small");
     return;
   }
 
-  bufsize -= ret;
-  p += ret;
+  bufsize -= len;
+  p += len;
 
   if ((output = fopen(configData.historyFile, "a")) == NULL) {
     Log("Unable to open history log file: %s (%s)", configData.historyFile, ErrnoString(err, sizeof(err)));

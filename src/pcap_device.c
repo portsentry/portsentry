@@ -21,7 +21,7 @@
 #define BUFFER_TIMEOUT 2000
 
 static pcap_t *PcapOpenLiveImmediate(const char *source, const int snaplen, const int promisc, const int to_ms, char *errbuf);
-static char **RemoveElementFromArray(char **array, const int index, int *count);
+static char **RemoveElementFromArray(char **array, const size_t index, size_t *count);
 static char *AllocAndBuildPcapFilter(const struct Device *device);
 
 /* Heavily inspired by src/lib/libpcap/pcap-bpf.c from OpenBSD's pcap implementation.
@@ -59,12 +59,11 @@ fail:
   return (NULL);
 }
 
-static char **RemoveElementFromArray(char **array, const int index, int *count) {
+static char **RemoveElementFromArray(char **array, const size_t index, size_t *count) {
   char **tmp = array;
 
   assert(array != NULL);
   assert(count != NULL);
-  assert(index >= 0);
   assert(index < *count);
   assert(*count > 0);
 
@@ -72,7 +71,7 @@ static char **RemoveElementFromArray(char **array, const int index, int *count) 
 
   (*count)--;
 
-  for (int i = index; i < *count; i++) {
+  for (size_t i = index; i < *count; i++) {
     array[i] = array[i + 1];
   }
 
@@ -89,8 +88,8 @@ static char **RemoveElementFromArray(char **array, const int index, int *count) 
 }
 
 static char *AllocAndBuildPcapFilter(const struct Device *device) {
-  int i;
-  int filterLen = 0;
+  size_t i;
+  size_t filterLen = 0;
   char *filter = NULL;
 
   assert(device != NULL);
@@ -189,7 +188,7 @@ static char *AllocAndBuildPcapFilter(const struct Device *device) {
 
   filter = ReallocAndAppend(filter, &filterLen, ")");
 
-  Debug("Device: %s pcap filter len %d: [%s]", device->name, filterLen, filter);
+  Debug("Device: %s pcap filter len %zu: [%s]", device->name, filterLen, filter);
 
   return filter;
 }
@@ -219,7 +218,7 @@ struct Device *CreateDevice(const char *name) {
 
 int AddAddress(struct Device *device, const char *address, const int type) {
   char **addresses = NULL;
-  int addresses_count = 0;
+  size_t addresses_count = 0;
 
   assert(device != NULL);
   assert(address != NULL);
@@ -288,9 +287,8 @@ int AddAddress(struct Device *device, const char *address, const int type) {
 }
 
 int AddressExists(const struct Device *device, const char *address, const int type) {
-  int i;
+  size_t i, addresses_count = 0;
   char **addresses = NULL;
-  int addresses_count = 0;
 
   assert(device != NULL);
   assert(address != NULL);
@@ -315,23 +313,25 @@ int AddressExists(const struct Device *device, const char *address, const int ty
   return FALSE;
 }
 
-int GetNoAddresses(const struct Device *device) {
+size_t GetNoAddresses(const struct Device *device) {
   assert(device != NULL);
   return device->inet4_addrs_count + device->inet6_addrs_count;
 }
 
 int RemoveAddress(struct Device *device, const char *address) {
+  size_t i;
+
   assert(device != NULL);
   assert(address != NULL);
 
-  for (int i = 0; i < device->inet4_addrs_count; i++) {
+  for (i = 0; i < device->inet4_addrs_count; i++) {
     if (strcmp(device->inet4_addrs[i], address) == 0) {
       device->inet4_addrs = RemoveElementFromArray(device->inet4_addrs, i, &device->inet4_addrs_count);
       return TRUE;
     }
   }
 
-  for (int i = 0; i < device->inet6_addrs_count; i++) {
+  for (i = 0; i < device->inet6_addrs_count; i++) {
     if (strcmp(device->inet6_addrs[i], address) == 0) {
       device->inet6_addrs = RemoveElementFromArray(device->inet6_addrs, i, &device->inet6_addrs_count);
       return TRUE;
@@ -342,10 +342,12 @@ int RemoveAddress(struct Device *device, const char *address) {
 }
 
 void RemoveAllAddresses(struct Device *device) {
+  size_t i;
+
   assert(device != NULL);
 
   if (device->inet4_addrs != NULL) {
-    for (int i = 0; i < device->inet4_addrs_count; i++) {
+    for (i = 0; i < device->inet4_addrs_count; i++) {
       free(device->inet4_addrs[i]);
     }
     free(device->inet4_addrs);
@@ -354,7 +356,7 @@ void RemoveAllAddresses(struct Device *device) {
   }
 
   if (device->inet6_addrs != NULL) {
-    for (int i = 0; i < device->inet6_addrs_count; i++) {
+    for (i = 0; i < device->inet6_addrs_count; i++) {
       free(device->inet6_addrs[i]);
     }
     free(device->inet6_addrs);
@@ -426,7 +428,7 @@ cleanup:
 }
 
 uint8_t FreeDevice(struct Device *device) {
-  int i;
+  size_t i;
 
   if (device == NULL) {
     return FALSE;
@@ -478,7 +480,7 @@ uint8_t StopDevice(struct Device *device) {
   return TRUE;
 }
 
-uint8_t StartDevice(struct Device *device) {
+int StartDevice(struct Device *device) {
   int status = ERROR;
   char errbuf[PCAP_ERRBUF_SIZE];
 

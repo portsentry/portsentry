@@ -69,7 +69,7 @@ int ParseKernelMessage(const struct nlmsghdr *nh, struct KernelMessage *kernelMe
 static int ParseInterface(const struct nlmsghdr *nh, struct KernelMessage *kernelMessage) {
   struct ifinfomsg *ifi = NLMSG_DATA(nh);
   struct rtattr *rta;
-  int payload_len = RTM_PAYLOAD(nh);
+  size_t payload_len = RTM_PAYLOAD(nh);
 
   kernelMessage->type = KMT_INTERFACE;
   kernelMessage->action = nh->nlmsg_type == RTM_NEWLINK ? KMA_ADD : KMA_DEL;
@@ -91,7 +91,7 @@ static int ParseInterface(const struct nlmsghdr *nh, struct KernelMessage *kerne
 static int ParseAddress(const struct nlmsghdr *nh, struct KernelMessage *kernelMessage) {
   struct ifaddrmsg *ifa = NLMSG_DATA(nh);
   struct rtattr *rta;
-  int payload_len = RTM_PAYLOAD(nh);
+  size_t payload_len = RTM_PAYLOAD(nh);
   int target_type = (ifa->ifa_family == AF_INET6) ? IFA_ADDRESS : IFA_LOCAL;
 
   kernelMessage->type = KMT_ADDRESS;

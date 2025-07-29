@@ -141,7 +141,7 @@ void Exit(const int status) {
   exit(status);
 }
 
-int BindSocket(const int sockfd, const int family, const int port, const int proto) {
+int BindSocket(const int sockfd, const int family, const uint16_t port, const int proto) {
   char err[ERRNOMAXBUF];
   struct sockaddr_in6 sin6;
   struct sockaddr_in sin4;
@@ -504,62 +504,67 @@ exit:
  * dest - The destination string to copy to.
  * destSize - The size of the destination buffer.
  *
- * It returns the number of substitutions made during the operation.
+ * Returns the number of substitutions made during the operation.
+ * Returns ERROR on failure.
  **********************************************************************************/
 int SubstString(const char *replaceToken, const char *findToken, const char *source, char *dest, const int destSize) {
-  // Input validation
-  if (!replaceToken || !findToken || !source || !dest || destSize <= 0) {
+  if (replaceToken == NULL || findToken == NULL || source == NULL || dest == NULL || destSize <= 0) {
     return ERROR;
   }
 
-  // Check for empty findToken to prevent infinite loop
-  if (findToken[0] == '\0') {
+  if (strlen(findToken) == 0) {
     return ERROR;
   }
 
-  int remainDestSize = destSize;
-  int chunkSize;
+  size_t remainDestSize = (size_t)destSize;
+  size_t findTokenLen = strlen(findToken);
+  size_t replaceTokenLen = strlen(replaceToken);
   int numberOfSubst = 0;
-  const char *srcToken;
-  const char *srcStart = source;
+  const char *srcPtr = source;
   char *destPtr = dest;
 
-  while ((srcToken = strstr(srcStart, findToken)) != NULL) {
-    // Copy data leading up to the findToken
-    chunkSize = srcToken - srcStart;
-    if (chunkSize < 0 || remainDestSize <= chunkSize) {
+  while (remainDestSize > 1) {
+    const char *srcToken = strstr(srcPtr, findToken);
+    if (!srcToken) {
+      break;
+    }
+
+    size_t chunkSize = (size_t)(srcToken - srcPtr);
+    if (chunkSize >= remainDestSize) {
       return ERROR;
     }
-    memcpy(destPtr, srcStart, chunkSize);
-    destPtr += chunkSize;
-    remainDestSize -= chunkSize;
-    srcStart = srcToken + strlen(findToken);
 
-    // Copy the replaceToken where the findToken was
-    chunkSize = strlen(replaceToken);
-    if (chunkSize < 0 || remainDestSize <= chunkSize) {
+    if (chunkSize > 0) {
+      memcpy(destPtr, srcPtr, chunkSize);
+      destPtr += chunkSize;
+      remainDestSize -= chunkSize;
+    }
+
+    if (replaceTokenLen >= remainDestSize) {
       return ERROR;
     }
-    memcpy(destPtr, replaceToken, chunkSize);
-    destPtr += chunkSize;
-    remainDestSize -= chunkSize;
 
+    if (replaceTokenLen > 0) {
+      memcpy(destPtr, replaceToken, replaceTokenLen);
+      destPtr += replaceTokenLen;
+      remainDestSize -= replaceTokenLen;
+    }
+
+    srcPtr = srcToken + findTokenLen;
     numberOfSubst++;
   }
 
-  // Copy the remaining data
-  chunkSize = strlen(srcStart);
-  if (chunkSize < 0 || remainDestSize <= chunkSize) {
+  size_t remainingLen = strlen(srcPtr);
+  if (remainingLen >= remainDestSize) {
     return ERROR;
   }
-  memcpy(destPtr, srcStart, chunkSize);
-  destPtr += chunkSize;
-  remainDestSize -= chunkSize;
 
-  // Ensure we have space for null terminator
-  if (remainDestSize <= 0) {
-    return ERROR;
+  if (remainingLen > 0) {
+    memcpy(destPtr, srcPtr, remainingLen);
+    destPtr += remainingLen;
+    remainDestSize -= remainingLen;
   }
+
   *destPtr = '\0';
 
   return numberOfSubst;

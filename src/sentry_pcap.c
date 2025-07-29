@@ -29,15 +29,15 @@
 
 static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const u_char *packet, const uint32_t packetLength);
-static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, int *nfds);
-static void ExecKernelMessageLogic(struct ListenerModule *lm, struct pollfd **fds, int *nfds, struct KernelMessage *kernelMessage);
+static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, nfds_t *nfds);
+static void ExecKernelMessageLogic(struct ListenerModule *lm, struct pollfd **fds, nfds_t *nfds, struct KernelMessage *kernelMessage);
 static struct Device *GetDeviceByKernelMessage(struct ListenerModule *lm, struct KernelMessage *kernelMessage);
-static void StartDeviceAndAddPollFd(struct Device *device, struct pollfd **fds, int *nfds);
-static void StopDeviceAndRemovePollFd(struct Device *device, struct pollfd **fds, int *nfds);
-static void HandleAddressAdded(struct Device *device, struct KernelMessage *kernelMessage, struct pollfd **fds, int *nfds);
-static void HandleAddressRemoved(struct Device *device, struct KernelMessage *kernelMessage, struct pollfd **fds, int *nfds);
-static void HandleInterfaceAdded(struct Device *device, struct pollfd **fds, int *nfds);
-static void HandleInterfaceRemoved(struct Device *device, struct pollfd **fds, int *nfds);
+static void StartDeviceAndAddPollFd(struct Device *device, struct pollfd **fds, nfds_t *nfds);
+static void StopDeviceAndRemovePollFd(struct Device *device, struct pollfd **fds, nfds_t *nfds);
+static void HandleAddressAdded(struct Device *device, struct KernelMessage *kernelMessage, struct pollfd **fds, nfds_t *nfds);
+static void HandleAddressRemoved(struct Device *device, struct KernelMessage *kernelMessage, struct pollfd **fds, nfds_t *nfds);
+static void HandleInterfaceAdded(struct Device *device, struct pollfd **fds, nfds_t *nfds);
+static void HandleInterfaceRemoved(struct Device *device, struct pollfd **fds, nfds_t *nfds);
 
 extern uint8_t g_isRunning;
 
@@ -53,11 +53,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 #endif
 
 int PortSentryPcap(void) {
-  int status = EXIT_FAILURE, ret, nfds = 0, i, kernel_socket;
+  int status = EXIT_FAILURE, ret, kernel_socket;
   char err[ERRNOMAXBUF];
   struct ListenerModule *lm = NULL;
   struct pollfd *fds = NULL;
   struct Device *current = NULL;
+  size_t i;
+  nfds_t nfds = 0;
 
   if ((lm = AllocListenerModule()) == NULL) {
     goto exit;
@@ -219,12 +221,17 @@ static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const 
     return FALSE;
   }
 
+  if (packetLength < (uint32_t)ipOffset) {
+    Error("Packet on %s is too short (%d bytes), ignoring", device->name, packetLength);
+    return FALSE;
+  }
+
   ClearPacketInfo(pi);
-  return SetPacketInfoFromPacket(pi, (unsigned char *)packet + ipOffset, packetLength - ipOffset);
+  return SetPacketInfoFromPacket(pi, (unsigned char *)packet + ipOffset, packetLength - (uint32_t)ipOffset);
 }
 
 #ifdef __linux__
-static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, int *nfds) {
+static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, nfds_t *nfds) {
   struct nlmsghdr *nh;
   struct KernelMessage kernelMessage;
   char buf[4096];
@@ -247,7 +254,7 @@ static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule 
 }
 
 #elif defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)
-static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, int *nfds) {
+static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule *lm, struct pollfd **fds, nfds_t *nfds) {
   char buf[4096];
   char err[ERRNOMAXBUF];
   struct KernelMessage kernelMessage;
@@ -266,7 +273,7 @@ static void ProcessKernelMessage(const int kernel_socket, struct ListenerModule 
 }
 #endif
 
-static void ExecKernelMessageLogic(struct ListenerModule *lm, struct pollfd **fds, int *nfds, struct KernelMessage *kernelMessage) {
+static void ExecKernelMessageLogic(struct ListenerModule *lm, struct pollfd **fds, nfds_t *nfds, struct KernelMessage *kernelMessage) {
   struct Device *device = NULL;
 
   if ((device = GetDeviceByKernelMessage(lm, kernelMessage)) == NULL) {
@@ -325,19 +332,19 @@ static struct Device *GetDeviceByKernelMessage(struct ListenerModule *lm, struct
   return NULL;
 }
 
-static void StartDeviceAndAddPollFd(struct Device *device, struct pollfd **fds, int *nfds) {
+static void StartDeviceAndAddPollFd(struct Device *device, struct pollfd **fds, nfds_t *nfds) {
   if (StartDevice(device) == TRUE) {
     *fds = AddPollFd(*fds, nfds, device->fd);
   }
 }
 
-static void StopDeviceAndRemovePollFd(struct Device *device, struct pollfd **fds, int *nfds) {
+static void StopDeviceAndRemovePollFd(struct Device *device, struct pollfd **fds, nfds_t *nfds) {
   int fd = device->fd;
   StopDevice(device);
   *fds = RemovePollFd(*fds, nfds, fd);
 }
 
-static void HandleAddressAdded(struct Device *device, struct KernelMessage *kernelMessage, struct pollfd **fds, int *nfds) {
+static void HandleAddressAdded(struct Device *device, struct KernelMessage *kernelMessage, struct pollfd **fds, nfds_t *nfds) {
   if (device->state != DEVICE_STATE_RUNNING) {
     Debug("ProcessKernelMessage[KMT_ADDRESS ADD]: %s not running, starting it", device->name);
     // Start device resets and adds all addresses
@@ -350,7 +357,7 @@ static void HandleAddressAdded(struct Device *device, struct KernelMessage *kern
   }
 }
 
-static void HandleAddressRemoved(struct Device *device, struct KernelMessage *kernelMessage, struct pollfd **fds, int *nfds) {
+static void HandleAddressRemoved(struct Device *device, struct KernelMessage *kernelMessage, struct pollfd **fds, nfds_t *nfds) {
   RemoveAddress(device, kernelMessage->address.ipAddr);
   if (GetNoAddresses(device) == 0) {
     Debug("ProcessKernelMessage[KMT_ADDRESS DEL]: No addresses left on %s, stopping device", device->name);
@@ -363,7 +370,7 @@ static void HandleAddressRemoved(struct Device *device, struct KernelMessage *ke
   }
 }
 
-static void HandleInterfaceAdded(struct Device *device, struct pollfd **fds, int *nfds) {
+static void HandleInterfaceAdded(struct Device *device, struct pollfd **fds, nfds_t *nfds) {
   if (device->state != DEVICE_STATE_RUNNING) {
     Debug("ProcessKernelMessage[KMT_INTERFACE UP]: Device %s was not running, starting it", device->name);
     StartDeviceAndAddPollFd(device, fds, nfds);
@@ -386,7 +393,7 @@ static void HandleInterfaceAdded(struct Device *device, struct pollfd **fds, int
   }
 }
 
-static void HandleInterfaceRemoved(struct Device *device, struct pollfd **fds, int *nfds) {
+static void HandleInterfaceRemoved(struct Device *device, struct pollfd **fds, nfds_t *nfds) {
   if (device->state == DEVICE_STATE_RUNNING) {
     Debug("ProcessKernelMessage[KMT_INTERFACE DOWN]: Device %s is running, stopping it", device->name);
     StopDeviceAndRemovePollFd(device, fds, nfds);

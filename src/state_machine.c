@@ -109,8 +109,6 @@ void FreeSentryState(struct SentryState *sentryState) {
 int CheckState(struct SentryState *state, struct sockaddr *addr) {
   assert(state != NULL);
   assert(addr != NULL);
-  assert(addr->sa_family == AF_INET || addr->sa_family == AF_INET6);
-  assert(state->isInitialized == TRUE);
 
   if (state->isInitialized == FALSE) {
     Error("Sentry state is not initialized");

@@ -27,7 +27,7 @@
 #include "util.h"
 #include "packet_info.h"
 
-static char *Realloc(char *filter, int newLen);
+static char *Realloc(char *filter, size_t newLen);
 
 char *SafeStrncpy(char *dest, const char *src, size_t size) {
   if (dest == NULL || src == NULL) {
@@ -55,11 +55,21 @@ char *SafeStrncpy(char *dest, const char *src, size_t size) {
   return dest;
 }
 
-void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize) {
+void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const socklen_t resolvedHostSize) {
+  char err[ERRNOMAXBUF];
+
+  assert(resolvedHostSize > 0);
+  assert(resolvedHostSize < INT_MAX);
+  assert(resolvedHost != NULL);
+
   if (getnameinfo(GetSourceSockaddrFromPacketInfo(pi), GetSourceSockaddrLenFromPacketInfo(pi), resolvedHost, resolvedHostSize, NULL, 0, NI_NUMERICHOST) != 0) {
-    Error("ResolveAddr: Unable to resolve address for %s", pi->saddr);
-    if (snprintf(resolvedHost, resolvedHostSize, "<unknown>") >= resolvedHostSize) {
-      Error("ResolveAddr: <unknown> placeholder too long for buffer");
+    Error("ResolveAddr: Unable to resolve address for %s: %s", pi->saddr, ErrnoString(err, sizeof(err)));
+
+    int ret = snprintf(resolvedHost, resolvedHostSize, "<unknown>");
+    if (ret <= 0) {
+      resolvedHost[0] = '\0';
+    } else if (ret >= (int)resolvedHostSize) {
+      Error("ResolveAddr: <unknown> placeholder too long for buffer: %s", ErrnoString(err, sizeof(err)));
       resolvedHost[resolvedHostSize - 1] = '\0';
     }
   }
@@ -296,14 +306,14 @@ int CreateDateTime(char *buf, const size_t size) {
     return ERROR;
   }
 
-  ret = strftime(p, remainingSize, "%Y-%m-%dT%H:%M:%S.", tmptr);
+  ret = (int)strftime(p, remainingSize, "%Y-%m-%dT%H:%M:%S.", tmptr);
   if (ret == 0 || (size_t)ret >= remainingSize) {
     Error("Buffer overflow while writing datetime format");
     *buf = '\0';
     return ERROR;
   }
 
-  remainingSize -= ret;
+  remainingSize -= (size_t)ret;
   p += ret;
 
   ret = snprintf(p, remainingSize, "%03ld", ts.tv_nsec / 1000000);
@@ -313,10 +323,10 @@ int CreateDateTime(char *buf, const size_t size) {
     return ERROR;
   }
 
-  remainingSize -= ret;
+  remainingSize -= (size_t)ret;
   p += ret;
 
-  ret = strftime(p, remainingSize, "%z", tmptr);
+  ret = (int)strftime(p, remainingSize, "%z", tmptr);
   if (ret == 0) {
     Error("Buffer overflow while writing timezone");
     *buf = '\0';
@@ -326,18 +336,18 @@ int CreateDateTime(char *buf, const size_t size) {
   return TRUE;
 }
 
-static char *Realloc(char *filter, int newLen) {
+static char *Realloc(char *filter, size_t newLen) {
   char *newFilter = NULL;
 
   if ((newFilter = realloc(filter, newLen)) == NULL) {
-    Error("Unable to reallocate %d bytes of memory for pcap filter", newLen);
+    Error("Unable to reallocate %zu bytes of memory for pcap filter", newLen);
     Exit(EXIT_FAILURE);
   }
 
   return newFilter;
 }
 
-char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
+char *ReallocAndAppend(char *filter, size_t *filterLen, const char *append, ...) {
   int neededBufferLen;
   char *p;
   va_list args;
@@ -351,25 +361,38 @@ char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
   neededBufferLen = vsnprintf(NULL, 0, append, args);
   va_end(args);
 
-  // First time we're called, make sure we alloc room for the null terminator since *snprintf auto adds it and force truncate if it doesn't fit
-  if (filter == NULL)
-    neededBufferLen += 1;
+  if (neededBufferLen < 0) {
+    return NULL;
+  }
 
-  filter = Realloc(filter, *filterLen + neededBufferLen);
+  size_t totalSize = *filterLen + (size_t)neededBufferLen + 1;
 
-  // First time we're called, start at the beginning of the buffer. Otherwise, go to end of buffer - the null terminator
-  if (*filterLen == 0)
+  // Overflow
+  if (totalSize < *filterLen) {
+    return NULL;
+  }
+
+  filter = Realloc(filter, totalSize);
+
+  // Position pointer at the end of existing string (null terminator)
+  if (*filterLen == 0) {
     p = filter;
-  else
-    p = filter + *filterLen - 1;
+  } else {
+    p = filter + *filterLen;  // Points to null terminator
+  }
 
-  // store the new length of the buffer
-  *filterLen += neededBufferLen;
-
-  // Append the new string to the buffer, *snprintf will add the null terminator
+  // Append the new string to the buffer
   va_start(args, append);
-  vsnprintf(p, (p == filter) ? neededBufferLen : neededBufferLen + 1, append, args);
+  int written = vsnprintf(p, (size_t)neededBufferLen + 1, append, args);
   va_end(args);
+
+  if (written < 0 || written >= neededBufferLen + 1) {
+    // vsnprintf failed or truncated
+    return NULL;
+  }
+
+  // Update the length (excluding null terminator)
+  *filterLen += (size_t)written;
 
   return filter;
 }
@@ -378,7 +401,7 @@ char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...) {
 void DebugWritePacketToFs(const struct PacketInfo *pi) {
   int fd = -1;
   char filename[64], err[ERRNOMAXBUF];
-  int ipLen;
+  size_t ipLen;
   unsigned char *ip;
 
   if (pi->ip != NULL) {
@@ -391,9 +414,9 @@ void DebugWritePacketToFs(const struct PacketInfo *pi) {
   }
 
   if (pi->tcp != NULL) {
-    ipLen = (unsigned char *)pi->tcp - ip;
+    ipLen = (size_t)((unsigned char *)pi->tcp - ip);
   } else if (pi->udp != NULL) {
-    ipLen = (unsigned char *)pi->udp - ip;
+    ipLen = (size_t)((unsigned char *)pi->udp - ip);
   } else {
     Error("No TCP or UDP header to write to file");
     goto exit;

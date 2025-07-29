@@ -9,7 +9,7 @@ option(USE_PCAP "Build with pcap code and link with libpcap" ON)
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
 
-set(STANDARD_COMPILE_OPTS -Wall -Wextra -pedantic -Werror -Wformat -Wformat-security -Wstack-protector -Wshadow -Wredundant-decls -Wdisabled-optimization -Wnested-externs -Wstrict-overflow=2 -fPIE -fstack-protector-strong -fstrict-aliasing -fno-common -fno-strict-overflow -D_FORTIFY_SOURCE=2)
+set(STANDARD_COMPILE_OPTS -Wall -Wextra -pedantic -Werror -Wformat -Wformat-security -Wstack-protector -Wshadow -Wredundant-decls -Wdisabled-optimization -Wnested-externs -Wstrict-overflow=2 -Wconversion -fPIE -fstack-protector-strong -fstrict-aliasing -fno-common -fno-strict-overflow -D_FORTIFY_SOURCE=2)
 
 check_c_compiler_flag("-fcf-protection=full" COMPILER_SUPPORTS_CFI_PROTECTION)
 
@@ -185,6 +185,12 @@ if(BUILD_TESTS)
   target_link_options(test_port PRIVATE ${STANDARD_LINK_OPTS})
   target_link_libraries(test_port PRIVATE lportsentry)
 
+  add_executable(test_io_subststring tests/test_io_subststring.c)
+  target_compile_options(test_io_subststring PRIVATE ${UNIT_TEST_COMPILE_OPTS})
+  target_include_directories(test_io_subststring PRIVATE "${PROJECT_BINARY_DIR}")
+  target_link_options(test_io_subststring PRIVATE ${STANDARD_LINK_OPTS})
+  target_link_libraries(test_io_subststring PRIVATE lportsentry)
+
   # Enable testing and add test targets
   enable_testing()
   add_test(NAME test_util_safestrncpy COMMAND $<TARGET_FILE:test_util_safestrncpy>)
@@ -194,4 +200,5 @@ if(BUILD_TESTS)
   add_test(NAME test_util_reallocandappend COMMAND $<TARGET_FILE:test_util_reallocandappend>)
   add_test(NAME test_state_machine COMMAND $<TARGET_FILE:test_state_machine>)
   add_test(NAME test_port COMMAND $<TARGET_FILE:test_port>)
+  add_test(NAME test_io_subststring COMMAND $<TARGET_FILE:test_io_subststring>)
 endif()

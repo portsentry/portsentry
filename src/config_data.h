@@ -10,11 +10,11 @@
 #include "portsentry.h"
 #include "port.h"
 
-#define LOGFLAG_NONE 0x00
-#define LOGFLAG_DEBUG 0x1
-#define LOGFLAG_VERBOSE 0x2
-#define LOGFLAG_OUTPUT_STDOUT 0x4
-#define LOGFLAG_OUTPUT_SYSLOG 0x8
+extern const uint8_t LOGFLAG_NONE;
+extern const uint8_t LOGFLAG_DEBUG;
+extern const uint8_t LOGFLAG_VERBOSE;
+extern const uint8_t LOGFLAG_OUTPUT_STDOUT;
+extern const uint8_t LOGFLAG_OUTPUT_SYSLOG;
 
 enum SentryMode { SENTRY_MODE_STEALTH = 0,
                   SENTRY_MODE_CONNECT };
@@ -30,9 +30,9 @@ struct ConfigData {
   char **interfaces;
 
   struct Port *tcpPorts;
-  int tcpPortsLength;
+  size_t tcpPortsLength;
   struct Port *udpPorts;
-  int udpPortsLength;
+  size_t udpPortsLength;
 
   char portBanner[MAXBUF];
   uint8_t portBannerPresent;
@@ -46,7 +46,7 @@ struct ConfigData {
   int blockUDP;
   int runCmdFirst;
   int resolveHost;
-  int configTriggerCount;
+  uint16_t configTriggerCount;
   int disableLocalCheck;
 
   enum SentryMode sentryMode;
@@ -65,6 +65,6 @@ void PrintConfigData(const struct ConfigData cd);
 char *GetSentryModeString(const enum SentryMode sentryMode);
 void SetConfigData(const struct ConfigData *fileConfig, const struct ConfigData *cmdlineConfig);
 int AddInterface(struct ConfigData *cd, const char *interface);
-int GetNoInterfaces(const struct ConfigData *cd);
+size_t GetNoInterfaces(const struct ConfigData *cd);
 void FreeConfigData(struct ConfigData *cd);
 int IsInterfacePresent(const struct ConfigData *cd, const char *interface);

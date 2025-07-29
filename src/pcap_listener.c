@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -129,8 +128,8 @@ int GetNoDevices(const struct ListenerModule *lm) {
   return count;
 }
 
-int GetNoRunningDevices(const struct ListenerModule *lm) {
-  int count;
+size_t GetNoRunningDevices(const struct ListenerModule *lm) {
+  size_t count;
   struct Device *current;
 
   assert(lm != NULL);
@@ -276,7 +275,7 @@ struct Device *FindDeviceByName(const struct ListenerModule *lm, const char *nam
 
 struct Device *FindDeviceByIpAddr(const struct ListenerModule *lm, const char *ip_addr) {
   struct Device *current;
-  int i;
+  size_t i;
 
   assert(lm != NULL);
   assert(ip_addr != NULL);
@@ -311,10 +310,10 @@ static void SetFdParams(struct pollfd *pollfd, const int fd) {
   pollfd->revents = 0;
 }
 
-struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
+struct pollfd *SetupPollFds(const struct ListenerModule *lm, nfds_t *nfds) {
   struct pollfd *fds = NULL;
   struct Device *current = NULL;
-  int i = 0;
+  nfds_t i = 0;
 
   if ((fds = malloc(sizeof(struct pollfd) * GetNoRunningDevices(lm))) == NULL) {
     Crash(1, "Unable to allocate memory for pollfd");
@@ -340,11 +339,11 @@ struct pollfd *SetupPollFds(const struct ListenerModule *lm, int *nfds) {
   return fds;
 }
 
-struct pollfd *AddPollFd(struct pollfd *fds, int *nfds, const int fd) {
+struct pollfd *AddPollFd(struct pollfd *fds, nfds_t *nfds, const int fd) {
   struct pollfd *newFds = NULL;
 
   // Already in the list?
-  for (int i = 0; i < *nfds; i++) {
+  for (size_t i = 0; i < *nfds; i++) {
     if (fds[i].fd == fd) {
       return fds;
     }
@@ -360,8 +359,8 @@ struct pollfd *AddPollFd(struct pollfd *fds, int *nfds, const int fd) {
   return newFds;
 }
 
-struct pollfd *RemovePollFd(struct pollfd *fds, int *nfds, const int fd) {
-  int i, j;
+struct pollfd *RemovePollFd(struct pollfd *fds, nfds_t *nfds, const int fd) {
+  size_t i, j;
   struct pollfd *newFds = NULL;
 
   assert(fds != NULL);
@@ -414,7 +413,7 @@ struct Device *GetDeviceByFd(const struct ListenerModule *lm, const int fd) {
 }
 
 static void PrintDevices(const struct ListenerModule *lm) {
-  int i;
+  size_t i;
   struct Device *current;
 
   if (lm == NULL) {

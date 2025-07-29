@@ -18,7 +18,7 @@
 #define MIN_DATETIME_BUFFER 32
 
 char *SafeStrncpy(char *, const char *, size_t);
-void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const int resolvedHostSize);
+void ResolveAddr(const struct PacketInfo *pi, char *resolvedHost, const socklen_t resolvedHostSize);
 long GetLong(const char *buffer);
 int StrToUint16_t(const char *str, uint16_t *val);
 int DisposeTarget(const char *, int, int);
@@ -29,7 +29,7 @@ int IsPortInUse(struct PacketInfo *pi);
 char *ReportPacketType(const struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);
 int CreateDateTime(char *buf, const size_t size);
-__attribute__((format(printf, 3, 4))) char *ReallocAndAppend(char *filter, int *filterLen, const char *append, ...);
+__attribute__((format(printf, 3, 4))) char *ReallocAndAppend(char *filter, size_t *filterLen, const char *append, ...);
 
 #ifndef NDEBUG
 void DebugWritePacketToFs(const struct PacketInfo *pi);
