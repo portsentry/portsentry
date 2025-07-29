@@ -313,7 +313,7 @@ static void SetFdParams(struct pollfd *pollfd, const int fd) {
 struct pollfd *SetupPollFds(const struct ListenerModule *lm, nfds_t *nfds) {
   struct pollfd *fds = NULL;
   struct Device *current = NULL;
-  size_t i = 0;
+  nfds_t i = 0;
 
   if ((fds = malloc(sizeof(struct pollfd) * GetNoRunningDevices(lm))) == NULL) {
     Crash(1, "Unable to allocate memory for pollfd");
