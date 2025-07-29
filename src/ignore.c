@@ -86,7 +86,7 @@ static int IgnoreParse(const char *buffer, struct IgnoreIp *ignoreIp) {
           ignoreIp->mask.mask6.s6_addr[i] = 0xff;
           mask -= 8;
         } else {
-          ignoreIp->mask.mask6.s6_addr[i] = 0xff << (8 - mask);
+          ignoreIp->mask.mask6.s6_addr[i] = (uint8_t)(0xff << (8 - mask));
           break;
         }
       }
