@@ -13,6 +13,13 @@
 #include "portsentry.h"
 #include "util.h"
 
+// Define the constants that are declared as extern in the header
+const uint8_t LOGFLAG_NONE = 0x00;
+const uint8_t LOGFLAG_DEBUG = 0x1;
+const uint8_t LOGFLAG_VERBOSE = 0x2;
+const uint8_t LOGFLAG_OUTPUT_STDOUT = 0x4;
+const uint8_t LOGFLAG_OUTPUT_SYSLOG = 0x8;
+
 struct ConfigData configData;
 
 static char *GetSentryMethodString(const enum SentryMethod sentryMethod);
