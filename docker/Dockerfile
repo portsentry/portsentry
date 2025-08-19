@@ -13,7 +13,7 @@ COPY --from=builder /build/portsentry-*.deb /
 COPY --from=builder /build/portsentry-*.tar.xz /
 
 FROM debian:stable
-RUN apt update && apt install -y libpcap0.8
+RUN apt update && apt install -y libpcap0.8t64
 RUN mkdir -p /etc/portsentry
 RUN mkdir -p /var/run/portsentry
 COPY --from=builder /build/release/portsentry /usr/local/sbin/portsentry
