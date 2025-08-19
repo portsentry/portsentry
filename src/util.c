@@ -209,7 +209,7 @@ int SetupPort(const struct sockaddr *addr, const socklen_t addrLen, uint8_t prot
 
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
-  if ((sock = OpenSocket(addr->sa_family, (proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM, proto, TRUE)) == ERROR) {
+  if ((sock = OpenSocket(addr->sa_family, (proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM, proto, FALSE)) == ERROR) {
     return -1;
   }
 
@@ -229,6 +229,7 @@ int IsPortInUse(struct PacketInfo *pi) {
   if (sock == -1) {
     return ERROR;
   } else if (sock == -2) {
+    close(sock);
     return TRUE;
   } else {
     close(sock);
