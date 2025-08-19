@@ -185,14 +185,14 @@ static int SetConnectionData(struct ConnectionData **cd, const size_t cdIdx, con
     addr6.sin6_family = AF_INET6;
     addr6.sin6_port = htons(port);
     addr6.sin6_addr = in6addr_any;
-    sockfd = SetupPort((struct sockaddr *)&addr6, sizeof(addr6), proto);
+    sockfd = SetupPort((struct sockaddr *)&addr6, sizeof(addr6), proto, TRUE);
   } else {
     struct sockaddr_in addr4;
     memset(&addr4, 0, sizeof(addr4));
     addr4.sin_family = AF_INET;
     addr4.sin_port = htons(port);
     addr4.sin_addr.s_addr = htonl(INADDR_ANY);
-    sockfd = SetupPort((struct sockaddr *)&addr4, sizeof(addr4), proto);
+    sockfd = SetupPort((struct sockaddr *)&addr4, sizeof(addr4), proto, TRUE);
   }
 
   if (sockfd < 0) {

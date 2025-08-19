@@ -204,12 +204,12 @@ const char *GetFamilyString(int family) {
   }
 }
 
-int SetupPort(const struct sockaddr *addr, const socklen_t addrLen, uint8_t proto) {
+int SetupPort(const struct sockaddr *addr, const socklen_t addrLen, uint8_t proto, uint8_t tcpReuseAddr) {
   int sock;
 
   assert(proto == IPPROTO_TCP || proto == IPPROTO_UDP);
 
-  if ((sock = OpenSocket(addr->sa_family, (proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM, proto, FALSE)) == ERROR) {
+  if ((sock = OpenSocket(addr->sa_family, (proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM, proto, tcpReuseAddr)) == ERROR) {
     return -1;
   }
 
@@ -224,7 +224,7 @@ int SetupPort(const struct sockaddr *addr, const socklen_t addrLen, uint8_t prot
 int IsPortInUse(struct PacketInfo *pi) {
   int sock;
 
-  sock = SetupPort(GetDestSockaddrFromPacketInfo(pi), GetDestSockaddrLenFromPacketInfo(pi), pi->protocol);
+  sock = SetupPort(GetDestSockaddrFromPacketInfo(pi), GetDestSockaddrLenFromPacketInfo(pi), pi->protocol, FALSE);
 
   if (sock == -1) {
     return ERROR;
