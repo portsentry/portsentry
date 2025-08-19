@@ -179,7 +179,23 @@ static int SetConnectionData(struct ConnectionData **cd, const size_t cdIdx, con
 
   Log("Listen on %s: %s port: %d", (family == AF_INET) ? "AF_INET" : "AF_INET6", (proto == IPPROTO_TCP ? "TCP" : "UDP"), port);
 
-  if ((sockfd = SetupPort(family, port, proto)) < 0) {
+  if (family == AF_INET6) {
+    struct sockaddr_in6 addr6;
+    memset(&addr6, 0, sizeof(addr6));
+    addr6.sin6_family = AF_INET6;
+    addr6.sin6_port = htons(port);
+    addr6.sin6_addr = in6addr_any;
+    sockfd = SetupPort((struct sockaddr *)&addr6, sizeof(addr6), proto);
+  } else {
+    struct sockaddr_in addr4;
+    memset(&addr4, 0, sizeof(addr4));
+    addr4.sin_family = AF_INET;
+    addr4.sin_port = htons(port);
+    addr4.sin_addr.s_addr = htonl(INADDR_ANY);
+    sockfd = SetupPort((struct sockaddr *)&addr4, sizeof(addr4), proto);
+  }
+
+  if (sockfd < 0) {
     if (errno == EMFILE) {
       Error("Unable to open all ports (TCP_PORTS/UDP_PORTS) specified in the configuration file. Reduce the number of ports to listen to or increase the max number of allowed file descriptors open by a process or use stealth mode instead");
       return ERROR;

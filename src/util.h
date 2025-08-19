@@ -24,7 +24,7 @@ int StrToUint16_t(const char *str, uint16_t *val);
 int DisposeTarget(const char *, int, int);
 const char *GetProtocolString(int proto);
 const char *GetFamilyString(int family);
-int SetupPort(int family, uint16_t port, int proto);
+int SetupPort(const struct sockaddr *addr, const socklen_t addrLen, uint8_t proto);
 int IsPortInUse(struct PacketInfo *pi);
 char *ReportPacketType(const struct tcphdr *);
 char *ErrnoString(char *buf, const size_t buflen);

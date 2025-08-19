@@ -141,34 +141,24 @@ void Exit(const int status) {
   exit(status);
 }
 
-int BindSocket(const int sockfd, const int family, const uint16_t port, const int proto) {
+int BindSocket(const int sockfd, const struct sockaddr *addr, const socklen_t addrLen, const uint8_t proto) {
   char err[ERRNOMAXBUF];
-  struct sockaddr_in6 sin6;
-  struct sockaddr_in sin4;
+  uint16_t port;
 
-  if (family == AF_INET6) {
-    bzero(&sin6, sizeof(sin6));
-    sin6.sin6_family = AF_INET6;
-    sin6.sin6_addr = in6addr_any;
-    sin6.sin6_port = htons(port);
-    if (bind(sockfd, (struct sockaddr *)&sin6, sizeof(sin6)) == -1) {
-      Verbose("Binding %s %s %d failed: %s", GetFamilyString(family), GetProtocolString(proto), port, ErrnoString(err, sizeof(err)));
-      return ERROR;
-    }
-  } else {
-    bzero(&sin4, sizeof(sin4));
-    sin4.sin_family = AF_INET;
-    sin4.sin_addr.s_addr = htonl(INADDR_ANY);
-    sin4.sin_port = htons(port);
-    if (bind(sockfd, (struct sockaddr *)&sin4, sizeof(sin4)) == -1) {
-      Verbose("Binding %s %s %d failed: %s", GetFamilyString(family), GetProtocolString(proto), port, ErrnoString(err, sizeof(err)));
-      return ERROR;
-    }
+  port = (addr->sa_family == AF_INET6) ? ntohs(((struct sockaddr_in6 *)addr)->sin6_port)
+                                       : ntohs(((struct sockaddr_in *)addr)->sin_port);
+
+  if ((bind(sockfd, addr, addrLen)) == -1) {
+    Verbose("Binding %s %s %d failed: %s",
+            GetFamilyString(addr->sa_family),
+            GetProtocolString(proto), port,
+            ErrnoString(err, sizeof(err)));
+    return ERROR;
   }
 
   if (proto == IPPROTO_TCP) {
     if (listen(sockfd, 5) == -1) {
-      Error("Listen failed: %s %d %s", GetFamilyString(family), port, ErrnoString(err, sizeof(err)));
+      Error("Listen failed: %s %d %s", GetFamilyString(addr->sa_family), port, ErrnoString(err, sizeof(err)));
       return ERROR;
     }
   }
