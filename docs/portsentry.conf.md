@@ -38,7 +38,7 @@ This file contains all the IP addresses that have triggered the Portsentry detec
 
 ## BLOCKED_FILE="/tmp/portsentry.blocked"
 
-When Portsentry's action mechanism is used, this file will contain a list of all hosts that triggers an action. If a host is matched against this file no further action will be taken.
+When Portsentry's action mechanism is used (BLOCK_TCP and/or BLOCK_UDP is set to 1 or 2, see below), this file will contain a list of all hosts that triggers an action. If a host is matched against this file no further action will be taken. Leaving this field as an empty string "" or not setting it will cause the action mechanism to always trigger when a scan is detected.
 
 
 ## RESOLVE_HOST = "<1|0>"
