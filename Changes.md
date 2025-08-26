@@ -1,5 +1,13 @@
 # Portsentry Changelog
 
+## 2025-08-26 2.0.4
+### Bugfixes
+- Fixed bug in the CI which didn't properly updated the stable docker tag
+
+### Improvements
+- When testing for existing, legitimate service on a scan detection, take IP:PORT binding into account
+- Added compiler flags to increase correctness/security of the code
+
 ## 2025-07-21 2.0.3
 
 ### Improvements
