@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <sys/resource.h>
+#include <inttypes.h>
 
 #include "config_data.h"
 #include "sentry_connect.h"
@@ -350,13 +351,7 @@ static int PrepareNoFds(void) {
     return TRUE;
   }
 
-#ifdef __OpenBSD__
-  Debug("Setting RLIMIT_NOFILE to %zu (from cur: %llu max: %llu)", noFds, rlim.rlim_cur, rlim.rlim_max);
-#elif defined(__arm__) || defined(__aarch64__)
-  Debug("Setting RLIMIT_NOFILE to %zu (from cur: %lu max: %lu)", noFds, rlim.rlim_cur, rlim.rlim_max);
-#else
-  Debug("Setting RLIMIT_NOFILE to %zu (from cur: %zu max: %zu)", noFds, rlim.rlim_cur, rlim.rlim_max);
-#endif
+  Debug("Setting RLIMIT_NOFILE to %zu (from cur: %" PRIuMAX " max: %" PRIuMAX ")", noFds, (uintmax_t)rlim.rlim_cur, (uintmax_t)rlim.rlim_max);
   rlim.rlim_cur = (rlim_t)noFds;
   rlim.rlim_max = (rlim_t)noFds;
   if (setrlimit(RLIMIT_NOFILE, &rlim) == -1) {
@@ -374,16 +369,9 @@ static int PrepareNoFds(void) {
   }
 
   Error("Unable to increase the number of allowed open file descriptors. Needed fd's: %zu, "
-#ifdef __OpenBSD__
-        "soft limit: %llu, hard limit: %llu."
-#elif defined(__arm__) || defined(__aarch64__)
-        "soft limit: %lu, hard limit: %lu."
-#else
-        "soft limit: %lu, hard limit: %lu."
-#endif
-
+        "soft limit: %" PRIuMAX ", hard limit: %" PRIuMAX ". "
         "Reduce the number of ports to listen to or increase the max number of allowed file descriptors open by a process or use stealth mode instead",
-        noFds, rlim.rlim_cur, rlim.rlim_max);
+        noFds, (uintmax_t)rlim.rlim_cur, (uintmax_t)rlim.rlim_max);
 
   return FALSE;
 }
