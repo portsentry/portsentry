@@ -1,4 +1,4 @@
-FROM gcc:latest AS builder
+FROM debian:stable AS builder
 RUN apt update && apt install -y build-essential libpcap-dev cmake
 WORKDIR /build
 COPY . .
