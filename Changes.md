@@ -1,5 +1,11 @@
 # Portsentry Changelog
 
+## 2025-09-03 2.0.5
+### Improvements
+- Added support and docker containers for i386 and 64bit risc-v
+- Compiled man pages with pandoc v3 in order to fix issues with markdown -> man
+- Added option to not install/package LICENSE file (useful for some package managers)
+
 ## 2025-08-26 2.0.4
 ### Bugfixes
 - Fixed bug in the CI which didn't properly updated the stable docker tag
