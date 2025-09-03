@@ -5,6 +5,7 @@ include(CheckCCompilerFlag)
 option(BUILD_FUZZER "Build fuzzer tests" OFF)
 option(BUILD_TESTS "Build unit tests" OFF)
 option(USE_PCAP "Build with pcap code and link with libpcap" ON)
+option(INSTALL_LICENSE "Install license file" ON)
 
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
@@ -103,7 +104,10 @@ install(FILES examples/logrotate.conf DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/lo
 install(FILES man/portsentry.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
 install(FILES man/portsentry.conf.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
 install(DIRECTORY docs/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
-install(FILES Changes.md README.md LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(FILES Changes.md README.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
+if (INSTALL_LICENSE)
+  install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
+endif()
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system)
 
 # PORTCON - helper test program used in system tests
