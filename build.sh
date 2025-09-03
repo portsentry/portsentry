@@ -49,11 +49,11 @@ elif [ "$ACTION" = "autobuild" ]; then
     sleep 5
   done
 elif [ "$ACTION" = "docker" ]; then
-  docker buildx build -t portsentry:unstable -f docker/Dockerfile --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 .
+  docker buildx build -t portsentry:unstable -f docker/Dockerfile --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/i386,linux/riscv64 .
 elif [ "$ACTION" = "docker_export" ]; then
   BUILD_DIR=/tmp/portsentry-build
   rm -rf $BUILD_DIR
-  docker buildx build -t export -f docker/Dockerfile --target export --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 --output type=local,dest=$BUILD_DIR .
+  docker buildx build -t export -f docker/Dockerfile --target export --platform=linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/i386,linux/riscv64 --output type=local,dest=$BUILD_DIR .
 
   find /tmp/portsentry-build -mindepth 2 -type f -regex ".*portsentry-[0-9\.]*-Linux.*" | while read f; do
     new_name=$(echo $f |sed "s/-Linux\./-$(basename $(dirname $f))\./")
