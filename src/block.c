@@ -32,13 +32,13 @@ int IsBlocked(const struct sockaddr *address, const struct BlockedState *bs) {
 
   while (node != NULL) {
     if (address->sa_family == AF_INET && node->address.sin6_family == AF_INET) {
-      struct sockaddr_in *target = (struct sockaddr_in *)address;
+      const struct sockaddr_in *target = (const struct sockaddr_in *)address;
       struct sockaddr_in *current = (struct sockaddr_in *)&node->address;
       if (memcmp(&current->sin_addr.s_addr, &target->sin_addr.s_addr, sizeof(target->sin_addr.s_addr)) == 0) {
         return TRUE;
       }
     } else if (address->sa_family == AF_INET6 && node->address.sin6_family == AF_INET6) {
-      struct sockaddr_in6 *target = (struct sockaddr_in6 *)address;
+      const struct sockaddr_in6 *target = (const struct sockaddr_in6 *)address;
       struct sockaddr_in6 *current = (struct sockaddr_in6 *)&node->address;
       if (memcmp(&current->sin6_addr, &target->sin6_addr, sizeof(target->sin6_addr)) == 0) {
         return TRUE;
@@ -161,7 +161,7 @@ int WriteBlockedFile(const struct sockaddr *address, struct BlockedState *bs) {
 
   // Ignore file write errors. Atlreast the addr is in memory and will be ignored in this session.
   // The function will report any errors to the log.
-  WriteAddressToBlockFile(fp, (struct sockaddr_in6 *)address);
+  WriteAddressToBlockFile(fp, (const struct sockaddr_in6 *)address);
   status = TRUE;
 
 exit:
@@ -234,10 +234,10 @@ static struct BlockedNode *AddBlockedNode(struct BlockedState *bs, const struct 
   }
 
   if (address->sa_family == AF_INET) {
-    struct sockaddr_in *addr = (struct sockaddr_in *)address;
+    const struct sockaddr_in *addr = (const struct sockaddr_in *)address;
     memcpy(&node->address, addr, sizeof(struct sockaddr_in));
   } else if (address->sa_family == AF_INET6) {
-    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)address;
+    const struct sockaddr_in6 *addr = (const struct sockaddr_in6 *)address;
     memcpy(&node->address, addr, sizeof(struct sockaddr_in6));
   } else {
     free(node);
@@ -282,7 +282,7 @@ static int WriteAddressToBlockFile(FILE *fp, const struct sockaddr_in6 *addr) {
   }
 
   if (addr->sin6_family == AF_INET) {
-    struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
+    const struct sockaddr_in *addr4 = (const struct sockaddr_in *)addr;
 
     if (fwrite(&addr4->sin_family, sizeof(addr4->sin_family), 1, fp) != 1) {
       Error("Unable to write sin_family to blocked file: %s", configData.blockedFile);

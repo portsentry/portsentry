@@ -16,11 +16,11 @@
 
 #define MAX_HASH_SIZE 1000000
 
-static int CheckStateIpv4(struct SentryState *state, struct sockaddr_in *addr);
-static int CheckStateIpv6(struct SentryState *state, struct sockaddr_in6 *addr);
+static int CheckStateIpv4(struct SentryState *state, const struct sockaddr_in *addr);
+static int CheckStateIpv6(struct SentryState *state, const struct sockaddr_in6 *addr);
 
-static int CheckStateIpv4(struct SentryState *state, struct sockaddr_in *addr) {
-  struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
+static int CheckStateIpv4(struct SentryState *state, const struct sockaddr_in *addr) {
+  const struct sockaddr_in *addr_in = (const struct sockaddr_in *)addr;
   struct AddrStateIpv4 *addrStateIpv4;
 
   HASH_FIND(hh, state->addrStateIpv4, &addr_in->sin_addr.s_addr, sizeof(in_addr_t), addrStateIpv4);
@@ -51,8 +51,8 @@ static int CheckStateIpv4(struct SentryState *state, struct sockaddr_in *addr) {
   return FALSE;
 }
 
-static int CheckStateIpv6(struct SentryState *state, struct sockaddr_in6 *addr) {
-  struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
+static int CheckStateIpv6(struct SentryState *state, const struct sockaddr_in6 *addr) {
+  const struct sockaddr_in6 *addr_in6 = (const struct sockaddr_in6 *)addr;
   struct AddrStateIpv6 *addrStateIpv6;
 
   HASH_FIND(hh, state->addrStateIpv6, &addr_in6->sin6_addr, sizeof(struct in6_addr), addrStateIpv6);
@@ -106,7 +106,7 @@ void FreeSentryState(struct SentryState *sentryState) {
   sentryState->isInitialized = FALSE;
 }
 
-int CheckState(struct SentryState *state, struct sockaddr *addr) {
+int CheckState(struct SentryState *state, const struct sockaddr *addr) {
   assert(state != NULL);
   assert(addr != NULL);
 
@@ -121,9 +121,9 @@ int CheckState(struct SentryState *state, struct sockaddr *addr) {
   }
 
   if (addr->sa_family == AF_INET) {
-    return CheckStateIpv4(state, (struct sockaddr_in *)addr);
+    return CheckStateIpv4(state, (const struct sockaddr_in *)addr);
   } else if (addr->sa_family == AF_INET6) {
-    return CheckStateIpv6(state, (struct sockaddr_in6 *)addr);
+    return CheckStateIpv6(state, (const struct sockaddr_in6 *)addr);
   }
 
   Error("Unsupported address family");

@@ -198,13 +198,13 @@ static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const 
 #endif
 #ifdef __linux__
   else if (pcap_datalink(device->handle) == DLT_LINUX_SLL) {
-    if (ntohs(*(uint16_t *)packet) != 0) {
+    if (ntohs(*(const uint16_t *)packet) != 0) {
       Verbose("Packet type on %s is not \"sent to us by somebody else\"", device->name);
       return FALSE;
     }
 
-    if (ntohs(*(uint16_t *)(packet + 2)) != ARPHRD_ETHER) {
-      Verbose("Packet type on %s is not Ethernet (type: %d)", device->name, ntohs(*(uint16_t *)(packet + 2)));
+    if (ntohs(*(const uint16_t *)(packet + 2)) != ARPHRD_ETHER) {
+      Verbose("Packet type on %s is not Ethernet (type: %d)", device->name, ntohs(*(const uint16_t *)(packet + 2)));
       return FALSE;
     }
 
@@ -227,7 +227,7 @@ static int PrepPacket(struct PacketInfo *pi, const struct Device *device, const 
   }
 
   ClearPacketInfo(pi);
-  return SetPacketInfoFromPacket(pi, (unsigned char *)packet + ipOffset, packetLength - (uint32_t)ipOffset);
+  return SetPacketInfoFromPacket(pi, (const unsigned char *)packet + ipOffset, packetLength - (uint32_t)ipOffset);
 }
 
 #ifdef __linux__

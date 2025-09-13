@@ -55,11 +55,11 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
   size_t iplen;
   uint8_t nextHeader;
   uint8_t protocol, ipVersion;
-  struct ip6_ext *ip6ext;
-  struct ip *ip = NULL;
-  struct ip6_hdr *ip6 = NULL;
-  struct tcphdr *tcp = NULL;
-  struct udphdr *udp = NULL;
+  const struct ip6_ext *ip6ext;
+  const struct ip *ip = NULL;
+  const struct ip6_hdr *ip6 = NULL;
+  const struct tcphdr *tcp = NULL;
+  const struct udphdr *udp = NULL;
 
   assert(pi != NULL);
   assert(packet != NULL);
@@ -73,7 +73,7 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
       return FALSE;
     }
 
-    ip = (struct ip *)pi->packet;
+    ip = (const struct ip *)pi->packet;
     iplen = ip->ip_hl * 4;
     protocol = ip->ip_p;
   } else if (ipVersion == 6) {
@@ -82,7 +82,7 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
       return FALSE;
     }
 
-    ip6 = (struct ip6_hdr *)pi->packet;
+    ip6 = (const struct ip6_hdr *)pi->packet;
     nextHeader = ip6->ip6_nxt;
     iplen = sizeof(struct ip6_hdr);
 
@@ -108,7 +108,7 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
         return FALSE;
       }
 
-      ip6ext = (struct ip6_ext *)(pi->packet + iplen);
+      ip6ext = (const struct ip6_ext *)(pi->packet + iplen);
       nextHeader = ip6ext->ip6e_nxt;
       if (ip6ext->ip6e_len == 0) {
         Error("IPv6 extension header length is 0, ignoring packet");
@@ -134,13 +134,13 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
       Error("Packet is too short for TCP header, ignoring");
       return FALSE;
     }
-    tcp = (struct tcphdr *)(pi->packet + iplen);
+    tcp = (const struct tcphdr *)(pi->packet + iplen);
   } else if (protocol == IPPROTO_UDP) {
     if ((int)(packetLength - iplen) < (int)sizeof(struct udphdr)) {
       Error("Packet is too short for UDP header, ignoring");
       return FALSE;
     }
-    udp = (struct udphdr *)(pi->packet + iplen);
+    udp = (const struct udphdr *)(pi->packet + iplen);
   } else {
     // Debug("Unknown protocol %d", protocol);
     return FALSE;
@@ -285,11 +285,11 @@ static int SetSockaddr6(struct sockaddr_in6 *sa6, const struct in6_addr *addr6, 
   return TRUE;
 }
 
-struct sockaddr *GetSourceSockaddrFromPacketInfo(const struct PacketInfo *pi) {
+const struct sockaddr *GetSourceSockaddrFromPacketInfo(const struct PacketInfo *pi) {
   if (pi->version == 6 && pi->sa6_saddr.sin6_family == AF_INET6) {
-    return (struct sockaddr *)&pi->sa6_saddr;
+    return (const struct sockaddr *)&pi->sa6_saddr;
   } else if (pi->version == 4 && pi->sa_saddr.sin_family == AF_INET) {
-    return (struct sockaddr *)&pi->sa_saddr;
+    return (const struct sockaddr *)&pi->sa_saddr;
   }
 
   return NULL;
@@ -305,11 +305,11 @@ socklen_t GetSourceSockaddrLenFromPacketInfo(const struct PacketInfo *pi) {
   return 0;
 }
 
-struct sockaddr *GetDestSockaddrFromPacketInfo(const struct PacketInfo *pi) {
+const struct sockaddr *GetDestSockaddrFromPacketInfo(const struct PacketInfo *pi) {
   if (pi->version == 6 && pi->sa6_daddr.sin6_family == AF_INET6) {
-    return (struct sockaddr *)&pi->sa6_daddr;
+    return (const struct sockaddr *)&pi->sa6_daddr;
   } else if (pi->version == 4 && pi->sa_daddr.sin_family == AF_INET) {
-    return (struct sockaddr *)&pi->sa_daddr;
+    return (const struct sockaddr *)&pi->sa_daddr;
   }
 
   return NULL;
@@ -325,11 +325,11 @@ socklen_t GetDestSockaddrLenFromPacketInfo(const struct PacketInfo *pi) {
   return 0;
 }
 
-struct sockaddr *GetClientSockaddrFromPacketInfo(const struct PacketInfo *pi) {
+const struct sockaddr *GetClientSockaddrFromPacketInfo(const struct PacketInfo *pi) {
   if (pi->client4 != NULL) {
-    return (struct sockaddr *)pi->client4;
+    return (const struct sockaddr *)pi->client4;
   } else if (pi->client6 != NULL) {
-    return (struct sockaddr *)pi->client6;
+    return (const struct sockaddr *)pi->client6;
   }
 
   return NULL;

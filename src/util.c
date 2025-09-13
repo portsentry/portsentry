@@ -403,21 +403,21 @@ void DebugWritePacketToFs(const struct PacketInfo *pi) {
   int fd = -1;
   char filename[64], err[ERRNOMAXBUF];
   size_t ipLen;
-  unsigned char *ip;
+  const unsigned char *ip;
 
   if (pi->ip != NULL) {
-    ip = (unsigned char *)pi->ip;
+    ip = (const unsigned char *)pi->ip;
   } else if (pi->ip6 != NULL) {
-    ip = (unsigned char *)pi->ip6;
+    ip = (const unsigned char *)pi->ip6;
   } else {
     Error("No IP address to write to file");
     goto exit;
   }
 
   if (pi->tcp != NULL) {
-    ipLen = (size_t)((unsigned char *)pi->tcp - ip);
+    ipLen = (size_t)((const unsigned char *)pi->tcp - ip);
   } else if (pi->udp != NULL) {
-    ipLen = (size_t)((unsigned char *)pi->udp - ip);
+    ipLen = (size_t)((const unsigned char *)pi->udp - ip);
   } else {
     Error("No TCP or UDP header to write to file");
     goto exit;

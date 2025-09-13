@@ -23,10 +23,10 @@ struct PacketInfo {
   char daddr[INET6_ADDRSTRLEN];   // The dest address as a string
   const unsigned char *packet;    // The raw packet + pointers into the various headers, where applicable
   int packetLength;
-  struct ip *ip;        // pointer into packet for ipv4 header
-  struct ip6_hdr *ip6;  // pointer into packet for ipv6 header
-  struct tcphdr *tcp;   // pointer into packet for tcp header (if it's a tcp packet, otherwise NULL)
-  struct udphdr *udp;   // pointer into packet for udp header (if it's a udp packet, otherwise NULL)
+  const struct ip *ip;        // pointer into packet for ipv4 header
+  const struct ip6_hdr *ip6;  // pointer into packet for ipv6 header
+  const struct tcphdr *tcp;   // pointer into packet for tcp header (if it's a tcp packet, otherwise NULL)
+  const struct udphdr *udp;   // pointer into packet for udp header (if it's a udp packet, otherwise NULL)
 
   // Connection based (sentry_connect) information
   int listenSocket;                    // The listening socket for the connection (also used to sendUDP packets if applicable)
@@ -40,13 +40,13 @@ void ClearPacketInfo(struct PacketInfo *pi);
 int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, const uint32_t packetLength);
 int SetPacketInfoFromConnectData(struct PacketInfo *pi, const uint16_t port, const int family, const uint8_t protocol, const int sockfd, const int incomingSockfd, const struct sockaddr_in *client4, const struct sockaddr_in6 *client6);
 
-struct sockaddr *GetSourceSockaddrFromPacketInfo(const struct PacketInfo *pi);
+const struct sockaddr *GetSourceSockaddrFromPacketInfo(const struct PacketInfo *pi);
 socklen_t GetSourceSockaddrLenFromPacketInfo(const struct PacketInfo *pi);
 
-struct sockaddr *GetDestSockaddrFromPacketInfo(const struct PacketInfo *pi);
+const struct sockaddr *GetDestSockaddrFromPacketInfo(const struct PacketInfo *pi);
 socklen_t GetDestSockaddrLenFromPacketInfo(const struct PacketInfo *pi);
 
-struct sockaddr *GetClientSockaddrFromPacketInfo(const struct PacketInfo *pi);
+const struct sockaddr *GetClientSockaddrFromPacketInfo(const struct PacketInfo *pi);
 socklen_t GetClientSockaddrLenFromPacketInfo(const struct PacketInfo *pi);
 
 int IsSameSourceAndDestAddress(const struct PacketInfo *pi);

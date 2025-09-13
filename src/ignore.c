@@ -213,12 +213,12 @@ int IgnoreIpIsPresent(const struct IgnoreState *is, const struct sockaddr *sa) {
     }
 
     if (sa->sa_family == AF_INET) {
-      struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+      const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
       if ((sin->sin_addr.s_addr & is->ignoreIpList[i].mask.mask4.s_addr) == is->ignoreIpList[i].ip.addr4.s_addr) {
         return TRUE;
       }
     } else if (sa->sa_family == AF_INET6) {
-      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+      const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sa;
       for (int j = 0; j < 16; j++) {
         if ((sin6->sin6_addr.s6_addr[j] & is->ignoreIpList[i].mask.mask6.s6_addr[j]) != is->ignoreIpList[i].ip.addr6.s6_addr[j]) {
           break;

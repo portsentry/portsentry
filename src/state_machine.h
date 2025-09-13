@@ -28,4 +28,4 @@ struct SentryState {
 
 void InitSentryState(struct SentryState *sentryState);
 void FreeSentryState(struct SentryState *sentryState);
-int CheckState(struct SentryState *state, struct sockaddr *addr);
+int CheckState(struct SentryState *state, const struct sockaddr *addr);
