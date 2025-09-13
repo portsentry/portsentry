@@ -665,7 +665,8 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
       Error("No client address specified for UDP banner transmission (ignoring)");
       return;
     }
-    result = sendto(socket, configData.portBanner, strlen(configData.portBanner), 0, (struct sockaddr *)saddr, saddrLen);
+    const struct sockaddr *addr = saddr;
+    result = sendto(socket, configData.portBanner, strlen(configData.portBanner), 0, addr, saddrLen);
   }
 
   if (result == -1) {
