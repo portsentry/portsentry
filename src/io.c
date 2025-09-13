@@ -145,8 +145,16 @@ int BindSocket(const int sockfd, const struct sockaddr *addr, const socklen_t ad
   char err[ERRNOMAXBUF];
   uint16_t port;
 
-  port = (addr->sa_family == AF_INET6) ? ntohs(((struct sockaddr_in6 *)addr)->sin6_port)
-                                       : ntohs(((struct sockaddr_in *)addr)->sin_port);
+  if (addr->sa_family == AF_INET6) {
+    const struct sockaddr_in6 *addr6Ptr = (const struct sockaddr_in6 *)addr;
+    port = ntohs(addr6Ptr->sin6_port);
+  } else if (addr->sa_family == AF_INET) {
+    const struct sockaddr_in *addr4Ptr = (const struct sockaddr_in *)addr;
+    port = ntohs(addr4Ptr->sin_port);
+  } else {
+    Error("Unsupported address family: %d", addr->sa_family);
+    return ERROR;
+  }
 
   if ((bind(sockfd, addr, addrLen)) == -1) {
     Verbose("Binding %s %s %d failed: %s",
