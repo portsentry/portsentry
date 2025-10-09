@@ -108,7 +108,13 @@ install(FILES Changes.md README.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
 if (INSTALL_LICENSE)
   install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system)
+
+# Allow overriding the systemd unit install directory, could be useful for distro package systems
+if (DEFINED SYSTEMD_SYSTEM_UNIT_DIR)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION "${SYSTEMD_SYSTEM_UNIT_DIR}")
+else()
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION "${CMAKE_INSTALL_LIBDIR}/systemd/system")
+endif()
 
 # PORTCON - helper test program used in system tests
 add_executable(portcon portcon/main.c)
