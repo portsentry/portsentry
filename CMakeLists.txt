@@ -7,6 +7,10 @@ option(BUILD_TESTS "Build unit tests" OFF)
 option(USE_PCAP "Build with pcap code and link with libpcap" ON)
 option(INSTALL_LICENSE "Install license file" ON)
 
+if (NOT DEFINED CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
 

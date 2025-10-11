@@ -26,13 +26,17 @@ To build a release version
 
 ## Running CMake manually
 
-In order to compile, you must supply the **CMAKE_BUILD_TYPE** flag to CMake (see below). It should be set to either **Debug** or **Release**.
+In order to compile, you should supply the **CMAKE_BUILD_TYPE** flag to CMake (see below). It should be set to either **Debug** or **Release**.
 
-Portsentry accepts one additional flag:
+Portsentry accepts these flags:
 
-**USE_PCAP=ON|OFF** (default: ON)
-
-If used with **USE_PCAP=OFF** set, all pcap code is excluded and Portsentry will not link to libpcap. This option can be used where libpcap is not desired and/or available.
+| Flag | Default | Description |
+| ---- | ------- | ----------- |
+| CMAKE_BUILD_TYPE | Release | Should be set to either Debug or Release |
+| USE_PCAP | ON | If used with **USE_PCAP=OFF** set, all pcap code is excluded and Portsentry will not link to libpcap. This option can be used where libpcap is not desired and/or available. |
+| BUILD_FUZZER | OFF | If used with **BUILD_FUZZER=ON**, the clang fuzzer tests are built. |
+| BUILD_TESTS | OFF | If used with **BUILD_TESTS=ON**, unit tests are built and can be run with the ctest suit. |
+| INSTALL_LICENSE | ON | When **INSTALL_LICENSE=ON** the LICENSE file will be included in the generated install files. However, some package managers (like debian and red hat for example) handle license installations separately. In these cases (when building distro packages), you might want to set **INSTALL_LICENSE=OFF**. |
 
 ### Compilation Examples
 
