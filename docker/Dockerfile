@@ -1,5 +1,5 @@
 FROM debian:stable AS builder
-RUN apt update && apt install -y build-essential libpcap-dev cmake git
+RUN apt update && apt install -y build-essential libpcap-dev cmake git pkg-config
 WORKDIR /build
 COPY . .
 RUN ./build.sh clean
