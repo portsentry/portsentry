@@ -71,6 +71,22 @@ set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "A port scanning detection tool")
 
 include(CPack)
 
+find_package(PkgConfig QUIET)
+
+if(USE_SYSTEMD AND NOT DEFINED SYSTEMD_SYSTEM_UNIT_DIR)
+  message(STATUS "SYSTEMD_SYSTEM_UNIT_DIR not defined, checking for systemd_system_unit_dir using pkg-config")
+  if(PKG_CONFIG_FOUND)
+    pkg_check_modules(SYSTEMD "systemd")
+  endif()
+
+  if(SYSTEMD_FOUND)
+    execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE} --variable=systemd_system_unit_dir systemd OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE SYSTEMD_SYSTEM_UNIT_DIR)
+    message(STATUS "SYSTEMD_SYSTEM_UNIT_DIR: ${SYSTEMD_SYSTEM_UNIT_DIR}")
+  else()
+    message(FATAL_ERROR "Unable to find systemd using pkg-config, please set SYSTEMD_SYSTEM_UNIT_DIR manually (e.g. /lib/systemd/system)")
+  endif()
+endif()
+
 # LIBPORTSENTRY - Static lib of the portsentry functionallity
 add_library(lportsentry STATIC ${CORE_SOURCE_FILES})
 target_compile_options(lportsentry PRIVATE ${STANDARD_COMPILE_OPTS})
