@@ -6,6 +6,7 @@ option(BUILD_FUZZER "Build fuzzer tests" OFF)
 option(BUILD_TESTS "Build unit tests" OFF)
 option(USE_PCAP "Build with pcap code and link with libpcap" ON)
 option(INSTALL_LICENSE "Install license file" ON)
+option(USE_SYSTEMD "Install systemd unit file" ON)
 
 if (NOT DEFINED CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
@@ -120,10 +121,12 @@ if (INSTALL_LICENSE)
 endif()
 
 # Allow overriding the systemd unit install directory, could be useful for distro package systems
-if (DEFINED SYSTEMD_SYSTEM_UNIT_DIR)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION "${SYSTEMD_SYSTEM_UNIT_DIR}")
-else()
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION "${CMAKE_INSTALL_LIBDIR}/systemd/system")
+if (USE_SYSTEMD)
+  if (DEFINED SYSTEMD_SYSTEM_UNIT_DIR)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION "${SYSTEMD_SYSTEM_UNIT_DIR}")
+  else()
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION "${CMAKE_INSTALL_LIBDIR}/systemd/system")
+  endif()
 endif()
 
 # PORTCON - helper test program used in system tests
