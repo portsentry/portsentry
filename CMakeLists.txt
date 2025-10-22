@@ -145,7 +145,7 @@ if (USE_SYSTEMD)
   if (DEFINED SYSTEMD_SYSTEM_UNIT_DIR)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION "${SYSTEMD_SYSTEM_UNIT_DIR}")
   else()
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION "${CMAKE_INSTALL_LIBDIR}/systemd/system")
+    message(FATAL_ERROR "Unable to find systemd using pkg-config, please set SYSTEMD_SYSTEM_UNIT_DIR manually (e.g. /lib/systemd/system)")
   endif()
 endif()
 
