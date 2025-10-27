@@ -6,10 +6,15 @@ option(BUILD_FUZZER "Build fuzzer tests" OFF)
 option(BUILD_TESTS "Build unit tests" OFF)
 option(USE_PCAP "Build with pcap code and link with libpcap" ON)
 option(INSTALL_LICENSE "Install license file" ON)
+option(USE_SYSTEMD "Install systemd unit file" ON)
 
 if (NOT DEFINED CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
 endif()
+
+# We're using an absolute path for the systemd unit file, so we need to set the CPack destination directory to ON
+# This is a workaround for the fact that the systemd unit file is installed in a non-standard location. Only affects the use of cpack.
+set(CPACK_SET_DESTDIR "ON")
 
 set(CONFIG_FILE "\"/etc/portsentry/portsentry.conf\"" CACHE STRING "Path to portsentry config file")
 set(WRAPPER_HOSTS_DENY "\"/etc/hosts.deny\"" CACHE STRING "Path to hosts.deny file")
@@ -66,6 +71,22 @@ set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "A port scanning detection tool")
 
 include(CPack)
 
+find_package(PkgConfig QUIET)
+
+if(USE_SYSTEMD AND NOT DEFINED SYSTEMD_SYSTEM_UNIT_DIR)
+  message(STATUS "SYSTEMD_SYSTEM_UNIT_DIR not defined, checking for systemd_system_unit_dir using pkg-config")
+  if(PKG_CONFIG_FOUND)
+    pkg_check_modules(SYSTEMD "systemd")
+  endif()
+
+  if(SYSTEMD_FOUND)
+    execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE} --variable=systemd_system_unit_dir systemd OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE SYSTEMD_SYSTEM_UNIT_DIR)
+    message(STATUS "SYSTEMD_SYSTEM_UNIT_DIR: ${SYSTEMD_SYSTEM_UNIT_DIR}")
+  else()
+    message(FATAL_ERROR "Unable to find systemd using pkg-config, please set SYSTEMD_SYSTEM_UNIT_DIR manually (e.g. /lib/systemd/system)")
+  endif()
+endif()
+
 # LIBPORTSENTRY - Static lib of the portsentry functionallity
 add_library(lportsentry STATIC ${CORE_SOURCE_FILES})
 target_compile_options(lportsentry PRIVATE ${STANDARD_COMPILE_OPTS})
@@ -118,7 +139,15 @@ install(FILES Changes.md README.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
 if (INSTALL_LICENSE)
   install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system)
+
+# Allow overriding the systemd unit install directory, could be useful for distro package systems
+if (USE_SYSTEMD)
+  if (DEFINED SYSTEMD_SYSTEM_UNIT_DIR)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/init/portsentry.service DESTINATION "${SYSTEMD_SYSTEM_UNIT_DIR}")
+  else()
+    message(FATAL_ERROR "Unable to find systemd using pkg-config, please set SYSTEMD_SYSTEM_UNIT_DIR manually (e.g. /lib/systemd/system)")
+  endif()
+endif()
 
 # PORTCON - helper test program used in system tests
 add_executable(portcon portcon/main.c)

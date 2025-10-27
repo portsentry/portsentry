@@ -3,7 +3,7 @@ RUN apt update && apt install -y build-essential libpcap-dev cmake git
 WORKDIR /build
 COPY . .
 RUN ./build.sh clean
-RUN ./build.sh release
+RUN CMAKE_OPTS="-D SYSTEMD_SYSTEM_UNIT_DIR=/lib/systemd/system" ./build.sh release
 RUN cpack --config release/CPackConfig.cmake -G DEB
 RUN cpack --config release/CPackConfig.cmake -G TXZ
 
