@@ -1,6 +1,11 @@
 #!/bin/sh
 
 ACTION=$1
+_SYSTEM=$(uname -s)
+
+if [ "$_SYSTEM" != "Linux" ]; then
+  CMAKE_OPTS="$CMAKE_OPTS -DUSE_SYSTEMD=OFF"
+fi
 
 if [ "$ACTION" = "clean" ]; then
   rm -rf debug release && \
