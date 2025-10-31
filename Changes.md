@@ -1,5 +1,15 @@
 # Portsentry Changelog
 
+## 2025-10-31 2.0.6
+### Improvements
+- Various compiler flags to increase security
+- Added systemd private devices
+- Various compile time configuration- and installation options to improve packaging
+
+### Bugfixes
+- Fixed bug where the build number would not be added during release
+- Fix manual which stated incorrect license
+
 ## 2025-09-03 2.0.5
 ### Improvements
 - Added support and docker containers for i386 and 64bit risc-v
