@@ -43,7 +43,7 @@ int ListenKernel(void) {
 }
 
 int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
-  struct rt_msghdr *rtm = (struct rt_msghdr *)buf;
+  const struct rt_msghdr *rtm = (const struct rt_msghdr *)buf;
 
   memset(kernelMessage, 0, sizeof(struct KernelMessage));
 
@@ -57,7 +57,7 @@ int ParseKernelMessage(const char *buf, struct KernelMessage *kernelMessage) {
 }
 
 static int HandleInterfaceAnnounce(const char *buf, struct KernelMessage *kernelMessage) {
-  struct if_announcemsghdr *ifan = (struct if_announcemsghdr *)buf;
+  const struct if_announcemsghdr *ifan = (const struct if_announcemsghdr *)buf;
 
   kernelMessage->type = KMT_INTERFACE;
 
@@ -91,17 +91,16 @@ static int HandleInterfaceAnnounce(const char *buf, struct KernelMessage *kernel
 }
 
 static int HandleAddressChange(const char *buf, struct KernelMessage *kernelMessage) {
-  struct ifa_msghdr *ifam = (struct ifa_msghdr *)buf;
-  struct sockaddr *sa;
-  char *cp;
+  const struct ifa_msghdr *ifam = (const struct ifa_msghdr *)buf;
+  const struct sockaddr *sa;
+  const char *cp = (const char *)(ifam + 1);
 
-  cp = ((char *)(ifam + 1));
   kernelMessage->type = KMT_ADDRESS;
   kernelMessage->action = ifam->ifam_type == RTM_NEWADDR ? KMA_ADD : KMA_DEL;
 
   for (int i = 0; i < RTAX_MAX; i++) {
     if (ifam->ifam_addrs & (1 << i)) {
-      sa = (struct sockaddr *)cp;
+      sa = (const struct sockaddr *)cp;
 
       if (i == RTAX_IFA) {
         if (HandleRTAX_IFA(sa, kernelMessage) == FALSE) {
@@ -129,9 +128,9 @@ static int HandleAddressChange(const char *buf, struct KernelMessage *kernelMess
 
 static int HandleRTAX_IFA(const struct sockaddr *sa, struct KernelMessage *kernelMessage) {
   if (sa->sa_family == AF_INET) {
-    inet_ntop(AF_INET, &((struct sockaddr_in *)sa)->sin_addr, kernelMessage->address.ipAddr, sizeof(kernelMessage->address.ipAddr));
+    inet_ntop(AF_INET, &((const struct sockaddr_in *)sa)->sin_addr, kernelMessage->address.ipAddr, sizeof(kernelMessage->address.ipAddr));
   } else if (sa->sa_family == AF_INET6) {
-    inet_ntop(AF_INET6, &((struct sockaddr_in6 *)sa)->sin6_addr, kernelMessage->address.ipAddr, sizeof(kernelMessage->address.ipAddr));
+    inet_ntop(AF_INET6, &((const struct sockaddr_in6 *)sa)->sin6_addr, kernelMessage->address.ipAddr, sizeof(kernelMessage->address.ipAddr));
   } else {
     Error("Unexpected address family: %d for RTAX_IFA. Unable to parse address", sa->sa_family);
     return FALSE;
@@ -148,7 +147,7 @@ static int HandleRTAX_IFP(const struct sockaddr *sa, struct KernelMessage *kerne
     return FALSE;
   }
 
-  struct sockaddr_dl *sdl = (struct sockaddr_dl *)sa;
+  const struct sockaddr_dl *sdl = (const struct sockaddr_dl *)sa;
   if (sdl->sdl_nlen >= IF_NAMESIZE) {
     Error("Unexpected interface length %d (IF_NAMESIZE: %d) on RTAX_IFP", sdl->sdl_nlen, IF_NAMESIZE);
     return FALSE;
