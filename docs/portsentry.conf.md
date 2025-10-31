@@ -116,4 +116,4 @@ portsentry(8)
 
 ## LICENSE
 
-Portsentry is licensed under the Common Public License v1.0
+Portsentry is licensed under the BSD-2-Clause license.
