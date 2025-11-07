@@ -74,7 +74,7 @@ int SetPacketInfoFromPacket(struct PacketInfo *pi, const unsigned char *packet, 
     }
 
     ip = (const struct ip *)pi->packet;
-    iplen = ip->ip_hl * 4;
+    iplen = (size_t)ip->ip_hl * 4;
     protocol = ip->ip_p;
   } else if (ipVersion == 6) {
     if (packetLength < 40) {
