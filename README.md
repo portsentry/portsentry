@@ -41,23 +41,29 @@ More docker configuration options available in the [HOWTO-Docker.md](docs/HOWTO-
 
 #### Debian 13 (trixie)
 
+```
 sudo apt install curl gpg
 echo 'deb https://download.opensuse.org/repositories/home:/portsentry/Debian_13/ /' | sudo tee /etc/apt/sources.list.d/portsentry.list
 curl -fsSL https://download.opensuse.org/repositories/home:/portsentry/Debian_13//Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/portsentry.gpg > /dev/null
 sudo apt update
 sudo apt install portsentry
+```
 
 #### Debian 14
 
+```
 sudo apt install portsentry
+```
 
 #### Ubuntu 24.04, 25.04, 25.10
 
+```
 sudo apt install curl gpg
 echo 'deb https://download.opensuse.org/repositories/home:/portsentry/xUbuntu_24.04/ /' | sudo tee /etc/apt/sources.list.d/portsentry.list
 curl -fsSL https://download.opensuse.org/repositories/home:/portsentry/xUbuntu_24.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/portsentry.gpg > /dev/null
 sudo apt update
 sudo apt install portsentry
+```
 
 #### Other Linux distributions
 
