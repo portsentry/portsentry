@@ -49,7 +49,7 @@ sudo apt update
 sudo apt install portsentry
 ```
 
-#### Debian 14
+#### Debian 14 and later
 
 ```
 sudo apt install portsentry
@@ -63,6 +63,22 @@ echo 'deb https://download.opensuse.org/repositories/home:/portsentry/xUbuntu_24
 curl -fsSL https://download.opensuse.org/repositories/home:/portsentry/xUbuntu_24.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/portsentry.gpg > /dev/null
 sudo apt update
 sudo apt install portsentry
+```
+
+#### Fedora 42
+
+```
+dnf config-manager addrepo --from-repofile=https://download.opensuse.org/repositories/home:/portsentry/Fedora_42/home:portsentry.repo
+dnf install portsentry
+sudo systemctl enable portsentry
+sudo systemctl start portsentry
+```
+
+#### Fedora 43 and later
+
+```
+dnf install portsentry
+sudo systemctl start portsentry
 ```
 
 #### Other Linux distributions
