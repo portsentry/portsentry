@@ -25,14 +25,6 @@ Upon detecting a port scan, Portsentry can respond in several ways to mitigate t
 * Logging: Portsentry logs the details of the scan attempt, including the source IP address, timestamp, and type of scan detected. This information can be useful for forensic analysis and monitoring.
 * Notification: It can send alerts to system administrators via email or other messaging systems to notify them of the detected scan.
 
-**Stealth Mode**
-
-Portsentry operates in stealth mode where it listens on unused ports. Since these ports should not receive any legitimate traffic, any connection attempts are considered suspicious and are flagged as potential scans.
-
-**Integration with Security Tools**
-
-Portsentry can be integrated with other security tools and systems to provide a comprehensive security solution. For example, it can be used with fail2ban in order to take advantage of its sophisticated blocking mechanism.
-
 ## Quickstart
 
 Detailed installation instructions can be found in the [HOWTO-Use](docs/HOWTO-Use.md) guide.
@@ -47,18 +39,27 @@ More docker configuration options available in the [HOWTO-Docker.md](docs/HOWTO-
 
 ### Linux
 
-Download the latest release from the [Release page](https://github.com/portsentry/portsentry/releases)
+#### Debian 13 (trixie)
 
-#### Debian/Ubuntu based systems
+sudo apt install curl gpg
+echo 'deb https://download.opensuse.org/repositories/home:/portsentry/Debian_13/ /' | sudo tee /etc/apt/sources.list.d/portsentry.list
+curl -fsSL https://download.opensuse.org/repositories/home:/portsentry/Debian_13//Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/portsentry.gpg > /dev/null
+sudo apt update
+sudo apt install portsentry
 
-Download the .deb file and install it by typing:
+#### Debian 14
 
-```bash
-sudo apt install libpcap0.8
-sudo dpkg -i portsentry-*.deb
-```
+sudo apt install portsentry
 
-#### tarball
+#### Ubuntu 24.04, 25.04, 25.10
+
+sudo apt install curl gpg
+echo 'deb https://download.opensuse.org/repositories/home:/portsentry/xUbuntu_24.04/ /' | sudo tee /etc/apt/sources.list.d/portsentry.list
+curl -fsSL https://download.opensuse.org/repositories/home:/portsentry/xUbuntu_24.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/portsentry.gpg > /dev/null
+sudo apt update
+sudo apt install portsentry
+
+#### Other Linux distributions
 
 Download and extract the tarball and run the installer script by typing:
 
@@ -71,10 +72,6 @@ sudo tar --strip-components=1 -C / -xvf portsentry-*.tar.xz
 OpenBSD, NetBSD and FreeBSD is supported but must currently be compiled manually, see below
 
 ### Compiling the Source Code
-
-* Make sure you have: **CMake**, **gcc or clang** and **libpcap** installed.
-* git clone https://github.com/portsentry/portsentry.git
-* ./build.sh release
 
 Detailed compilation instructions can be found on the [HOWTO-Compile](docs/HOWTO-Compile.md) page.
 
