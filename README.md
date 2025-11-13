@@ -81,6 +81,24 @@ dnf install portsentry
 sudo systemctl start portsentry
 ```
 
+#### Arch Linux
+
+```
+sudo pacman -Sy curl gnupg
+curl -fsSL https://download.opensuse.org/repositories/home:/portsentry/Arch/x86_64/home_portsentry_Arch.key -o /tmp/portsentry.key
+sudo pacman-key --add /tmp/portsentry.key
+KEYID=$(gpg --show-keys /tmp/portsentry.key | grep -A1 "^pub" | tail -n 1 | sed 's/\s*//')
+sudo pacman-key --lsign-key "$KEYID"
+sudo cat <<EOF >>/etc/pacman.conf
+[home_portsentry_Arch]
+SigLevel = Required
+Server = https://download.opensuse.org/repositories/home:/portsentry/Arch/\$arch/
+EOF
+sudo pacman -Sy portsentry
+sudo systemctl enable portsentry
+sudo systemctl start portsentry
+```
+
 #### Other Linux distributions
 
 Download and extract the tarball and run the installer script by typing:
