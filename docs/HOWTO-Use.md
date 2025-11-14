@@ -1,8 +1,8 @@
-# Howto Install and Setup Guide
+# Installation and Initial Setup Guide
 
 ## Choosing a Deployment Method
 
-Portsentry is available on Linux, OpenBSD, NetBSD and FreeBSD. The [../README](README.md) file lists the installation options for the various distributions and/or operating systems
+Portsentry is available on Linux, OpenBSD, NetBSD and FreeBSD. The [README](../README.md) file lists the installation options for the various distributions and/or operating systems
 
 ## Setup
 
