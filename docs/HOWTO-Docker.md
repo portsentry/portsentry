@@ -9,7 +9,7 @@ These are the tags you can use:
 | Tag Name | Description |
 | -------- | ----------- |
 | unstable | Follows the master branch, unreleased/unstable version |
-| latest | Follows the latest stable release brnach/version |
+| latest | Follows the latest stable release branch/version |
 | v2.0 | Follows the v2.0 branch (current stable branch) |
 
 ## Quickstart
@@ -33,7 +33,7 @@ https://github.com/portsentry/portsentry/blob/master/examples/portsentry.conf
 
 https://github.com/portsentry/portsentry/blob/master/examples/portsentry.ignore
 
-Here is a complete example of how to run Portsentry with a custom configruation and ignore file and the log directory mounted:
+Here is a complete example of how to run Portsentry with a custom configuration and ignore file and the log directory mounted:
 
 
 ```
@@ -74,7 +74,7 @@ services:
 
 ## Fail2ban Integration
 
-It is highly recommended to use Portsentry with fail2ban if you want to block ip addresses. Fail2ban is able to block ip addresses using a wide variety of methods and will enforce state between system reboots and service restarts.
+It is highly recommended to use Portsentry with fail2ban if you want to block IP addresses. Fail2ban is able to block IP addresses using a wide variety of methods and will enforce state between system reboots and service restarts.
 
 Get the fail2ban integration files here: https://github.com/portsentry/portsentry/tree/master/fail2ban
 
