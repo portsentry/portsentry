@@ -86,6 +86,9 @@ elif [ "$ACTION" = "test_all" ]; then
   (command -v docker >/dev/null 2>&1 && ./build.sh docker)
   cd system_test
   ./run_all_tests.sh
+elif [ "$ACTION" = "doc" ]; then
+  pandoc --standalone --to man docs/Manual.md -o man/portsentry.8
+  pandoc --standalone --to man docs/portsentry.conf.md -o man/portsentry.conf.8
 else
   echo "Usage: $0 <command>"
   echo "Commands:"
