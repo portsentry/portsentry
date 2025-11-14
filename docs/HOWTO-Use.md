@@ -2,64 +2,17 @@
 
 ## Choosing a Deployment Method
 
-**At the time of writing, Portsentry has limited deployment options due to the fact that the project has just recently been relaunched. More deployment options are next on the roadmap and will be comming soon.**
-
-Your current options are:
-
-### Docker
-
-This is the recommeded deployment option if you have Docker available. Refer to rhe [HOWTO-Docker.md](HOWTO-Docker.md) guide for more information.
-
-### Debian/Ubuntu based systems
-
-Download the .deb file from the [releases](https://github.com/portsentry/portsentry/releases) page and install it by typing:
-
-```bash
-sudo apt install libpcap0.8
-sudo dpkg -i portsentry-*.deb
-```
-
-### Tarball
-
-Download the .tar.xz file from the [releases](https://github.com/portsentry/portsentry/releases) page and install if by tping:
-
-```bash
-sudo tar --strip-components=1 -C / -xvf portsentry-*.tar.xz
-```
-
-### Compile from source
-
-If you are using a system that is not supported by the precompiled binaries, you can compile Portsentry from source. Refer to the [HOWTO-Compile.md](HOWTO-Compile.md) guide for more information.
+Portsentry is available on Linux, OpenBSD, NetBSD and FreeBSD. The [../README](README.md) file lists the installation options for the various distributions and/or operating systems
 
 ## Setup
 
-Once Portsentry is installed, you need to configure it. The configuration file is located in **/etc/portsentry/portsentry.conf**. The default configuration file is well documented and should be easy to understand. More documentation and in-depth discusson on the configuration can be found in the [portsentry.conf.md](portsentry.conf.md) manual. You can also use **man portsentry.conf** to read the manual page for the configuration file.
+Once Portsentry is installed, you need to configure it. The configuration file is located in **/etc/portsentry/portsentry.conf**. The default configuration file provides a well rounded start position and is well documented and should be easy to understand.
+
+More documentation and in-depth discusson on the configuration can be found in the [portsentry.conf.md](portsentry.conf.md) manual. You can also use **man portsentry.conf** to read the manual page for the configuration file.
 
 ## Running Portsentry
 
-### Running in a Terminal
-
-You can run Portsentry directly in your terminal to get a feel for it. Simply run the following command:
-
-```bash
-sudo portsentry
-```
-
-This will start Portsentry in the foreground and you will see the output in your terminal. You can stop Portsentry by pressing **Ctrl+C**.
-
-### Systemd
-
-Portsentry comes with a systemd service file which is installed during installation. To enable the Portsentry service to start on boot, you can run the following command:
-
-```bash
-sudo systemctl enable portsentry
-```
-
-You can start Portsentry by running the following command:
-
-```bash
-sudo systemctl start portsentry
-```
+By default, portsentry is started via the OS init system. On Linux, this is done via _systemd_.
 
 You can check the status of Portsentry by running:
 
@@ -67,7 +20,7 @@ You can check the status of Portsentry by running:
 sudo systemctl status portsentry
 ```
 
-You the journalctl command to view the Portsentry system log:
+Use journalctl to view the Portsentry system log:
 
 ```bash
 sudo journalctl -u portsentry
@@ -94,4 +47,3 @@ Fail2ban is a log-parsing tool that can be used to block IP addresses that are d
 ```bash
 sudo systemctl restart fail2ban
 ```
-
