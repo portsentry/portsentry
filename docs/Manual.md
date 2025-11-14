@@ -16,7 +16,7 @@ Portsentry does three main things:
 * It stealthily (or visibly) logs connection attempts to the ports you have specified.
 * It can optionally execute scripts or applications when connection attempts are made.
 
-The most common use\-case for Portsentry is to block unwanted service enumeration attempts against your host. This could be accomplished by simply listening to a wide variety of **unused** ports and block all connection attempts to those ports. Portsentry can also be deployed as a Network Intrusion Detection System (NIDS). By listening to unused ports on your internal networks, you will be notified as soon as a potential attacker tries to scan for services within your organization. A more detailed explanation and guide of the various uses of portsentry, refer to the [HOWTO-Use](https://github.com/portsentry/portsentry/blob/master/docs/HOWTO-Use.md) guide.
+The most common use\-case for Portsentry is to block unwanted service enumeration attempts against your host. This could be accomplished by simply listening to a wide variety of **unused** ports and blocking all connection attempts to those ports. Portsentry can also be deployed as a Network Intrusion Detection System (NIDS). By listening to unused ports on your internal networks, you will be notified as soon as a potential attacker tries to scan for services within your organization. For a more detailed explanation and guide to the various uses of Portsentry, refer to the [HOWTO-Use](https://github.com/portsentry/portsentry/blob/master/docs/HOWTO-Use.md) guide.
 
 
 
@@ -45,7 +45,7 @@ This section covers options only relevant when Stealth mode **\-\-stealth** is u
 
 ### \-i, \-\-interface=ALL|ALL_NLO|\<interface\>
 
-**This option is only relevant when pcap mode is used**. Specify interface(s) to listen on. You can either specify an "interface alias or a specific interface:
+**This option is only relevant when pcap mode is used**. Specify interface(s) to listen on. You can either specify an "interface alias" or a specific interface:
 
 * `ALL` - Listen on all interfaces (including the loopback interface) (Alias)
 * `ALL_NLO` - Listen on all interfaces except the loopback interface (Alias)
@@ -58,7 +58,7 @@ These options can be used regardless of mode used.
 
 ### \-L, \-\-disable\-local\-check
 
-Under normal operations; if Portsentry detects traffic with the same source and destination IP address, no logging or actions are performed. This is to prevent Portsentry from potentially taking actions on itself. This option disables this logic. I.e, logging and actions are taken on the host on which Portsentry is run. Use this option with care.
+Under normal operations; if Portsentry detects traffic with the same source and destination IP address, no logging or actions are performed. This is to prevent Portsentry from potentially taking actions on itself. This option disables this logic. i.e., logging and actions are taken on the host on which Portsentry is run. Use this option with care.
 
 ### \-l, \-\-logoutput=stdout|syslog
 
@@ -70,7 +70,7 @@ Portsentry can be configured using an alternative path for the configuration fil
 
 ### \-D, \-\-daemon
 
-Portsentry can be run as a daemon using the `--daemon` (or `-D`) command line option. This will cause Portsentry to fork into the background and run as a daemon. By default portsentry runs in the foreground.
+Portsentry can be run as a daemon using the `--daemon` (or `-D`) command line option. This will cause Portsentry to fork into the background and run as a daemon. By default, Portsentry runs in the foreground.
 
 ### \-d, \-\-debug
 
@@ -104,7 +104,7 @@ Review the [HOWTO-Use](https://github.com/portsentry/portsentry/blob/master/docs
 
 ## BUGS
 
-All bugs should be reported via the portsentry github issue tracker https://github.com/portsentry/portsentry/issues
+All bugs should be reported via the Portsentry GitHub issue tracker https://github.com/portsentry/portsentry/issues
 
 ## AUTHORS
 

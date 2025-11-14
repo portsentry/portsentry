@@ -13,21 +13,11 @@
 
 ## What is Portsentry?
 
-**Port Scan Detection**
+**Portsentry monitors network traffic to detect and respond to port scans and probing attempts in real-time.**
 
-Portsentry monitors network traffic in order to detect port scans in real-time. It can identify several types of scans, including TCP, SYN, FIN, XMAS, and NULL scans and UDP probing.
-
-**Response Mechanisms**
-
-Upon detecting a port scan, Portsentry can respond in several ways to mitigate the threat:
-
-* Blocking the Attacker: It can automatically add the attacker's IP address to the system's firewall or access control list, effectively blocking any further connections from that IP.
-* Logging: Portsentry logs the details of the scan attempt, including the source IP address, timestamp, and type of scan detected. This information can be useful for forensic analysis and monitoring.
-* Notification: It can send alerts to system administrators via email or other messaging systems to notify them of the detected scan.
+_For a more detailed introduction, review the [HOWTO-Use-Cases](docs/HOWTO-Use-Cases.md) documentation_
 
 ## Quickstart
-
-Detailed installation instructions can be found in the [HOWTO-Use](docs/HOWTO-Use.md) guide.
 
 ### Docker
 
@@ -35,13 +25,11 @@ Detailed installation instructions can be found in the [HOWTO-Use](docs/HOWTO-Us
 docker run -d --network=host --name portsentry portsentry/portsentry:unstable
 ```
 
-More docker configuration options available in the [HOWTO-Docker.md](docs/HOWTO-Docker.md)
+_More docker configuration options available in the [HOWTO-Docker.md](docs/HOWTO-Docker.md) documentation_
 
-### Linux
+### Debian 13 (trixie)
 
-#### Debian 13 (trixie)
-
-```
+```sh
 sudo apt install curl gpg
 echo 'deb https://download.opensuse.org/repositories/home:/portsentry/Debian_13/ /' | sudo tee /etc/apt/sources.list.d/portsentry.list
 curl -fsSL https://download.opensuse.org/repositories/home:/portsentry/Debian_13//Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/portsentry.gpg > /dev/null
@@ -49,15 +37,15 @@ sudo apt update
 sudo apt install portsentry
 ```
 
-#### Debian 14 and later
+### Debian 14 and later
 
-```
+```sh
 sudo apt install portsentry
 ```
 
-#### Ubuntu 24.04, 25.04, 25.10
+### Ubuntu 24.04, 25.04, 25.10
 
-```
+```sh
 sudo apt install curl gpg
 echo 'deb https://download.opensuse.org/repositories/home:/portsentry/xUbuntu_24.04/ /' | sudo tee /etc/apt/sources.list.d/portsentry.list
 curl -fsSL https://download.opensuse.org/repositories/home:/portsentry/xUbuntu_24.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/portsentry.gpg > /dev/null
@@ -65,25 +53,31 @@ sudo apt update
 sudo apt install portsentry
 ```
 
-#### Fedora 42
+### Ubuntu 26.04 and later
 
+```sh
+sudo apt install portsentry
 ```
+
+### Fedora 42
+
+```sh
 dnf config-manager addrepo --from-repofile=https://download.opensuse.org/repositories/home:/portsentry/Fedora_42/home:portsentry.repo
 dnf install portsentry
 sudo systemctl enable portsentry
 sudo systemctl start portsentry
 ```
 
-#### Fedora 43 and later
+### Fedora 43 and later
 
-```
+```sh
 dnf install portsentry
 sudo systemctl start portsentry
 ```
 
-#### Arch Linux
+### Arch Linux
 
-```
+```sh
 sudo pacman -Sy curl gnupg
 curl -fsSL https://download.opensuse.org/repositories/home:/portsentry/Arch/x86_64/home_portsentry_Arch.key -o /tmp/portsentry.key
 sudo pacman-key --add /tmp/portsentry.key
@@ -99,21 +93,63 @@ sudo systemctl enable portsentry
 sudo systemctl start portsentry
 ```
 
-#### Other Linux distributions
+### openSUSE 16
 
-Download and extract the tarball and run the installer script by typing:
+```sh
+sudo zypper addrepo https://download.opensuse.org/repositories/home:/portsentry/16.0/home:portsentry.repo
+sudo zypper refresh
+sudo zypper install portsentry
+sudo systemctl enable portsentry
+sudo systemctl start portsentry
+```
 
-```bash
+### openSUSE Tumbleweed
+
+```sh
+sudo zypper addrepo https://download.opensuse.org/repositories/home:/portsentry/openSUSE_Tumbleweed/home:portsentry.repo
+sudo zypper refresh
+sudo zypper install portsentry
+sudo systemctl enable portsentry
+sudo systemctl start portsentry
+```
+
+### openSUSE Slowroll
+
+```sh
+sudo zypper addrepo https://download.opensuse.org/repositories/home:/portsentry/openSUSE_Slowroll/home:portsentry.repo
+sudo zypper refresh
+sudo zypper install portsentry
+sudo systemctl enable portsentry
+sudo systemctl start portsentry
+```
+
+### Other Linux distributions
+
+Download the portsentry tar archive from the [Releases page](https://github.com/portsentry/portsentry/releases) and extract the tarball in the root directory:
+
+```sh
 sudo tar --strip-components=1 -C / -xvf portsentry-*.tar.xz
 ```
 
 ### *BSD
 
-OpenBSD, NetBSD and FreeBSD is supported but must currently be compiled manually, see below
+OpenBSD, NetBSD and FreeBSD are supported but must currently be compiled manually, see below
 
 ### Compiling the Source Code
 
-Detailed compilation instructions can be found on the [HOWTO-Compile](docs/HOWTO-Compile.md) page.
+_Detailed compilation instructions can be found on the [HOWTO-Compile](docs/HOWTO-Compile.md) page._
+
+## Configuration and setup
+
+_The [HOWTO-Use-Cases](docs/HOWTO-Use-Cases.md) documentation provides an overview of how portsentry can be used_
+
+_The [HOWTO-Use](docs/HOWTO-Use.md) documentation provides detailed installation and usage instructions_
+
+_The [Manual](docs/Manual.md) provides details around how Portsentry works and can be configured on the command line_
+
+_The [Portsentry Configuration](docs/portsentry.conf.md) reference provides details on how to configure Portsentry_
+
+_The [Logfile](docs/HOWTO-Logfile.md) reference explains how log entries from Portsentry should be interpreted._
 
 ## Documentation
 

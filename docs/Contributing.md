@@ -2,12 +2,12 @@
 
 ## Coding Style
 
-+ Use ``clang-format`` tool to format the code according to the ``.clang-format`` config file
-+ Use the ``cpplint`` tool using the ``CPPLING.cfg`` config to make sure you follow the project style.
++ Use the ``clang-format`` tool to format the code according to the ``.clang-format`` config file
++ Use the ``cpplint`` tool using the ``CPPLINT.cfg`` config to make sure you follow the project style.
 
 ## Development Environment Setup
 
-+ Install the following formater/linting tools
++ Install the following formatter/linting tools
   - clang-format
   - cpplint
 + Review [HOWTO-Compile.md](HOWTO-Compile.md) for compilation requirements.
@@ -22,7 +22,7 @@ Before submitting a pull request, please make sure that you do the following:
 + (optional) Run [CodeQL](https://codeql.github.com) locally if you have it installed
 + Run the fuzzers: ``./build.sh build_fuzz ; ./build.sh run_fuzz``
 + Run the integration tests: ``cd system_test ; ./run_all_tests.sh``. Consider running the tests in a VM. It would be greatly appreciated if you could run the tests on Linux, NetBSD, FreeBSD and OpenBSD but it's not a requirement.
-  - Note; The shell script build_and_test.sh can be used in order to build and run the tests on several VM's at the same time
+  - Note: The shell script build_and_test.sh can be used in order to build and run the tests on several VMs at the same time
 
 ## Documentation
 

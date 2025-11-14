@@ -10,7 +10,7 @@ In order to compile, Portsentry requires:
 
 ## Quickstart
 
-The build.sh convenience script can be used in order to build Portsentry
+The build.sh convenience script can be used in order to build Portsentry.
 
 To build a debug version:
 
@@ -18,7 +18,7 @@ To build a debug version:
 ./build.sh debug
 ```
 
-To build a release version
+To build a release version:
 
 ```
 ./build.sh release
@@ -33,10 +33,12 @@ Portsentry accepts these flags:
 | Flag | Default | Description |
 | ---- | ------- | ----------- |
 | CMAKE_BUILD_TYPE | Release | Should be set to either Debug or Release |
-| USE_PCAP | ON | If used with **USE_PCAP=OFF** set, all pcap code is excluded and Portsentry will not link to libpcap. This option can be used where libpcap is not desired and/or available. |
+| USE_PCAP | ON | When **USE_PCAP=OFF** is set, all pcap code is excluded and Portsentry will not link to libpcap. This option can be used where libpcap is not desired and/or available. |
 | BUILD_FUZZER | OFF | If used with **BUILD_FUZZER=ON**, the clang fuzzer tests are built. |
-| BUILD_TESTS | OFF | If used with **BUILD_TESTS=ON**, unit tests are built and can be run with the ctest suit. |
-| INSTALL_LICENSE | ON | When **INSTALL_LICENSE=ON** the LICENSE file will be included in the generated install files. However, some package managers (like debian and red hat for example) handle license installations separately. In these cases (when building distro packages), you might want to set **INSTALL_LICENSE=OFF**. |
+| BUILD_TESTS | OFF | If used with **BUILD_TESTS=ON**, unit tests are built and can be run with the ctest suite. |
+| INSTALL_LICENSE | ON | When **INSTALL_LICENSE=ON** the LICENSE file will be included in the generated install files. However, some package managers (like Debian and Red Hat for example) handle license installations separately. In these cases (when building distro packages), you might want to set **INSTALL_LICENSE=OFF**. |
+| USE_SYSTEMD | ON | When **USE_SYSTEMD=ON** the systemd service file is included in the install phase. |
+| SYSTEMD_SYSTEM_UNIT_DIR | N/A | Set **SYSTEMD_SYSTEM_UNIT_DIR** to the installation path to use for the systemd service file. If not set, pkg-config is used in order to determine where to put the service file |
 
 ### Compilation Examples
 

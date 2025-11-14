@@ -20,14 +20,15 @@ attempts are made.
 The most common use\-case for Portsentry is to block unwanted service
 enumeration attempts against your host.
 This could be accomplished by simply listening to a wide variety of
-\f[B]unused\f[R] ports and block all connection attempts to those ports.
+\f[B]unused\f[R] ports and blocking all connection attempts to those
+ports.
 Portsentry can also be deployed as a Network Intrusion Detection System
 (NIDS).
 By listening to unused ports on your internal networks, you will be
 notified as soon as a potential attacker tries to scan for services
 within your organization.
-A more detailed explanation and guide of the various uses of portsentry,
-refer to the \c
+For a more detailed explanation and guide to the various uses of
+Portsentry, refer to the \c
 .UR
 https://github.com/portsentry/portsentry/blob/master/docs/HOWTO-Use.md
 HOWTO\-Use
@@ -88,7 +89,8 @@ desired.
 .SS \-i, \-\-interface=ALL|ALL_NLO|<interface>
 \f[B]This option is only relevant when pcap mode is used\f[R].
 Specify interface(s) to listen on.
-You can either specify an \[lq]interface alias or a specific interface:
+You can either specify an \[lq]interface alias\[rq] or a specific
+interface:
 .IP \[bu] 2
 \f[CR]ALL\f[R] \- Listen on all interfaces (including the loopback
 interface) (Alias)
@@ -112,7 +114,7 @@ Under normal operations; if Portsentry detects traffic with the same
 source and destination IP address, no logging or actions are performed.
 This is to prevent Portsentry from potentially taking actions on itself.
 This option disables this logic.
-I.e, logging and actions are taken on the host on which Portsentry is
+i.e., logging and actions are taken on the host on which Portsentry is
 run.
 Use this option with care.
 .SS \-l, \-\-logoutput=stdout|syslog
@@ -133,7 +135,7 @@ Portsentry can be run as a daemon using the \f[CR]\-\-daemon\f[R] (or
 \f[CR]\-D\f[R]) command line option.
 This will cause Portsentry to fork into the background and run as a
 daemon.
-By default portsentry runs in the foreground.
+By default, Portsentry runs in the foreground.
 .SS \-d, \-\-debug
 Enable debug output using the \f[CR]\-\-debug\f[R] (or \f[CR]\-d\f[R])
 command line option.
@@ -163,7 +165,7 @@ HOWTO\-Use
 .PP
 /tmp/portsentry.blocked
 .SS BUGS
-All bugs should be reported via the portsentry github issue tracker
+All bugs should be reported via the Portsentry GitHub issue tracker
 https://github.com/portsentry/portsentry/issues
 .SS AUTHORS
 Marcus Hufvudsson \c
