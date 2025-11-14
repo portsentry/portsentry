@@ -125,7 +125,7 @@ sudo systemctl start portsentry
 
 ### Other Linux distributions
 
-Download and extract the tarball in the root directory
+Download the portsentry tar archive from the [Releases page](https://github.com/portsentry/portsentry/releases) and extract the tarball in the root directory:
 
 ```sh
 sudo tar --strip-components=1 -C / -xvf portsentry-*.tar.xz
