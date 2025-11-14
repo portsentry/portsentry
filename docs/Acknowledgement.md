@@ -1,8 +1,8 @@
 # Credits
 
-Craig Rowland - Inventor, Main developer and Maintainer of Portsentry from its inception in 1997 to its end in 2003
+**This file lists all the developers and contributors from its inception in 1997, up to it's abandonment in 2003. All contributions after portsentry's revival in 2023 is noted in the git repository and github's issue tracker.**
 
-Thanks to the following people who offered testing and bug fixes/suggestions. I apologize if I've forgotten anyone. (No particular order on this list either):
+Craig Rowland - Inventor, Main developer and Maintainer of Portsentry from its inception in 1997 to its end in 2003
 
 Jeff Johnson <trn@flinet.com> - Initial tester. Recommended ipfwadm addition.
 
