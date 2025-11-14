@@ -2,7 +2,7 @@
 
 ## Versions
 
-It's recommended to use either the **latest tag**, which corresponds to the latest stable version of Portsentry, or if you want to follow a specific branch, use a branch tag (such as v2.0).
+It's recommended to use either the **latest** tag, which corresponds to the latest stable version of Portsentry, or if you want to follow a specific branch, use a branch tag (such as v2.0).
 
 These are the tags you can use:
 
@@ -11,7 +11,6 @@ These are the tags you can use:
 | unstable | Follows the master branch, unreleased/unstable version |
 | latest | Follows the latest stable release brnach/version |
 | v2.0 | Follows the v2.0 branch (current stable branch) |
-| v1.2 | The old **legacy/unmaintained** version |
 
 ## Quickstart
 ```
