@@ -8,13 +8,13 @@
 
 The portsentry.conf file is used to configure Portsentry. The default location for this file is **/etc/portsentry/portsentry.conf**. The configuration file is read by Portsentry at startup. The configuration file is a simple text file with one option per line. Lines starting with a **#** are considered comments and are ignored.
 
-There is an example configuration file included with portsentry and available at [Github](https://github.com/portsentry/portsentry/blob/master/examples/portsentry.conf) with additional comments, examples and recommendations for how to setup Portsentry.
+There is an example configuration file included with portsentry and available at [GitHub](https://github.com/portsentry/portsentry/blob/master/examples/portsentry.conf) with additional comments, examples and recommendations for how to set up Portsentry.
 
 # OPTIONS
 
 ## TCP_PORTS="\<ports\>"
 
-A comma separated list of TCP ports you want to monitor. You can specify inclusive port ranges with a dash, e.g, 10-20 to include port 10 to 20.
+A comma separated list of TCP ports you want to monitor. You can specify inclusive port ranges with a dash, e.g., 10-20 to include port 10 to 20.
 
 ### Example
 
@@ -22,7 +22,7 @@ TCP_PORTS="10,20,30-40"
 
 ## UDP_PORTS="\<ports\>"
 
-A comma separated list of UDP ports you want to monitor. You can specify inclusive port ranges with a dash, e.g, 10-20 to include port 10 to 20.
+A comma separated list of UDP ports you want to monitor. You can specify inclusive port ranges with a dash, e.g., 10-20 to include port 10 to 20.
 
 ### Example
 
@@ -38,7 +38,7 @@ This file contains all the IP addresses that have triggered the Portsentry detec
 
 ## BLOCKED_FILE="/tmp/portsentry.blocked"
 
-When Portsentry's action mechanism is used (BLOCK_TCP and/or BLOCK_UDP is set to 1 or 2, see below), this file will contain a list of all hosts that triggers an action. If a host is matched against this file no further action will be taken. Leaving this field as an empty string "" or not setting it will cause the action mechanism to always trigger when a scan is detected.
+When Portsentry's action mechanism is used (BLOCK_TCP and/or BLOCK_UDP is set to 1 or 2, see below), this file will contain a list of all hosts that trigger an action. If a host is matched against this file no further action will be taken. Leaving this field as an empty string "" or not setting it will cause the action mechanism to always trigger when a scan is detected.
 
 
 ## RESOLVE_HOST = "<1|0>"
@@ -58,13 +58,13 @@ NOTE: It is highly recommended to only log connection attempts (by using: BLOCK_
 
 1 = Block UDP/TCP scans. This option will block the attacking host after the scan is detected using the technique specified in the KILL_ROUTE and/or KILL_HOSTS_DENY section below. If KILL_ROUTE is defined, it will run first, followed by KILL_HOSTS_DENY if it is set. If the KILL_RUN_CMD option is set, the command will also be executed.
 
-NOTE: These options are preserved as a legacy option for those who cannot use an external tool to block the attacking host or has some specific use-case, where this method is preferred.
+NOTE: These options are preserved as a legacy option for those who cannot use an external tool to block the attacking host or have some specific use-case, where this method is preferred.
 
-2 = Run external command only (KILL_RUN_CMD). This option will only run the external command specified in the KILL_RUN_CMD
+2 = Run external command only (KILL_RUN_CMD). This option will only run the external command specified in the KILL_RUN_CMD.
 
 ## KILL_ROUTE="<shell command>"
 
-The KILL_ROUTE option is used to drop blacklist the attacking host. This can be done in a number of ways depending on your OS.  The string $TARGET$ is replaced with the attacking host.
+The KILL_ROUTE option is used to drop or blacklist the attacking host. This can be done in a number of ways depending on your OS.  The string $TARGET$ is replaced with the attacking host.
 
 ### Example
 
@@ -104,7 +104,7 @@ View the example configuration file [portsentry.conf](https://github.com/portsen
 
 ## BUGS
 
-All bugs should be reported via the portsentry github issue tracker https://github.com/portsentry/portsentry/issues
+All bugs should be reported via the Portsentry GitHub issue tracker https://github.com/portsentry/portsentry/issues
 
 ## AUTHORS
 
