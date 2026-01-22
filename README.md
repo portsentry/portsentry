@@ -22,7 +22,7 @@ _For a more detailed introduction, review the [HOWTO-Use-Cases](docs/HOWTO-Use-C
 ### Docker
 
 ```
-docker run -d --network=host --name portsentry portsentry/portsentry:unstable
+docker run -d --network=host --name portsentry portsentry/portsentry:latest
 ```
 
 _More docker configuration options available in the [HOWTO-Docker.md](docs/HOWTO-Docker.md) documentation_
