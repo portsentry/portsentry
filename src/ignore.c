@@ -16,7 +16,7 @@
 #include "ignore.h"
 #include "util.h"
 
-static int IgnoreParse(const char *buffer, struct IgnoreIp *ignoreIp);
+static int IgnoreParse(char *buffer, struct IgnoreIp *ignoreIp);
 static int IsValidIPChar(const char c);
 
 static int IsValidIPChar(const char c) {
@@ -27,7 +27,7 @@ static int IsValidIPChar(const char c) {
   return FALSE;
 }
 
-static int IgnoreParse(const char *buffer, struct IgnoreIp *ignoreIp) {
+static int IgnoreParse(char *buffer, struct IgnoreIp *ignoreIp) {
   int ret, status = ERROR;
   struct addrinfo hints, *res = NULL;
   char *separator = NULL;
