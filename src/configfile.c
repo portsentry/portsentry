@@ -312,7 +312,7 @@ static void StripTrailingSpace(char *buffer) {
 }
 
 static ssize_t GetSizeToQuote(const char *buffer) {
-  char *ptr;
+  const char *ptr;
   ssize_t valueSize = 0;
 
   if ((ptr = strstr(buffer, "\"")) == NULL) {
