@@ -1,5 +1,11 @@
 # Portsentry Changelog
 
+## 2026-02-22 2.0.7
+### Improvements
+- Fixed various issues in the documentation
+- Fixed glibc 2.43 compatibility issue
+- Fixed conversion warning on certain compilers
+
 ## 2025-10-31 2.0.6
 ### Improvements
 - Various compiler flags to increase security
