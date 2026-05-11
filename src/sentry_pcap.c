@@ -146,7 +146,7 @@ static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u
   struct PacketInfo pi;
   (void)header;
 
-  if (PrepPacket(&pi, device, packet, header->len) == FALSE) {
+  if (PrepPacket(&pi, device, packet, header->caplen) == FALSE) {
     return;
   }
 
