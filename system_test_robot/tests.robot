@@ -591,6 +591,7 @@ Test Teardown     Test Teardown
     Confirm Block File Size    1    0
 
 101 Sentry Stealth Range
+    Skip If Target Not Linux
     Write Portsentry Config
     ...    TCP_PORTS="1,5-11"
     ...    UDP_PORTS="1,7-11"
