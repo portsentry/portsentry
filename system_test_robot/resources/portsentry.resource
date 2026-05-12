@@ -20,7 +20,8 @@ ${PORTSENTRY_USER}        root
 ${PORTSENTRY_PORT}        22
 ${PORTSENTRY_KEYFILE}     ${EMPTY}
 ${PORTSENTRY_PASSWORD}    ${EMPTY}
-${PORTSENTRY_TEST_DIR}    /tmp/portsentry-test
+${PORTSENTRY_BIN}         ${EMPTY}
+${PORTSENTRY_TEST_DIR}    ${EMPTY}
 ${PORTSENTRY_SUDO}        ${EMPTY}
 ${PORTSENTRY_PROC_TAG}    ${EMPTY}
 ${SSH_TIMEOUT}            30s
@@ -39,7 +40,6 @@ Portsentry Suite Setup
     Configure Sudo Prefix
     Configure Process Tag
     Verify Portsentry Binary On Target
-    Claim Remote Test Dir
     Discover Source IPs
 
 Portsentry Suite Teardown
@@ -74,17 +74,26 @@ Configure Process Tag
     Set Suite Variable    ${PORTSENTRY_PROC_TAG}    portsentry
 
 Verify Portsentry Binary On Target
-    ${rc}=    Execute Command    test -x ${PORTSENTRY_TEST_DIR}/portsentry
+    [Documentation]    Locate the portsentry binary on the target. Prefer
+    ...                /tmp/portsentry/debug/portsentry; fall back to
+    ...                /tmp/portsentry/release/portsentry. The chosen path
+    ...                is stored in ${PORTSENTRY_BIN} for the rest of the
+    ...                suite.
+    ${rc_debug}=    Execute Command    test -x /tmp/portsentry/debug/portsentry
     ...    return_stdout=False    return_rc=True
-    Should Be Equal As Integers    ${rc}    0
-    ...    msg=portsentry binary not found at ${PORTSENTRY_TEST_DIR}/portsentry on ${PORTSENTRY_HOST}
-
-Claim Remote Test Dir
-    [Documentation]    Make sure the test directory is writable by the SSH
-    ...                user. Files left over from earlier runs may be
-    ...                root-owned; chown them once so SFTP uploads succeed.
-    Execute Command    ${PORTSENTRY_SUDO} chown -R ${PORTSENTRY_USER} ${PORTSENTRY_TEST_DIR}
-    ...    return_stdout=False    return_rc=False
+    IF    ${rc_debug} == 0
+        Set Suite Variable    ${PORTSENTRY_BIN}    /tmp/portsentry/debug/portsentry
+        Log    Using portsentry binary: ${PORTSENTRY_BIN} (debug)    INFO    console=True
+        RETURN
+    END
+    ${rc_release}=    Execute Command    test -x /tmp/portsentry/release/portsentry
+    ...    return_stdout=False    return_rc=True
+    IF    ${rc_release} == 0
+        Set Suite Variable    ${PORTSENTRY_BIN}    /tmp/portsentry/release/portsentry
+        Log    Using portsentry binary: ${PORTSENTRY_BIN} (release)    INFO    console=True
+        RETURN
+    END
+    Fatal Error    portsentry binary not found on ${PORTSENTRY_HOST}: neither /tmp/portsentry/debug/portsentry nor /tmp/portsentry/release/portsentry exist or are executable.
 
 Discover Source IPs
     [Documentation]    Resolve the runner's source IPv4 toward ${PORTSENTRY_HOST}
@@ -107,20 +116,45 @@ Discover Source IPs
 
 # ------------------------------------------------------------------ Test lifecycle
 Test Setup
-    Reset Remote Test Dir
+    [Documentation]    Per-test setup: kill any stale portsentry from a prior
+    ...                failed run, reset /etc/hosts.deny, and allocate a fresh
+    ...                unique working directory under /tmp via ``mktemp -d``.
+    Kill Stale Portsentry
+    Reset Hosts Deny
+    Create Unique Test Dir
 
 Test Teardown
     Run Keyword If Test Failed    Dump Portsentry Logs
     ${stop_status}    ${stop_msg}=    Run Keyword And Ignore Error    Stop Portsentry
-    Run Keyword And Ignore Error    Reset Remote Test Dir
+    Run Keyword And Ignore Error    Remove Test Dir
+    Run Keyword And Ignore Error    Reset Hosts Deny
     IF    '${stop_status}' == 'FAIL'
         Fail    Stop Portsentry failed (no SIGKILL escalation): ${stop_msg}
     END
 
-Reset Remote Test Dir
+Kill Stale Portsentry
     Execute Command    ${PORTSENTRY_SUDO} pkill -TERM -x ${PORTSENTRY_PROC_TAG} 2>/dev/null; sleep 1; true
-    Execute Command    ${PORTSENTRY_SUDO} find ${PORTSENTRY_TEST_DIR} -mindepth 1 -maxdepth 1 ! -name portsentry ! -name portcon -exec rm -rf {} + 2>/dev/null; true
+
+Reset Hosts Deny
     Execute Command    ${PORTSENTRY_SUDO} rm -f /etc/hosts.deny 2>/dev/null; ${PORTSENTRY_SUDO} touch /etc/hosts.deny 2>/dev/null; true
+
+Create Unique Test Dir
+    [Documentation]    Allocate a fresh /tmp/portsentry-test.XXXXXX directory
+    ...                owned by the SSH user. Stored as ${PORTSENTRY_TEST_DIR}
+    ...                for the duration of this test.
+    ${out}=    Execute Command    mktemp -d /tmp/portsentry-test.XXXXXXXX
+    ${dir}=    Strip String    ${out}
+    Should Not Be Empty    ${dir}    msg=mktemp -d returned no path
+    Set Test Variable    ${PORTSENTRY_TEST_DIR}    ${dir}
+    Log    Per-test working directory: ${dir}    INFO
+
+Remove Test Dir
+    [Documentation]    Best-effort cleanup of the per-test working directory.
+    ...                Uses sudo because portsentry (root) may have created
+    ...                root-owned children inside it.
+    IF    '${PORTSENTRY_TEST_DIR}' == '${EMPTY}'    RETURN
+    Execute Command    ${PORTSENTRY_SUDO} rm -rf ${PORTSENTRY_TEST_DIR} 2>/dev/null; true
+    Set Test Variable    ${PORTSENTRY_TEST_DIR}    ${EMPTY}
 
 # ------------------------------------------------------------------ Skip helpers
 Skip If Target Not Linux
@@ -128,7 +162,7 @@ Skip If Target Not Linux
     Skip If    '${uname.strip()}' != 'Linux'    Target OS is ${uname.strip()}, not Linux
 
 Skip If Pcap Not Supported
-    ${count}=    Execute Command    ldd ${PORTSENTRY_TEST_DIR}/portsentry 2>/dev/null | grep -c 'libpcap' || true
+    ${count}=    Execute Command    ldd ${PORTSENTRY_BIN} 2>/dev/null | grep -c 'libpcap' || true
     ${n}=    Convert To Integer    ${count.strip()}
     Skip If    ${n} == 0    portsentry binary not linked against libpcap
 
@@ -174,7 +208,7 @@ Start Portsentry
     ...                exec'ing portsentry so we can read them without sudo.
     [Arguments]    ${switches}
     ${cmd}=    Set Variable
-    ...    cd ${PORTSENTRY_TEST_DIR} && { nohup ${PORTSENTRY_SUDO} ${PORTSENTRY_TEST_DIR}/portsentry -c portsentry.conf ${switches} </dev/null > portsentry.stdout 2> portsentry.stderr & }
+    ...    cd ${PORTSENTRY_TEST_DIR} && { nohup ${PORTSENTRY_SUDO} ${PORTSENTRY_BIN} -c portsentry.conf ${switches} </dev/null > portsentry.stdout 2> portsentry.stderr & }
     Execute Command    ${cmd}    return_stdout=False    return_rc=False
     Wait Until Keyword Succeeds    ${READY_TIMEOUT}    1s    Portsentry Should Be Ready
 
