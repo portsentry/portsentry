@@ -124,13 +124,21 @@ Test Setup
     Create Unique Test Dir
 
 Test Teardown
+    [Documentation]    On failure we preserve the per-test working directory
+    ...                so the user can inspect ``portsentry.stdout``,
+    ...                ``portsentry.history``, ``portsentry.blocked``, helper
+    ...                script outputs, etc. ``Stop Portsentry`` and the
+    ...                hosts.deny reset always run so the next test starts
+    ...                from a clean global state regardless of this test's
+    ...                outcome.
     Run Keyword If Test Failed    Dump Portsentry Logs
     ${stop_status}    ${stop_msg}=    Run Keyword And Ignore Error    Stop Portsentry
-    Run Keyword And Ignore Error    Remove Test Dir
     Run Keyword And Ignore Error    Reset Hosts Deny
     IF    '${stop_status}' == 'FAIL'
         Fail    Stop Portsentry failed (no SIGKILL escalation): ${stop_msg}
     END
+    Run Keyword If Test Passed    Remove Test Dir
+    Run Keyword If Test Failed    Preserve Test Dir
 
 Kill Stale Portsentry
     Execute Command    ${PORTSENTRY_SUDO} pkill -TERM -x ${PORTSENTRY_PROC_TAG} 2>/dev/null; sleep 1; true
@@ -155,6 +163,15 @@ Remove Test Dir
     IF    '${PORTSENTRY_TEST_DIR}' == '${EMPTY}'    RETURN
     Execute Command    ${PORTSENTRY_SUDO} rm -rf ${PORTSENTRY_TEST_DIR} 2>/dev/null; true
     Set Test Variable    ${PORTSENTRY_TEST_DIR}    ${EMPTY}
+
+Preserve Test Dir
+    [Documentation]    Called from Test Teardown when the test failed. Leaves
+    ...                the per-test working directory in place so the user can
+    ...                SSH in and inspect portsentry's stdout/stderr, history,
+    ...                blocked file, helper-script outputs, etc.
+    IF    '${PORTSENTRY_TEST_DIR}' == '${EMPTY}'    RETURN
+    Log    Test failed — preserving ${PORTSENTRY_TEST_DIR} on ${PORTSENTRY_HOST} for inspection. Clean up with: ssh ${PORTSENTRY_USER}@${PORTSENTRY_HOST} 'sudo rm -rf ${PORTSENTRY_TEST_DIR}'
+    ...    WARN    console=True
 
 # ------------------------------------------------------------------ Skip helpers
 Skip If Target Not Linux
