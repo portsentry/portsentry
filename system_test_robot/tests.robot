@@ -25,14 +25,14 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_ROUTE="true $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Already Blocked
     Confirm Block File Size    1    0
-    Run Nmap    11    U
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern Count    2    Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\] type: \\[Connect\\]
     Wait For Stdout Pattern Count    2    Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[UDP\\] port: \\[11\\] type: \\[Connect\\]
 
@@ -46,14 +46,14 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_ROUTE="true $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Block Triggered    udp
     Confirm Block File Size    1    0
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Already Blocked
     Confirm Block File Size    1    0
-    Run Nmap    11    T
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern Count    2    Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\] type: \\[Connect\\]
     Wait For Stdout Pattern Count    2    Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[UDP\\] port: \\[11\\] type: \\[Connect\\]
 
@@ -72,7 +72,7 @@ Test Teardown     Test Teardown
     Should Contain    ${banner}    Some banner printed on port
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Already Blocked
     Confirm Block File Size    1    0
 
@@ -91,7 +91,7 @@ Test Teardown     Test Teardown
     Should Contain    ${banner}    Some banner printed on port
     Confirm Block Triggered    udp
     Confirm Block File Size    1    0
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Already Blocked
     Confirm Block File Size    1    0
 
@@ -103,10 +103,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_UDP="0"
     ...    BLOCK_TCP="0"
     Start Portsentry    --connect -d
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    tcp
     Confirm History Logged    tcp
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern Count    2    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\]
 
 006 Block 0 UDP
@@ -117,10 +117,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_UDP="0"
     ...    BLOCK_TCP="0"
     Start Portsentry    --connect -d
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    udp
     Confirm History Logged    udp
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern Count    2    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[UDP\\] port: \\[11\\]
 
 007 Block 2 TCP
@@ -134,7 +134,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="2"
     ...    KILL_RUN_CMD="${PORTSENTRY_TEST_DIR}/extcmd.sh $TARGET$ $PORT$"
     Start Portsentry    --connect -d
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    tcp
     Confirm History Logged    tcp
     Confirm External Command Run
@@ -152,7 +152,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="2"
     ...    KILL_RUN_CMD="${PORTSENTRY_TEST_DIR}/extcmd.sh $TARGET$ $PORT$"
     Start Portsentry    --connect -d
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    udp
     Confirm History Logged    udp
     Confirm External Command Run
@@ -170,12 +170,12 @@ Test Teardown     Test Teardown
     ...    SCAN_TRIGGER="2"
     ...    KILL_ROUTE="true $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\] type: \\[Connect\\] IP opts: \\[unknown\\] ignored: \\[false\\] triggered: \\[false\\] noblock: \\[unset\\]
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Already Blocked
     Confirm Block File Size    1    0
 
@@ -190,7 +190,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_ROUTE="${PORTSENTRY_TEST_DIR}/extcmd.sh $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
     Confirm Route Kill
@@ -210,7 +210,7 @@ Test Teardown     Test Teardown
     ...    KILL_ROUTE="${PORTSENTRY_TEST_DIR}/routesim.sh $TARGET$"
     ...    KILL_RUN_CMD="${PORTSENTRY_TEST_DIR}/extcmd.sh $TARGET$ $PORT$"
     Start Portsentry    --connect -d
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Wait For Remote File    extcmd.stdout
     Sleep    1s
     Confirm Block File Size    1    0
@@ -233,7 +233,7 @@ Test Teardown     Test Teardown
     ...    KILL_RUN_CMD="${PORTSENTRY_TEST_DIR}/extcmd.sh $TARGET$ $PORT$"
     ...    KILL_RUN_CMD_FIRST="1"
     Start Portsentry    --connect -d
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Wait For Remote File    extcmd.stdout
     Sleep    1s
     Confirm Block File Size    1    0
@@ -254,7 +254,7 @@ Test Teardown     Test Teardown
     ...    KILL_ROUTE="${PORTSENTRY_TEST_DIR}/routesim.sh $TARGET$"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Wait For Remote File    routesim.stdout
     Remote File Should Match    routesim.stdout    ^${RE_SOURCE_IP4}
     Confirm Block Triggered    tcp
@@ -273,10 +273,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --stealth -m pcap -d -i ALL -L
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Already Blocked
     Confirm Block File Size    1    0
 
@@ -291,10 +291,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --stealth -m pcap -d -i ALL -L
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Block Triggered    udp
     Confirm Block File Size    1    0
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Already Blocked
     Confirm Block File Size    1    0
 
@@ -327,7 +327,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --stealth -m pcap -d -i ALL -L
-    Run Nmap    11    S
+    Run Nmap    -sS -p 11 ${PORTSENTRY_HOST}
     Confirm Syn Scan
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
@@ -343,7 +343,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --stealth -m pcap -d -i ALL -L
-    Run Nmap    11    N
+    Run Nmap    -sN -p 11 ${PORTSENTRY_HOST}
     Confirm Null Scan
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
@@ -359,7 +359,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --stealth -m pcap -d -i ALL -L
-    Run Nmap    11    X
+    Run Nmap    -sX -p 11 ${PORTSENTRY_HOST}
     Confirm Xmas Scan
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
@@ -375,7 +375,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --stealth -m pcap -d -i ALL -L
-    Run Nmap    11    F
+    Run Nmap    -sF -p 11 ${PORTSENTRY_HOST}
     Confirm Fin Scan
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
@@ -389,15 +389,15 @@ Test Teardown     Test Teardown
     ...    BLOCK_UDP="0"
     ...    BLOCK_TCP="0"
     Start Portsentry    --connect -d
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    tcp
     Confirm History Logged    tcp
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern Count    2    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\]
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    udp
     Confirm History Logged    udp
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern Count    2    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[UDP\\] port: \\[11\\]
 
 024 Sentry Pcap Range
@@ -410,15 +410,15 @@ Test Teardown     Test Teardown
     ...    BLOCK_UDP="0"
     ...    BLOCK_TCP="0"
     Start Portsentry    --stealth -m pcap -d -i ALL
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    tcp
     Confirm History Logged    tcp
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern Count    2    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\]
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    udp
     Confirm History Logged    udp
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern Count    2    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[UDP\\] port: \\[11\\]
 
 025 Pcap Invalid Probe
@@ -430,7 +430,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_UDP="0"
     ...    BLOCK_TCP="0"
     Start Portsentry    --stealth -m pcap -d -i ALL
-    Run Nmap    10    T
+    Run Nmap    -sT -p 10 ${PORTSENTRY_HOST}
     Sleep    2s
     Remote File Should Not Match    portsentry.stdout    ^Scan from: \\[${RE_SOURCE_IP4}\\]
 
@@ -442,7 +442,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_UDP="0"
     ...    BLOCK_TCP="0"
     Start Portsentry    --connect -d -i ALL
-    Run Nmap    10    T
+    Run Nmap    -sT -p 10 ${PORTSENTRY_HOST}
     Sleep    2s
     Remote File Should Not Match    portsentry.stdout    ^Scan from: \\[${RE_SOURCE_IP4}\\]
 
@@ -455,7 +455,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_UDP="0"
     ...    BLOCK_TCP="0"
     Start Portsentry    --stealth -m raw -d -i ALL
-    Run Nmap    10    T
+    Run Nmap    -sT -p 10 ${PORTSENTRY_HOST}
     Sleep    2s
     Remote File Should Not Match    portsentry.stdout    ^Scan from: \\[${RE_SOURCE_IP4}\\]
 
@@ -469,10 +469,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    11    T    6
+    Run Nmap    -6 -sT -p 11 ${PORTSENTRY_HOST_IPV6}
     Confirm Block Triggered    tcp    6
     Confirm Block File Size    0    1
-    Run Nmap    11    T    6
+    Run Nmap    -6 -sT -p 11 ${PORTSENTRY_HOST_IPV6}
     Confirm Already Blocked    6
     Confirm Block File Size    0    1
 
@@ -487,10 +487,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --stealth -m pcap -d -i ALL -L
-    Run Nmap    11    T    6
+    Run Nmap    -6 -sT -p 11 ${PORTSENTRY_HOST_IPV6}
     Confirm Block Triggered    tcp    6
     Confirm Block File Size    0    1
-    Run Nmap    11    T    6
+    Run Nmap    -6 -sT -p 11 ${PORTSENTRY_HOST_IPV6}
     Confirm Already Blocked    6
     Confirm Block File Size    0    1
 
@@ -505,10 +505,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --stealth -m raw -d -L
-    Run Nmap    11    T    6
+    Run Nmap    -6 -sT -p 11 ${PORTSENTRY_HOST_IPV6}
     Confirm Block Triggered    tcp    6
     Confirm Block File Size    0    1
-    Run Nmap    11    T    6
+    Run Nmap    -6 -sT -p 11 ${PORTSENTRY_HOST_IPV6}
     Confirm Already Blocked    6
     Confirm Block File Size    0    1
 
@@ -524,7 +524,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="0"
     Write Portsentry Ignore    ${SOURCE_IP4}/32    0.0.0.0
     Start Portsentry    --stealth -m pcap -d -i ALL -v
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Ignore File Match
 
 032 Ignore File No Mask
@@ -539,7 +539,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="0"
     Write Portsentry Ignore    ${SOURCE_IP4}    0.0.0.0
     Start Portsentry    --stealth -m pcap -d -i ALL -v
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Ignore File Match
 
 033 Ignore File IPv6
@@ -554,7 +554,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="0"
     Write Portsentry Ignore    ${SOURCE_IP6}/128
     Start Portsentry    --stealth -m pcap -d -i ALL -v
-    Run Nmap    11    T    6
+    Run Nmap    -6 -sT -p 11 ${PORTSENTRY_HOST_IPV6}
     Confirm Ignore File Match    6
 
 034 Ignore File No Mask IPv6
@@ -569,7 +569,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="0"
     Write Portsentry Ignore    ${SOURCE_IP6}
     Start Portsentry    --stealth -m pcap -d -i ALL -v
-    Run Nmap    11    T    6
+    Run Nmap    -6 -sT -p 11 ${PORTSENTRY_HOST_IPV6}
     Confirm Ignore File Match    6
 
 100 Raw Socket TCP
@@ -583,10 +583,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --stealth -m raw -d -L
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Already Blocked
     Confirm Block File Size    1    0
 
@@ -599,13 +599,13 @@ Test Teardown     Test Teardown
     ...    BLOCK_UDP="0"
     ...    BLOCK_TCP="0"
     Start Portsentry    --stealth -m raw -d
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    tcp
     Confirm History Logged    tcp
-    Run Nmap    11    T
+    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern Count    2    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\]
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    udp
     Confirm History Logged    udp
-    Run Nmap    11    U
+    Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Wait For Stdout Pattern Count    2    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[UDP\\] port: \\[11\\]

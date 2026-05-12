@@ -8,22 +8,13 @@ compute the expected block-file size.
 """
 
 import re
+import shlex
 import shutil
 import socket
 import subprocess
 
 from robot.api import logger
 from robot.api.deco import keyword
-
-
-_NMAP_FLAG = {
-    "T": "-sT",  # connect
-    "U": "-sU",  # UDP
-    "S": "-sS",  # SYN
-    "N": "-sN",  # NULL
-    "F": "-sF",  # FIN
-    "X": "-sX",  # XMAS
-}
 
 
 def _family(ipv6):
@@ -107,33 +98,32 @@ def udp_banner_probe(host, port, timeout=5, ipv6=False, payload="Hello"):
         return data.decode("latin-1", errors="replace")
 
 
-@keyword("Run Nmap Probe")
-def run_nmap_probe(host, port, scan_type, ipv6=False, timeout=30):
-    """Run ``nmap`` against ``host:port`` from the runner.
+@keyword("Run Nmap")
+def run_nmap(*args, timeout=30):
+    """Run nmap on the runner with the given arguments.
 
-    ``scan_type`` accepts the single-letter codes used by the original shell
-    tests: ``T`` (connect), ``U`` (UDP), ``S`` (SYN), ``N`` (NULL),
-    ``F`` (FIN), ``X`` (XMAS). The latter four need raw-socket privileges
-    (root or ``CAP_NET_RAW``) on the runner.
+    Arguments are nmap CLI flags exactly as you'd pass them on the shell,
+    including the target host(s). Each Robot argument may be a single
+    token or a space-separated string (split via :mod:`shlex`), so either
+    of these works::
+
+        Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+        Run Nmap    -sT    -p    11    ${PORTSENTRY_HOST}
+
+    The boilerplate ``--privileged -Pn -n --max-retries 0`` is prepended
+    by the keyword — those flags are testing infrastructure (skip host
+    discovery / DNS / retries; trust the runner's CAP_NET_RAW) and not
+    something individual tests should think about. Pass a contradicting
+    flag later in ``args`` to override.
+
+    Raises ``AssertionError`` if nmap is missing or exits non-zero.
     """
     nmap = shutil.which("nmap")
     if not nmap:
         raise AssertionError("nmap is not installed on the runner")
-    code = str(scan_type).upper()
-    if code not in _NMAP_FLAG:
-        raise AssertionError(f"Unknown nmap scan type: {scan_type!r}")
-    cmd = [
-        nmap,
-        "--privileged",
-        "-Pn",
-        "-n",
-        "--max-retries", "0",
-        _NMAP_FLAG[code],
-        "-p", f"{port}-{port}",
-    ]
-    if str(ipv6).lower() in ("1", "true", "yes", "ipv6", "6"):
-        cmd.append("-6")
-    cmd.append(str(host))
+    cmd = [nmap, "--privileged", "-Pn", "-n", "--max-retries", "0"]
+    for a in args:
+        cmd.extend(shlex.split(str(a)))
     logger.info("nmap: " + " ".join(cmd))
     completed = subprocess.run(
         cmd,

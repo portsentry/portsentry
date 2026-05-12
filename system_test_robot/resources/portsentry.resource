@@ -210,19 +210,6 @@ Dump Portsentry Logs
     Log    ==== PORTSENTRY STDOUT ====\n${out}    WARN
     Log    ==== PORTSENTRY STDERR ====\n${err}    WARN
 
-# ------------------------------------------------------------------ Probe wrappers
-Run Nmap
-    [Documentation]    Convenience wrapper that targets the configured host.
-    ...                IPv4 probes go to ${PORTSENTRY_HOST}; IPv6 probes go
-    ...                to ${PORTSENTRY_HOST_IPV6}. ``scan_type`` is one of
-    ...                T/U/S/N/F/X (see PortsentryLib).
-    [Arguments]    ${port}    ${scan_type}    ${ipv}=4
-    IF    '${ipv}' == '6'
-        Run Nmap Probe    ${PORTSENTRY_HOST_IPV6}    ${port}    ${scan_type}    ipv6=${True}
-    ELSE
-        Run Nmap Probe    ${PORTSENTRY_HOST}    ${port}    ${scan_type}    ipv6=${False}
-    END
-
 # ------------------------------------------------------------------ Remote file reads / matches
 Read Remote File
     [Arguments]    ${name}
