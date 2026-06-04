@@ -22,6 +22,7 @@ ${PORTSENTRY_KEYFILE}     ${EMPTY}
 ${PORTSENTRY_PASSWORD}    ${EMPTY}
 ${PORTSENTRY_BIN}         ${EMPTY}
 ${PORTSENTRY_TEST_DIR}    ${EMPTY}
+${PORTSENTRY_FAMILY_SIZE}    ${EMPTY}
 ${PORTSENTRY_SUDO}        ${EMPTY}
 ${PORTSENTRY_PROC_TAG}    ${EMPTY}
 ${SSH_TIMEOUT}            30s
@@ -40,6 +41,7 @@ Portsentry Suite Setup
     Configure Sudo Prefix
     Configure Process Tag
     Verify Portsentry Binary On Target
+    Detect Block File Family Size
     Discover Source IPs
 
 Portsentry Suite Teardown
@@ -94,6 +96,22 @@ Verify Portsentry Binary On Target
         RETURN
     END
     Fatal Error    portsentry binary not found on ${PORTSENTRY_HOST}: neither /tmp/portsentry/debug/portsentry nor /tmp/portsentry/release/portsentry exist or are executable.
+
+Detect Block File Family Size
+    [Documentation]    portsentry's blocked file stores one record per host:
+    ...                a ``sa_family_t`` followed by the raw address bytes.
+    ...                Linux's ``sa_family_t`` is 2 bytes; the BSDs use 1.
+    ...                Detect the target's OS once and stash the width in
+    ...                ${PORTSENTRY_FAMILY_SIZE} for ``Confirm Block File Size``.
+    ...                Mirrors confirmBlockFileSize() in system_test/testlib.sh.
+    ${uname}=    Execute Command    uname -s
+    ${u}=    Strip String    ${uname}
+    IF    '${u}' == 'Linux'
+        Set Suite Variable    ${PORTSENTRY_FAMILY_SIZE}    2
+    ELSE
+        Set Suite Variable    ${PORTSENTRY_FAMILY_SIZE}    1
+    END
+    Log    Block-file address-family width on ${u}: ${PORTSENTRY_FAMILY_SIZE} byte(s)    INFO    console=True
 
 Discover Source IPs
     [Documentation]    Resolve the runner's source IPv4 toward ${PORTSENTRY_HOST}
@@ -347,15 +365,20 @@ Confirm Already Blocked
 Confirm Block File Size
     [Arguments]    ${ipv4_count}    ${ipv6_count}
     ${expected}=    Expected Block File Size    ${ipv4_count}    ${ipv6_count}
+    ...    family_size=${PORTSENTRY_FAMILY_SIZE}
     Wait Until Keyword Succeeds    ${POLL_TIMEOUT}    1s
     ...    Block File Size Should Be    ${expected}
 
 Block File Size Should Be
+    [Documentation]    Read the block-file size with ``ls -l | tr -s ' ' | cut
+    ...                -d ' ' -f 5`` — the same POSIX pipeline the original
+    ...                confirmBlockFileSize() shell helper used. ``stat -c
+    ...                '%s'`` is GNU-only and breaks on OpenBSD/FreeBSD.
     [Arguments]    ${expected}
-    ${out}=    Execute Command    ${PORTSENTRY_SUDO} stat -c '%s' ${PORTSENTRY_TEST_DIR}/portsentry.blocked 2>/dev/null || echo MISSING
+    ${out}=    Execute Command    ${PORTSENTRY_SUDO} ls -l ${PORTSENTRY_TEST_DIR}/portsentry.blocked 2>/dev/null | tr -s ' ' | cut -d ' ' -f 5
     ${size}=    Strip String    ${out}
     Should Be Equal As Strings    ${size}    ${expected}
-    ...    msg=Expected block file size ${expected}, got ${size}
+    ...    msg=Expected block file size ${expected}, got '${size}'
 
 Confirm External Command Run
     Wait For Stdout Pattern    ^attackalert: External command run for host: ${RE_SOURCE_IP4} using command
