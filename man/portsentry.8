@@ -117,6 +117,15 @@ This option disables this logic.
 i.e., logging and actions are taken on the host on which Portsentry is
 run.
 Use this option with care.
+.SS \-S, \-\-disable\-service\-check
+Under normal operations; if Portsentry receives a packet whose
+destination port is bound by a local service, the packet is ignored and
+no detection logic is run on it.
+This option disables that check so detection runs on every monitored
+port regardless of whether a service is already listening there.
+Note that this may cause Portsentry to take action on legitimate traffic
+to your services.
+Use this option with care.
 .SS \-l, \-\-logoutput=stdout|syslog
 Portsentry can log to either \f[CR]stdout\f[R] or \f[CR]syslog\f[R].
 The log output can be set using the \f[CR]\-\-logoutput\f[R] (or

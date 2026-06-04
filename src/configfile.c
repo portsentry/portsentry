@@ -270,6 +270,7 @@ static void MergeToConfigData(struct ConfigData *fileConfig) {
   configData.daemon = temp.daemon;
   configData.interfaces = temp.interfaces;
   configData.disableLocalCheck = temp.disableLocalCheck;
+  configData.disableServiceCheck = temp.disableServiceCheck;
   memcpy(configData.configFile, temp.configFile, sizeof(configData.configFile));
 }
 
