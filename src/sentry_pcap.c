@@ -155,7 +155,7 @@ static void HandlePacket(u_char *args, const struct pcap_pkthdr *header, const u
   }
 
   // FIXME: In pcap we need to consider the interface
-  if (IsPortInUse(&pi) != FALSE) {
+  if (configData.disableServiceCheck == FALSE && IsPortInUse(&pi) != FALSE) {
     Log("Ignoring packet from %s to destination port %d, a service is running", pi.saddr, pi.port);
     return;
   }
