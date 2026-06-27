@@ -224,7 +224,7 @@ int SetupPort(const struct sockaddr *addr, const socklen_t addrLen, uint8_t prot
 int IsPortInUse(struct PacketInfo *pi) {
   int sock;
 
-  sock = SetupPort(GetDestSockaddrFromPacketInfo(pi), GetDestSockaddrLenFromPacketInfo(pi), pi->protocol, FALSE);
+  sock = SetupPort(GetDestSockaddrFromPacketInfo(pi), GetDestSockaddrLenFromPacketInfo(pi), pi->protocol, TRUE);
 
   if (sock == -1) {
     return ERROR;
