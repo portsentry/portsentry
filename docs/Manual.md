@@ -60,6 +60,10 @@ These options can be used regardless of mode used.
 
 Under normal operations; if Portsentry detects traffic with the same source and destination IP address, no logging or actions are performed. This is to prevent Portsentry from potentially taking actions on itself. This option disables this logic. i.e., logging and actions are taken on the host on which Portsentry is run. Use this option with care.
 
+### \-S, \-\-disable\-service\-check
+
+Under normal operations; if Portsentry receives a packet whose destination port is bound by a local service, the packet is ignored and no detection logic is run on it. This option disables that check so detection runs on every monitored port regardless of whether a service is already listening there. Note that this may cause Portsentry to take action on legitimate traffic to your services. Use this option with care.
+
 ### \-l, \-\-logoutput=stdout|syslog
 
 Portsentry can log to either `stdout` or `syslog`. The log output can be set using the `--logoutput` (or `-l`) command line option. The default log output is `stdout`.

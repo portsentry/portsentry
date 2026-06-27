@@ -124,7 +124,7 @@ int PortSentryStealthMode(void) {
         continue;
       }
 
-      if (IsPortInUse(&pi) != FALSE) {
+      if (configData.disableServiceCheck == FALSE && IsPortInUse(&pi) != FALSE) {
         Log("Ignoring packet from %s to destination port %d, a service is running", pi.saddr, pi.port);
         continue;
       }
