@@ -7,3 +7,5 @@ Testing/**
 remotes.txt
 portsentry*.tar.xz
 _CPack_Packages/**
+.cache/**
+**/__pycache__/**
