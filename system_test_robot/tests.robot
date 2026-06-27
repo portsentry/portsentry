@@ -25,10 +25,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_ROUTE="true $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Confirm Already Blocked
     Confirm Block File Size    1    0
     Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
@@ -52,8 +52,8 @@ Test Teardown     Test Teardown
     Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Already Blocked
     Confirm Block File Size    1    0
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Wait For Stdout Pattern Count    2    Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\] type: \\[Connect\\]
     Wait For Stdout Pattern Count    2    Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[UDP\\] port: \\[11\\] type: \\[Connect\\]
 
@@ -72,7 +72,7 @@ Test Teardown     Test Teardown
     Should Contain    ${banner}    Some banner printed on port
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Confirm Already Blocked
     Confirm Block File Size    1    0
 
@@ -103,10 +103,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_UDP="0"
     ...    BLOCK_TCP="0"
     Start Portsentry    --connect -d
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Confirm Scan Logged    tcp
     Confirm History Logged    tcp
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Wait For Stdout Pattern Count    2    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\]
 
 006 Block 0 UDP
@@ -134,7 +134,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="2"
     ...    KILL_RUN_CMD="${PORTSENTRY_TEST_DIR}/extcmd.sh $TARGET$ $PORT$"
     Start Portsentry    --connect -d
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Confirm Scan Logged    tcp
     Confirm History Logged    tcp
     Confirm External Command Run
@@ -170,12 +170,12 @@ Test Teardown     Test Teardown
     ...    SCAN_TRIGGER="2"
     ...    KILL_ROUTE="true $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Wait For Stdout Pattern    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\] type: \\[Connect\\] IP opts: \\[unknown\\] ignored: \\[false\\] triggered: \\[false\\] noblock: \\[unset\\]
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Confirm Already Blocked
     Confirm Block File Size    1    0
 
@@ -190,7 +190,7 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_ROUTE="${PORTSENTRY_TEST_DIR}/extcmd.sh $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Confirm Block Triggered    tcp
     Confirm Block File Size    1    0
     Confirm Route Kill
@@ -210,7 +210,7 @@ Test Teardown     Test Teardown
     ...    KILL_ROUTE="${PORTSENTRY_TEST_DIR}/routesim.sh $TARGET$"
     ...    KILL_RUN_CMD="${PORTSENTRY_TEST_DIR}/extcmd.sh $TARGET$ $PORT$"
     Start Portsentry    --connect -d
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Wait For Remote File    extcmd.stdout
     Sleep    1s
     Confirm Block File Size    1    0
@@ -233,7 +233,7 @@ Test Teardown     Test Teardown
     ...    KILL_RUN_CMD="${PORTSENTRY_TEST_DIR}/extcmd.sh $TARGET$ $PORT$"
     ...    KILL_RUN_CMD_FIRST="1"
     Start Portsentry    --connect -d
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Wait For Remote File    extcmd.stdout
     Sleep    1s
     Confirm Block File Size    1    0
@@ -254,7 +254,7 @@ Test Teardown     Test Teardown
     ...    KILL_ROUTE="${PORTSENTRY_TEST_DIR}/routesim.sh $TARGET$"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Wait For Remote File    routesim.stdout
     Remote File Should Match    routesim.stdout    ^${RE_SOURCE_IP4}
     Confirm Block Triggered    tcp
@@ -389,10 +389,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_UDP="0"
     ...    BLOCK_TCP="0"
     Start Portsentry    --connect -d
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Confirm Scan Logged    tcp
     Confirm History Logged    tcp
-    Run Nmap    -sT -p 11 ${PORTSENTRY_HOST}
+    TCP Connect Probe    ${PORTSENTRY_HOST}    11
     Wait For Stdout Pattern Count    2    ^Scan from: \\[${RE_SOURCE_IP4}\\] \\(${RE_SOURCE_IP4}\\) protocol: \\[TCP\\] port: \\[11\\]
     Run Nmap    -sU -p 11 ${PORTSENTRY_HOST}
     Confirm Scan Logged    udp
@@ -469,10 +469,10 @@ Test Teardown     Test Teardown
     ...    BLOCK_TCP="1"
     ...    KILL_HOSTS_DENY="ALL: $TARGET$"
     Start Portsentry    --connect -d
-    Run Nmap    -6 -sT -p 11 ${PORTSENTRY_HOST_IPV6}
+    TCP Connect Probe    ${PORTSENTRY_HOST_IPV6}    11    ipv6=True
     Confirm Block Triggered    tcp    6
     Confirm Block File Size    0    1
-    Run Nmap    -6 -sT -p 11 ${PORTSENTRY_HOST_IPV6}
+    TCP Connect Probe    ${PORTSENTRY_HOST_IPV6}    11    ipv6=True
     Confirm Already Blocked    6
     Confirm Block File Size    0    1
 

@@ -12,6 +12,7 @@ import shlex
 import shutil
 import socket
 import subprocess
+import time
 
 from robot.api import logger
 from robot.api.deco import keyword
@@ -77,6 +78,35 @@ def tcp_banner_probe(host, port, timeout=5, ipv6=False):
         except socket.timeout:
             data = b""
         return data.decode("latin-1", errors="replace")
+
+
+@keyword("TCP Connect Probe")
+def tcp_connect_probe(host, port, hold=0.5, timeout=5, ipv6=False):
+    """Establish a TCP connection to ``host:port`` and close it cleanly.
+
+    This is the connect-mode equivalent of a port scan, but unlike
+    ``nmap -sT`` it does *not* abort the connection with a RST. nmap's
+    connect scan completes the handshake and then tears the connection down
+    with a RST immediately. On the BSDs a RST that arrives while the
+    connection is still on the listen queue (i.e. before portsentry's
+    ``accept()`` runs) makes the kernel discard the pending connection and
+    return ``ECONNABORTED`` — the peer address is lost and portsentry can
+    only log "Possible stealth scan from unknown host". Linux keeps such
+    connections, which is why ``nmap -sT`` works there. The original shell
+    tests dodged this entirely by scanning ``localhost``.
+
+    To portably exercise connect-mode detection we make a real connection,
+    hold it briefly so the daemon's ``accept()`` wins the race, then close
+    it with a normal FIN (which never triggers ``ECONNABORTED``). The
+    connection carries the runner's source IP exactly like the other probes.
+    """
+    fam = _family(ipv6)
+    with socket.socket(fam, socket.SOCK_STREAM) as s:
+        s.settimeout(float(timeout))
+        s.connect((host, int(port)))
+        if float(hold) > 0:
+            time.sleep(float(hold))
+    return ""
 
 
 @keyword("UDP Banner Probe")
