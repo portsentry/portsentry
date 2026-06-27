@@ -5,22 +5,71 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build:
+  system-test:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install pcap
+    - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install libpcap-dev nmap
+        sudo apt-get install -y libpcap-dev nmap openssh-server python3-venv
 
     - name: Build
       run: ./build.sh debug
 
-    - name: System Test
+    # The Robot suite drives portsentry on a *remote* target over SSH and probes
+    # it from the runner. Here the runner is its own target ("localhost"): the
+    # binary is placed where the suite expects it, and the runner is given
+    # key-based root SSH access to itself.
+
+    - name: Install portsentry binary at the path the suite expects
       run: |
-        cd system_test
-        sudo ./run_all_tests.sh
+        sudo mkdir -p /tmp/portsentry/debug
+        sudo cp debug/portsentry /tmp/portsentry/debug/portsentry
+
+    - name: Configure key-based root SSH to localhost
+      run: |
+        sudo mkdir -p /root/.ssh
+        sudo chmod 700 /root/.ssh
+        sudo ssh-keygen -t ed25519 -N '' -f /root/.ssh/id_ed25519
+        sudo sh -c 'cat /root/.ssh/id_ed25519.pub >> /root/.ssh/authorized_keys'
+        sudo chmod 600 /root/.ssh/authorized_keys
+        echo 'PermitRootLogin prohibit-password' | sudo tee /etc/ssh/sshd_config.d/99-portsentry-ci.conf
+        sudo systemctl restart ssh
+        # Fail fast with a clear message if SSH-to-self is not working.
+        sudo ssh -i /root/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o BatchMode=yes root@127.0.0.1 'echo IPv4 SSH OK'
+        sudo ssh -i /root/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o BatchMode=yes root@::1 'echo IPv6 SSH OK'
+
+    - name: Install Robot Framework
+      run: |
+        python3 -m venv "$HOME/robot-venv"
+        "$HOME/robot-venv/bin/pip" install --upgrade pip
+        "$HOME/robot-venv/bin/pip" install -r system_test_robot/requirements.txt
+
+    - name: System Test
+      # Run as root: nmap's raw SYN/NULL/XMAS/FIN/UDP scans need raw-socket
+      # privileges, and the suite reads /root/.ssh/id_ed25519 to log in. The
+      # target is the runner itself over loopback (IPv4 127.0.0.1, IPv6 ::1).
+      run: |
+        cd system_test_robot
+        sudo env \
+          PORTSENTRY_HOST=127.0.0.1 \
+          PORTSENTRY_HOST_IPV6=::1 \
+          PORTSENTRY_USER=root \
+          PORTSENTRY_KEYFILE=/root/.ssh/id_ed25519 \
+          PATH="$HOME/robot-venv/bin:$PATH" \
+          ./run_all_tests.sh
+
+    - name: Upload Robot Framework results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: robot-results
+        path: |
+          system_test_robot/output.xml
+          system_test_robot/log.html
+          system_test_robot/report.html
+        if-no-files-found: ignore
