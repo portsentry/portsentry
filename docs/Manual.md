@@ -32,6 +32,7 @@ Connect mode **(legacy option)** uses the kernel socket API to listen for incomi
 * When monitoring TCP ports, Portsentry will require a three\-way TCP handshake to be completed before Portsentry registers the connection attempt. Thus, a "stealth scan attack" will go unnoticed by Portsentry.
 * Additionally, other TCP protocol attacks, such as SYN floods must be taken into consideration when using Connect Mode.
 * Connect mode will require Portsentry to bind to each port to be monitored individually. If you are monitoring a large number of ports you could potentially hit the max number of file descriptors allowed by the system and could also lead to performance issues. Most modern systems will allow you to increase the number of max opened file descriptors, but this is something to be aware of.
+* On BSD\-derived systems (OpenBSD, FreeBSD, NetBSD, macOS), a TCP client that completes the handshake and then immediately tears the connection down with a RST \(the behaviour of fast connect\-scanners such as `nmap -sT`\) can race Portsentry's `accept()` call. If the RST arrives while the connection is still on the listen queue, the kernel discards the pending connection and `accept()` fails with `ECONNABORTED` \- the source address is never handed to Portsentry, so the host cannot be identified or blocked and the event is only logged as "Possible stealth scan from unknown host". Linux retains such connections and is not affected. Because of this, connect mode cannot reliably detect or block fast remote connect\-scans on the BSDs; use stealth mode \(the default\) if you need dependable detection on those platforms.
 
 ## Stealth Mode Options
 
@@ -59,6 +60,10 @@ These options can be used regardless of mode used.
 ### \-L, \-\-disable\-local\-check
 
 Under normal operations; if Portsentry detects traffic with the same source and destination IP address, no logging or actions are performed. This is to prevent Portsentry from potentially taking actions on itself. This option disables this logic. i.e., logging and actions are taken on the host on which Portsentry is run. Use this option with care.
+
+### \-S, \-\-disable\-service\-check
+
+Under normal operations; if Portsentry receives a packet whose destination port is bound by a local service, the packet is ignored and no detection logic is run on it. This option disables that check so detection runs on every monitored port regardless of whether a service is already listening there. Note that this may cause Portsentry to take action on legitimate traffic to your services. Use this option with care.
 
 ### \-l, \-\-logoutput=stdout|syslog
 

@@ -31,6 +31,7 @@
 #define CMDLINE_INTERFACE 'i'
 #define CMDLINE_METHOD 'm'
 #define CMDLINE_DISABLE_LOCAL_CHECK 'L'
+#define CMDLINE_DISABLE_SERVICE_CHECK 'S'
 
 static void Usage(void);
 
@@ -49,6 +50,7 @@ void ParseCmdline(const int argc, char **argv) {
       {"daemon", no_argument, 0, CMDLINE_DAEMON},
       {"method", required_argument, 0, CMDLINE_METHOD},
       {"disable-local-check", no_argument, 0, CMDLINE_DISABLE_LOCAL_CHECK},
+      {"disable-service-check", no_argument, 0, CMDLINE_DISABLE_SERVICE_CHECK},
       {"debug", no_argument, 0, CMDLINE_DEBUG},
       {"verbose", no_argument, 0, CMDLINE_VERBOSE},
       {"help", no_argument, 0, CMDLINE_HELP},
@@ -59,7 +61,7 @@ void ParseCmdline(const int argc, char **argv) {
 
   while (1) {
     int option_index = 0;
-    opt = getopt_long(argc, argv, "l:c:t:s:a:u:i:m:DLdvhV", long_options, &option_index);
+    opt = getopt_long(argc, argv, "l:c:t:s:a:u:i:m:DLSdvhV", long_options, &option_index);
 
     if (opt >= CMDLINE_CONNECT && opt <= CMDLINE_STEALTH && flagModeSet == TRUE) {
       fprintf(stderr, "Error: Only one mode can be specified, Use only one of --stealth or --connect\n");
@@ -124,6 +126,9 @@ void ParseCmdline(const int argc, char **argv) {
     case CMDLINE_DISABLE_LOCAL_CHECK:
       cmdlineConfig.disableLocalCheck = TRUE;
       break;
+    case CMDLINE_DISABLE_SERVICE_CHECK:
+      cmdlineConfig.disableServiceCheck = TRUE;
+      break;
     case CMDLINE_DAEMON:
       cmdlineConfig.daemon = TRUE;
       break;
@@ -176,6 +181,7 @@ static void Usage(void) {
   printf("--configfile, -c <path> - Set config file path\n");
   printf("--method, -m\t[pcap|raw] - Set sentry method to use the stealth mode. Use libpcap or linux raw sockets (only available on linux) (default: pcap)\n");
   printf("--disable-local-check, -L\tIf source and destination address are the same we don't do any actions. This option disables this check\n");
+  printf("--disable-service-check, -S\tBy default, packets to a destination port where a service is already running are ignored. This option disables that check so detection runs on every port\n");
   printf("--daemon, -D\tRun as a daemon\n");
   printf("--debug, -d\tEnable debugging output\n");
   printf("--verbose, -v\tEnable verbose output\n");

@@ -64,6 +64,7 @@ void PrintConfigData(const struct ConfigData cd) {
   printf("debug: killRunCmd: %s\n", cd.killRunCmd);
 
   printf("debug: disableLocalCheck: %d\n", cd.disableLocalCheck);
+  printf("debug: disableServiceCheck: %d\n", cd.disableServiceCheck);
 
   if (GetNoInterfaces(&cd) > 0) {
     i = 0;
