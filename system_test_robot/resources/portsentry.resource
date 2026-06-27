@@ -39,8 +39,8 @@ ${RE_SOURCE_IP6}          ${EMPTY}
 Portsentry Suite Setup
     Open Portsentry SSH Connection
     Configure Sudo Prefix
-    Configure Process Tag
     Verify Portsentry Binary On Target
+    Configure Process Tag
     Detect Block File Family Size
     Discover Source IPs
 
@@ -68,12 +68,31 @@ Configure Sudo Prefix
     Set Suite Variable    ${PORTSENTRY_SUDO}    sudo -n
 
 Configure Process Tag
-    [Documentation]    Process name used by pgrep/pkill to find portsentry.
-    ...                We match the exact basename via ``-x`` rather than the
-    ...                full command line; full-cmdline matching with ``-f``
-    ...                false-positives on the shell running pgrep itself
-    ...                because the search pattern is in its argv.
-    Set Suite Variable    ${PORTSENTRY_PROC_TAG}    portsentry
+    [Documentation]    Pattern used by pgrep/pkill -f to find portsentry.
+    ...
+    ...                We can't match the basename with ``-x``: on NetBSD the
+    ...                process "command" reported to pgrep/pkill is the full
+    ...                invocation path (``/tmp/portsentry/debug/portsentry``),
+    ...                not the basename, so ``pkill -x portsentry`` matches
+    ...                nothing there and stale daemons are never reaped — which
+    ...                wedges the monitored ports for every later test. Linux
+    ...                and OpenBSD match the basename, NetBSD does not, so there
+    ...                is no portable ``-x`` value.
+    ...
+    ...                Instead we match the full binary path with ``-f``. To
+    ...                avoid the well-known self-match (the search string is in
+    ...                the argv of the very shell running pkill) we bracket the
+    ...                first letter of the *basename*: the regex
+    ...                ``.../[p]ortsentry`` still matches the daemon's argv
+    ...                (``.../portsentry``) but not the literal pattern in the
+    ...                pkill command line (``.../[p]ortsentry``). Bracketing only
+    ...                the basename is required because the build directory
+    ...                ``/tmp/portsentry/`` also contains the substring
+    ...                "portsentry", so a bare ``[p]ortsentry`` would still
+    ...                self-match via the path.
+    ${pat}=    Evaluate    re.sub(r'portsentry$', '[p]ortsentry', r"${PORTSENTRY_BIN}")    modules=re
+    Set Suite Variable    ${PORTSENTRY_PROC_TAG}    ${pat}
+    Log    portsentry process match pattern: ${pat}    INFO    console=True
 
 Verify Portsentry Binary On Target
     [Documentation]    Locate the portsentry binary on the target. Prefer
@@ -159,7 +178,7 @@ Test Teardown
     Run Keyword If Test Failed    Preserve Test Dir
 
 Kill Stale Portsentry
-    Execute Command    ${PORTSENTRY_SUDO} pkill -TERM -x ${PORTSENTRY_PROC_TAG} 2>/dev/null; sleep 1; true
+    Execute Command    ${PORTSENTRY_SUDO} pkill -TERM -f '${PORTSENTRY_PROC_TAG}' 2>/dev/null; sleep 1; true
 
 Reset Hosts Deny
     Execute Command    ${PORTSENTRY_SUDO} rm -f /etc/hosts.deny 2>/dev/null; ${PORTSENTRY_SUDO} touch /etc/hosts.deny 2>/dev/null; true
@@ -252,7 +271,7 @@ Portsentry Should Be Ready
     ...    return_stdout=False    return_rc=True
     IF    ${rc} != 0
         ${alive}=    Execute Command
-        ...    ${PORTSENTRY_SUDO} pgrep -x ${PORTSENTRY_PROC_TAG} >/dev/null 2>&1 && echo running || echo gone
+        ...    ${PORTSENTRY_SUDO} pgrep -f '${PORTSENTRY_PROC_TAG}' >/dev/null 2>&1 && echo running || echo gone
         IF    'gone' in '''${alive}'''
             Dump Portsentry Logs
             Fail    portsentry exited before reporting ready
@@ -265,12 +284,12 @@ Stop Portsentry
     ...                portsentry to exit. Does NOT escalate to SIGKILL — if
     ...                the daemon hangs after a TERM, the test is failed.
     ...                portsentry hanging on shutdown is considered a defect.
-    Execute Command    ${PORTSENTRY_SUDO} pkill -TERM -x ${PORTSENTRY_PROC_TAG} 2>/dev/null; true
+    Execute Command    ${PORTSENTRY_SUDO} pkill -TERM -f '${PORTSENTRY_PROC_TAG}' 2>/dev/null; true
     Wait Until Keyword Succeeds    ${STOP_TIMEOUT}    1s    Portsentry Should Be Gone
 
 Portsentry Should Be Gone
     ${out}=    Execute Command
-    ...    ${PORTSENTRY_SUDO} pgrep -x ${PORTSENTRY_PROC_TAG} >/dev/null 2>&1 && echo running || echo stopped
+    ...    ${PORTSENTRY_SUDO} pgrep -f '${PORTSENTRY_PROC_TAG}' >/dev/null 2>&1 && echo running || echo stopped
     Should Contain    ${out}    stopped
 
 Dump Portsentry Logs
