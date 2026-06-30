@@ -180,6 +180,32 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" A
   if (USE_PCAP)
     target_link_libraries(fuzz_sentry_stealth PRIVATE pcap)
   endif()
+
+  add_executable(fuzz_ignore src/ignore.c)
+  target_compile_options(fuzz_ignore PUBLIC -O1 -DFUZZ_IGNORE_PARSE ${FUZZER_OPTS})
+  target_include_directories(fuzz_ignore PRIVATE "${PROJECT_BINARY_DIR}")
+  target_link_options(fuzz_ignore PRIVATE ${FUZZER_OPTS})
+  target_link_libraries(fuzz_ignore PRIVATE lportsentry)
+
+  add_executable(fuzz_subststring src/io.c)
+  target_compile_options(fuzz_subststring PUBLIC -O1 -DFUZZ_SUBSTSTRING ${FUZZER_OPTS})
+  target_include_directories(fuzz_subststring PRIVATE "${PROJECT_BINARY_DIR}")
+  target_link_options(fuzz_subststring PRIVATE ${FUZZER_OPTS})
+  target_link_libraries(fuzz_subststring PRIVATE lportsentry)
+
+  add_executable(fuzz_configfile src/configfile.c)
+  target_compile_options(fuzz_configfile PUBLIC -O1 -DFUZZ_CONFIGFILE ${FUZZER_OPTS})
+  target_include_directories(fuzz_configfile PRIVATE "${PROJECT_BINARY_DIR}")
+  target_link_options(fuzz_configfile PRIVATE ${FUZZER_OPTS})
+  target_link_libraries(fuzz_configfile PRIVATE lportsentry)
+
+  # fuzz_cmdline wraps libc exit() so ParseCmdline()'s many Exit()/exit() paths
+  # longjmp back to the harness instead of terminating the fuzzer.
+  add_executable(fuzz_cmdline src/cmdline.c)
+  target_compile_options(fuzz_cmdline PUBLIC -O1 -DFUZZ_CMDLINE ${FUZZER_OPTS})
+  target_include_directories(fuzz_cmdline PRIVATE "${PROJECT_BINARY_DIR}")
+  target_link_options(fuzz_cmdline PRIVATE ${FUZZER_OPTS} -Wl,--wrap=exit)
+  target_link_libraries(fuzz_cmdline PRIVATE lportsentry)
 endif()
 
 # UNIT TESTS
