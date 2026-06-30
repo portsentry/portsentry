@@ -231,3 +231,20 @@ int IgnoreIpIsPresent(const struct IgnoreState *is, const struct sockaddr *sa) {
   }
   return FALSE;
 }
+
+#ifdef FUZZ_IGNORE_PARSE
+/* libFuzzer harness for the ignore-file line parser.
+ * IgnoreParse() does not call Exit() and resolves with AI_NUMERICHOST (no DNS),
+ * so the line parser can be driven directly with arbitrary bytes. */
+int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+  char buffer[MAXBUF];
+  struct IgnoreIp ignoreIp;
+  size_t len = (Size < sizeof(buffer) - 1) ? Size : sizeof(buffer) - 1;
+
+  memcpy(buffer, Data, len);
+  buffer[len] = '\0';
+
+  IgnoreParse(buffer, &ignoreIp);
+  return 0;
+}
+#endif

@@ -1,0 +1,1 @@
+KILL_ROUTE="/sbin/route add -host $TARGET$ reject"

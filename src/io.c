@@ -673,3 +673,45 @@ void XmitBannerIfConfigured(const int proto, const int socket, const struct sock
     Error("Could not write banner to socket (ignoring): %s", ErrnoString(err, sizeof(err)));
   }
 }
+
+#ifdef FUZZ_SUBSTSTRING
+/* libFuzzer harness for the token-replacement helper SubstString().
+ * Data[0] selects the destination buffer size (0-255, always <= sizeof(dest)
+ * so the call can never legitimately overflow); the remaining bytes are split
+ * on NUL into up to three NUL-terminated tokens: replace, find, source. */
+int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+  char work[1024];
+  char dest[256];
+  int destSize;
+  size_t len;
+  char *replaceToken, *findToken, *source, *workEnd, *sep;
+
+  if (Size < 1) {
+    return 0;
+  }
+
+  destSize = (int)Data[0]; /* 0-255, strictly less than sizeof(dest) */
+
+  len = Size - 1;
+  if (len > sizeof(work) - 1) {
+    len = sizeof(work) - 1;
+  }
+  memcpy(work, Data + 1, len);
+  work[len] = '\0';
+  workEnd = work + len;
+
+  replaceToken = work;
+  findToken = "";
+  source = "";
+
+  if ((sep = memchr(work, '\0', len)) != NULL) {
+    findToken = sep + 1;
+    if ((sep = memchr(findToken, '\0', (size_t)(workEnd - findToken))) != NULL) {
+      source = sep + 1;
+    }
+  }
+
+  SubstString(replaceToken, findToken, source, dest, destSize);
+  return 0;
+}
+#endif

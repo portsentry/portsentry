@@ -357,3 +357,69 @@ static int ParsePortsList(char *str, struct Port **ports, size_t *portsLength) {
 
   return TRUE;
 }
+
+#ifdef FUZZ_CONFIGFILE
+/* libFuzzer harness for the config-file line tokenizer + ports-list parser.
+ *
+ * This intentionally does NOT route through ReadConfigFile()/SetConfiguration().
+ * Those call Exit() on almost every invalid value (which would terminate the
+ * fuzzer) and have real filesystem side effects -- HISTORY_FILE and BLOCKED_FILE
+ * call TestFileAccess(..., createDir=TRUE), creating directories/files from
+ * fuzzer-controlled paths. Instead the harness replicates the per-line
+ * byte-walking sequence from ReadConfigFile() (StripTrailingSpace, GetKeySize,
+ * SkipSpaceAndTab, quote handling, GetSizeToQuote) using early returns in place
+ * of Exit(), then drives ParsePortsList() with the parsed value. That focuses
+ * fuzzing on the pointer-arithmetic parsing code with no process termination,
+ * no filesystem side effects, and deterministic per-iteration cleanup. */
+int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+  char buffer[MAXBUF], *ptr;
+  size_t keySize, len;
+  ssize_t valueSize;
+  struct Port *ports = NULL;
+  size_t portsLength = 0;
+
+  len = (Size < sizeof(buffer) - 1) ? Size : sizeof(buffer) - 1;
+  memcpy(buffer, Data, len);
+  buffer[len] = '\0';
+
+  if (buffer[0] == '#' || buffer[0] == '\n' || buffer[0] == '\r') {
+    return 0;
+  }
+
+  StripTrailingSpace(buffer);
+
+  if ((keySize = GetKeySize(buffer)) == 0) {
+    return 0;
+  }
+
+  ptr = buffer + keySize;
+  ptr = SkipSpaceAndTab(ptr);
+
+  if (*ptr != '=') {
+    return 0;
+  }
+  ptr++;
+
+  ptr = SkipSpaceAndTab(ptr);
+
+  if (*ptr != '"') {
+    return 0;
+  }
+  ptr++;
+
+  if ((valueSize = GetSizeToQuote(ptr)) == ERROR || valueSize < 1) {
+    return 0;
+  }
+
+  *(ptr + valueSize) = '\0'; /* Remove trailing quote, mirroring ReadConfigFile */
+
+  /* Drive the ports-list parser (strtok_r on ',' + ParsePort per entry). */
+  ParsePortsList(ptr, &ports, &portsLength);
+
+  if (ports != NULL) {
+    free(ports);
+  }
+
+  return 0;
+}
+#endif

@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifdef FUZZ_CMDLINE
+#include <setjmp.h>
+#endif
 
 #include "cmdline.h"
 #include "config.h"
@@ -193,3 +196,97 @@ static void Usage(void) {
 void Version(void) {
   printf("Portsentry %d.%d.%d (%s)\n", PORTSENTRY_VERSION_MAJOR, PORTSENTRY_VERSION_MINOR, PORTSENTRY_VERSION_PATCH, GIT_COMMIT_HASH);
 }
+
+#ifdef FUZZ_CMDLINE
+/* libFuzzer harness for ParseCmdline().
+ *
+ * ParseCmdline() reaches Exit() (which calls libc exit()), a raw exit() on the
+ * version path, and Usage()->Exit() on almost every malformed argument vector.
+ * We intercept libc exit via the linker (-Wl,--wrap=exit) and longjmp back here
+ * when inside an iteration, so the fuzzer keeps running instead of terminating.
+ *
+ * getopt keeps global parsing state across calls; it is reset every iteration.
+ * Allocations that ParseCmdline() places in the (local) cmdlineConfig before an
+ * Exit() are unreachable after the longjmp; LeakSanitizer is disabled around
+ * the call so these intentional exit-path leaks are not reported, and the
+ * successful-parse interfaces in the global configData are freed each iteration
+ * to keep RSS bounded. */
+
+#define FUZZ_MAX_ARGS 64
+
+extern void __real_exit(int status);
+
+/* Provided by the AddressSanitizer/LeakSanitizer runtime. Declared weak so the
+ * OpenBSD fuzzer build (fuzzer without address sanitizer) still links. */
+__attribute__((weak)) void __lsan_disable(void);
+__attribute__((weak)) void __lsan_enable(void);
+
+static jmp_buf g_fuzzCmdlineJmp;
+static int g_fuzzInIteration = 0;
+
+void __wrap_exit(int status) {
+  if (g_fuzzInIteration) {
+    longjmp(g_fuzzCmdlineJmp, status == 0 ? 1 : status);
+  }
+  __real_exit(status);
+}
+
+int LLVMFuzzerInitialize(int *argc, char ***argv) {
+  (void)argc;
+  (void)argv;
+  ResetConfigData(&configData);
+  return 0;
+}
+
+int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+  char buffer[4096];
+  char *argv[FUZZ_MAX_ARGS + 1];
+  int argc = 0;
+  size_t i, start, len;
+
+  len = (Size < sizeof(buffer) - 1) ? Size : sizeof(buffer) - 1;
+  memcpy(buffer, Data, len);
+  buffer[len] = '\0';
+
+  /* Synthetic program name in argv[0], as getopt expects. */
+  argv[argc++] = (char *)"portsentry";
+
+  /* Split the input on NUL bytes into NUL-terminated argv tokens. */
+  start = 0;
+  for (i = 0; i <= len && argc < FUZZ_MAX_ARGS; i++) {
+    if (i == len || buffer[i] == '\0') {
+      if (i > start) {
+        argv[argc++] = &buffer[start];
+      }
+      start = i + 1;
+    }
+  }
+  argv[argc] = NULL;
+
+  /* Reset getopt's global parsing state before each run. */
+#ifdef BSD
+  optreset = 1;
+  optind = 1;
+#else
+  optind = 0; /* glibc/musl: forces full reinitialization */
+#endif
+
+  if (__lsan_disable) {
+    __lsan_disable();
+  }
+
+  if (setjmp(g_fuzzCmdlineJmp) == 0) {
+    g_fuzzInIteration = 1;
+    ParseCmdline(argc, argv);
+  }
+  g_fuzzInIteration = 0;
+
+  if (__lsan_enable) {
+    __lsan_enable();
+  }
+
+  /* Free interfaces copied into configData by a successful parse. */
+  FreeConfigData(&configData);
+  return 0;
+}
+#endif
