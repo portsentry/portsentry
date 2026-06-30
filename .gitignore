@@ -9,3 +9,4 @@ portsentry*.tar.xz
 _CPack_Packages/**
 .cache/**
 **/__pycache__/**
+.claude/settings.local.json
