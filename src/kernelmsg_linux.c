@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdint.h>
 
 #include "portsentry.h"
 #include "io.h"
@@ -46,7 +47,11 @@ int ParseKernelMessage(const struct nlmsghdr *nh, struct KernelMessage *kernelMe
   memset(kernelMessage, 0, sizeof(struct KernelMessage));
 
   if (nh->nlmsg_type == RTM_NEWADDR || nh->nlmsg_type == RTM_DELADDR) {
-    struct ifaddrmsg *ifa = NLMSG_DATA(nh);
+    /* glibc's NLMSG_DATA() casts its argument through char *, dropping the
+     * const from nh and tripping -Wcast-qual. Launder via uintptr_t (an
+     * integer round-trip is not a qualifier-dropping pointer cast) so the
+     * const public API is preserved. */
+    struct ifaddrmsg *ifa = NLMSG_DATA((struct nlmsghdr *)(uintptr_t)nh);
 
     // Adding IPv6 address will trigger 2 messages, only care when address is added
     if (nh->nlmsg_type == RTM_NEWADDR && ifa->ifa_family == AF_INET6 &&
@@ -67,7 +72,8 @@ int ParseKernelMessage(const struct nlmsghdr *nh, struct KernelMessage *kernelMe
 }
 
 static int ParseInterface(const struct nlmsghdr *nh, struct KernelMessage *kernelMessage) {
-  struct ifinfomsg *ifi = NLMSG_DATA(nh);
+  /* See note in ParseKernelMessage on the uintptr_t launder for NLMSG_DATA. */
+  struct ifinfomsg *ifi = NLMSG_DATA((struct nlmsghdr *)(uintptr_t)nh);
   struct rtattr *rta;
   size_t payload_len = RTM_PAYLOAD(nh);
 
@@ -89,7 +95,8 @@ static int ParseInterface(const struct nlmsghdr *nh, struct KernelMessage *kerne
 }
 
 static int ParseAddress(const struct nlmsghdr *nh, struct KernelMessage *kernelMessage) {
-  struct ifaddrmsg *ifa = NLMSG_DATA(nh);
+  /* See note in ParseKernelMessage on the uintptr_t launder for NLMSG_DATA. */
+  struct ifaddrmsg *ifa = NLMSG_DATA((struct nlmsghdr *)(uintptr_t)nh);
   struct rtattr *rta;
   size_t payload_len = RTM_PAYLOAD(nh);
   int target_type = (ifa->ifa_family == AF_INET6) ? IFA_ADDRESS : IFA_LOCAL;
