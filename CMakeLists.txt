@@ -149,12 +149,6 @@ if (USE_SYSTEMD)
   endif()
 endif()
 
-# PORTCON - helper test program used in system tests
-add_executable(portcon portcon/main.c)
-target_compile_options(portcon PRIVATE ${STANDARD_COMPILE_OPTS})
-target_include_directories(portcon PRIVATE "${PROJECT_BINARY_DIR}")
-target_link_options(portcon PRIVATE ${STANDARD_LINK_OPTS})
-
 # FUZZER - fuzzer tests
 if (CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug" AND BUILD_FUZZER STREQUAL "ON")
   if (CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
