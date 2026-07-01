@@ -123,6 +123,31 @@ sudo systemctl enable portsentry
 sudo systemctl start portsentry
 ```
 
+### Gentoo
+
+An ebuild is provided in [`packaging/gentoo`](packaging/gentoo). Register it as a
+local overlay and emerge `net-analyzer/portsentry`:
+
+```sh
+sudo mkdir -p /etc/portage/repos.conf
+sudo tee /etc/portage/repos.conf/portsentry.conf >/dev/null <<'EOF'
+[portsentry]
+location = /var/db/repos/portsentry
+auto-sync = no
+EOF
+# Copy packaging/gentoo (the dir containing metadata/ and profiles/) into place
+sudo cp -a packaging/gentoo /var/db/repos/portsentry
+echo "=net-analyzer/portsentry-2.0.7 ~amd64" | sudo tee /etc/portage/package.accept_keywords/portsentry
+sudo ebuild /var/db/repos/portsentry/net-analyzer/portsentry/portsentry-2.0.7.ebuild manifest
+sudo emerge net-analyzer/portsentry
+sudo rc-update add portsentry default   # OpenRC
+sudo rc-service portsentry start
+```
+
+Use `USE="systemd"` to install the systemd unit, or `USE="-pcap"` to build
+against Linux raw sockets instead of libpcap. See
+[`packaging/gentoo/README.md`](packaging/gentoo/README.md) for details.
+
 ### Other Linux distributions
 
 Download the portsentry tar archive from the [Releases page](https://github.com/portsentry/portsentry/releases) and extract the tarball in the root directory:
