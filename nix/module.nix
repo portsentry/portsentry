@@ -231,11 +231,10 @@ in
 
     historyFile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = "/var/log/portsentry/portsentry.log";
+      default = "/var/log/portsentry.log";
       description = ''
         File recording hosts that triggered an alert. Set to `null` to disable
-        (output still goes to the journal). The default lives in the
-        systemd-managed {file}`/var/log/portsentry` directory.
+        (output still goes to the journal).
       '';
     };
 

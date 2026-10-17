@@ -86,8 +86,10 @@ package.
   active-response setups (external firewall commands, custom file paths) may
   need `ProtectSystem`/`ReadWritePaths` relaxed via a `systemd.services.portsentry`
   override.
-- The history and blocked-host files default to the systemd-managed
-  `/var/log/portsentry` and `/run/portsentry` directories respectively.
+- The module defaults mirror `examples/portsentry.conf`, except that the
+  blocked-host file lives in the systemd-managed runtime directory
+  (`/run/portsentry/blocked`) so it is cleared on reboot. The history file is
+  `/var/log/portsentry.log`.
 
 ## Testing
 
