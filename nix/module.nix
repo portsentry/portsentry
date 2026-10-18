@@ -21,14 +21,15 @@ let
   # be overridden/extended through `services.portsentry.settings`.
   baseSettings =
     {
-      TCP_PORTS = lib.concatStringsSep "," cfg.tcpPorts;
-      UDP_PORTS = lib.concatStringsSep "," cfg.udpPorts;
       IGNORE_FILE = toString ignoreFile;
       BLOCK_TCP = cfg.blockTcp;
       BLOCK_UDP = cfg.blockUdp;
       RESOLVE_HOST = cfg.resolveHost;
       SCAN_TRIGGER = cfg.scanTrigger;
     }
+    # An empty port list omits the directive entirely, disabling that protocol.
+    // lib.optionalAttrs (cfg.tcpPorts != [ ]) { TCP_PORTS = lib.concatStringsSep "," cfg.tcpPorts; }
+    // lib.optionalAttrs (cfg.udpPorts != [ ]) { UDP_PORTS = lib.concatStringsSep "," cfg.udpPorts; }
     // lib.optionalAttrs (cfg.historyFile != null) { HISTORY_FILE = cfg.historyFile; }
     // lib.optionalAttrs (cfg.blockedFile != null) { BLOCKED_FILE = cfg.blockedFile; }
     // lib.optionalAttrs (cfg.killRoute != null) { KILL_ROUTE = cfg.killRoute; }
@@ -126,20 +127,52 @@ in
 
     tcpPorts = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [
-        "1" "7" "9" "11" "13" "15" "17" "19" "20" "21" "70" "79" "111" "113"
-        "119" "389" "512-515" "540" "543-544" "873" "989" "990" "992" "1080"
-      ];
+      default = [ ];
+      example = lib.literalExpression ''config.services.portsentry.recommended.tcpPorts ++ [ "8080" ]'';
       description = ''
         TCP ports (and ranges, e.g. `"512-515"`) to monitor. Ports already in use
-        by a running service are automatically excluded by portsentry.
+        by a running service are automatically excluded by portsentry. An empty
+        list (the default) omits `TCP_PORTS` and disables TCP monitoring. At least
+        one of this and {option}`udpPorts` must be non-empty. See
+        {option}`recommended.tcpPorts` for a suggested starting point.
       '';
     };
 
     udpPorts = lib.mkOption {
       type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = lib.literalExpression "config.services.portsentry.recommended.udpPorts";
+      description = ''
+        UDP ports (and ranges) to monitor. An empty list (the default) omits
+        `UDP_PORTS` and disables UDP monitoring. See
+        {option}`recommended.udpPorts` for a suggested starting point.
+      '';
+    };
+
+    # Read-only port lists (mirroring examples/portsentry.conf) that users can
+    # assign to, or extend into, tcpPorts/udpPorts.
+    recommended.tcpPorts = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      readOnly = true;
+      default = [
+        "1" "7" "9" "11" "13" "15" "17" "19" "20" "21" "70" "79" "111" "113"
+        "119" "389" "512-515" "540" "543-544" "873" "989" "990" "992" "1080"
+      ];
+      description = ''
+        Recommended TCP ports to monitor. Read-only; use it as a value for
+        {option}`tcpPorts`, e.g.
+        `tcpPorts = config.services.portsentry.recommended.tcpPorts;`.
+      '';
+    };
+
+    recommended.udpPorts = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      readOnly = true;
       default = [ "7" "9" "13" "19" "111" "389" "513" "517-518" ];
-      description = "UDP ports (and ranges) to monitor.";
+      description = ''
+        Recommended UDP ports to monitor. Read-only; use it as a value for
+        {option}`udpPorts`.
+      '';
     };
 
     ignoreHosts = lib.mkOption {
@@ -283,6 +316,10 @@ in
 
   config = lib.mkIf cfg.enable {
     assertions = [
+      {
+        assertion = cfg.configFile == null -> (cfg.tcpPorts != [ ] || cfg.udpPorts != [ ]);
+        message = "services.portsentry: set tcpPorts and/or udpPorts (there is no default port list).";
+      }
       {
         assertion = cfg.blockTcp == 1 -> (cfg.killRoute != null || cfg.killHostsDeny != null);
         message = "services.portsentry: blockTcp = 1 requires killRoute and/or killHostsDeny to be set.";
