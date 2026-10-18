@@ -30,10 +30,13 @@ They are exposed from the repo's top-level `flake.nix` as:
       system = "x86_64-linux";
       modules = [
         portsentry.nixosModules.portsentry
-        {
+        ({ config, ... }: {
           nixpkgs.overlays = [ portsentry.overlays.default ];
-          services.portsentry.enable = true;
-        }
+          services.portsentry = {
+            enable = true;
+            tcpPorts = config.services.portsentry.recommended.tcpPorts;
+          };
+        })
       ];
     };
   };
@@ -52,6 +55,8 @@ Log-only (recommended — hand blocking off to e.g. fail2ban):
 services.portsentry = {
   enable = true;
   blockTcp = 0;              # default
+  tcpPorts = config.services.portsentry.recommended.tcpPorts;
+  udpPorts = config.services.portsentry.recommended.udpPorts;
   ignoreHosts = [ "127.0.0.1/32" "192.168.0.0/16" ];
 };
 ```
@@ -62,6 +67,7 @@ Active blocking via nftables/iptables:
 services.portsentry = {
   enable = true;
   blockTcp = 1;
+  tcpPorts = config.services.portsentry.recommended.tcpPorts ++ [ "8080" ];
   killRoute = "${pkgs.iptables}/bin/iptables -I INPUT -s $TARGET$ -j DROP";
 };
 ```
@@ -86,7 +92,12 @@ package.
   active-response setups (external firewall commands, custom file paths) may
   need `ProtectSystem`/`ReadWritePaths` relaxed via a `systemd.services.portsentry`
   override.
-- The module defaults mirror `examples/portsentry.conf`, except that the
+- There is no default port list: set `tcpPorts` and/or `udpPorts` explicitly.
+  Leaving one empty omits its `TCP_PORTS`/`UDP_PORTS` directive, disabling that
+  protocol. The read-only `recommended.tcpPorts` / `recommended.udpPorts`
+  options hold the lists from `examples/portsentry.conf`; assign or extend them
+  (they are plain lists, so `++`, `lib.subtractLists` etc. work).
+- The remaining module defaults mirror `examples/portsentry.conf`, except that the
   blocked-host file lives in the systemd-managed runtime directory
   (`/run/portsentry/blocked`) so it is cleared on reboot. The history file is
   `/var/log/portsentry.log`.
